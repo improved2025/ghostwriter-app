@@ -4,18 +4,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { topic, audience, blocker } = req.body || {};
+    const { topic, audience, blocker, chapters } = req.body || {};
 
     const clean = (v) => (v || "").toString().trim();
     const t = clean(topic) || "your message";
     const a = clean(audience) || "the people you want to reach";
     const b = clean(blocker) || "self-doubt";
 
+    let n = parseInt(chapters, 10);
+    if (![5, 8, 10, 12].includes(n)) n = 5;
+
     const prompt = `
-You are a helpful book coach. Create:
+You are a helpful book coach.
+
+Create:
 1) A working title (short)
 2) A one-sentence purpose statement
-3) A 5-chapter outline with chapter titles only
+3) A ${n}-chapter outline with chapter titles only
 
 Make it clear, human, and encouraging. No hype. No mention of AI.
 
@@ -27,7 +32,7 @@ Return JSON ONLY in this format:
 {
   "title": "...",
   "purpose": "...",
-  "outline": ["...", "...", "...", "...", "..."]
+  "outline": ["...", "..."]
 }
 `.trim();
 
@@ -52,32 +57,33 @@ Return JSON ONLY in this format:
       }),
     });
 
-    const data = await response.json();
+    const raw = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({
-        error: "OpenAI request failed",
-        details: data,
-      });
+      return res.status(500).json({ error: "OpenAI request failed", details: raw });
     }
 
-    const text = data.choices?.[0]?.message?.content || "";
-
-    let parsed;
+    // The model returns JSON in message.content (we parse it safely)
+    const content = raw?.choices?.[0]?.message?.content || "";
+    let data;
     try {
-      parsed = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({
-        error: "Model returned invalid JSON",
-        raw: text,
-      });
+      data = JSON.parse(content);
+    } catch {
+      return res.status(500).json({ error: "Model did not return valid JSON", details: content });
     }
 
-    return res.status(200).json(parsed);
-  } catch (err) {
-    return res.status(500).json({
-      error: "Server error",
-      details: String(err),
+    // Basic cleanup
+    const title = clean(data.title) || "Untitled";
+    const purpose = clean(data.purpose) || "";
+    const outlineArr = Array.isArray(data.outline) ? data.outline.map(clean).filter(Boolean) : [];
+
+    return res.status(200).json({
+      title,
+      purpose,
+      outline: outlineArr.slice(0, n),
     });
+  } catch (err) {
+    return res.status(500).json({ error: "Server error", details: String(err) });
   }
 }
+
