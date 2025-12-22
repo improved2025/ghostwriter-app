@@ -8,29 +8,79 @@
   <body style="font-family: Arial, sans-serif; margin: 60px; max-width: 700px;">
     <h1>Start your book</h1>
 
+    <p>You don’t need a finished idea to begin. Just answer a few questions.</p>
+
     <p>
-      You don’t need a finished idea to begin. Just answer a few questions.
+      <label><strong>What do you want to write about?</strong></label><br />
+      <textarea id="topic" rows="4" style="width:100%;" placeholder="It’s okay if you’re not sure yet."></textarea>
     </p>
 
-    <form>
-      <p>
-        <label>What do you want to write about?</label><br />
-        <textarea rows="4" cols="60" placeholder="It’s okay if you’re not sure yet."></textarea>
-      </p>
+    <p>
+      <label><strong>Who is this for?</strong></label><br />
+      <input id="audience" type="text" style="width:100%;" placeholder="Who do you want to reach?" />
+    </p>
 
-      <p>
-        <label>Who is this for?</label><br />
-        <input type="text" size="60" placeholder="Who do you want to reach?" />
-      </p>
+    <p>
+      <label><strong>What’s been stopping you from writing?</strong></label><br />
+      <input id="blocker" type="text" style="width:100%;" placeholder="Fear, time, clarity, confidence…" />
+    </p>
 
-      <p>
-        <label>What’s been stopping you from writing?</label><br />
-        <input type="text" size="60" placeholder="Fear, time, clarity, confidence…" />
-      </p>
+    <p>
+      <button id="beginBtn" type="button">Begin</button>
+      &nbsp; <a href="/index.html">Back to home</a>
+    </p>
 
-      <p>
-        <button type="button">Begin</button>
-      </p>
-    </form>
+    <hr />
+
+    <div id="result" style="display:none;">
+      <h2>Your starting point</h2>
+
+      <p><strong>Working title:</strong> <span id="titleOut"></span></p>
+
+      <p><strong>One-sentence purpose:</strong></p>
+      <p id="purposeOut"></p>
+
+      <p><strong>Starter outline (5 chapters):</strong></p>
+      <ol id="outlineOut"></ol>
+    </div>
+
+    <script>
+      function clean(text) {
+        return (text || "").trim();
+      }
+
+      document.getElementById("beginBtn").addEventListener("click", function () {
+        const topic = clean(document.getElementById("topic").value) || "your message";
+        const audience = clean(document.getElementById("audience").value) || "the people you want to reach";
+        const blocker = clean(document.getElementById("blocker").value) || "doubt";
+
+        const title = "Authored: " + topic.charAt(0).toUpperCase() + topic.slice(1);
+
+        document.getElementById("titleOut").textContent = title;
+
+        document.getElementById("purposeOut").textContent =
+          "This book helps " + audience + " move past " + blocker + " and make steady progress from idea to finished manuscript.";
+
+        const outline = [
+          "Why this matters: the real reason you want to write this",
+          "Finding clarity: what you truly want to say",
+          "Building momentum: writing even when you don’t feel ready",
+          "Writing in your voice: staying consistent as you grow",
+          "Finishing strong: shaping your message into a complete manuscript"
+        ];
+
+        const list = document.getElementById("outlineOut");
+        list.innerHTML = "";
+        outline.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        });
+
+        document.getElementById("result").style.display = "block";
+        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+      });
+    </script>
   </body>
 </html>
+
