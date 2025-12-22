@@ -44,43 +44,49 @@
       <ol id="outlineOut"></ol>
     </div>
 
-    <script>
-      function clean(text) {
-        return (text || "").trim();
-      }
+   <script>
+  function clean(text) {
+    return (text || "").toString().trim();
+  }
 
-      document.getElementById("beginBtn").addEventListener("click", function () {
-        const topic = clean(document.getElementById("topic").value) || "your message";
-        const audience = clean(document.getElementById("audience").value) || "the people you want to reach";
-        const blocker = clean(document.getElementById("blocker").value) || "doubt";
+  document.getElementById("beginBtn").addEventListener("click", async function () {
+    const topic = clean(document.getElementById("topic").value);
+    const audience = clean(document.getElementById("audience").value);
+    const blocker = clean(document.getElementById("blocker").value);
 
-        const title = "Authored: " + topic.charAt(0).toUpperCase() + topic.slice(1);
+    // Show loading state
+    document.getElementById("result").style.display = "block";
+    document.getElementById("titleOut").textContent = "Generating...";
+    document.getElementById("purposeOut").textContent = "Please wait...";
+    document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
 
-        document.getElementById("titleOut").textContent = title;
-
-        document.getElementById("purposeOut").textContent =
-          "This book helps " + audience + " move past " + blocker + " and make steady progress from idea to finished manuscript.";
-
-        const outline = [
-          "Why this matters: the real reason you want to write this",
-          "Finding clarity: what you truly want to say",
-          "Building momentum: writing even when you don’t feel ready",
-          "Writing in your voice: staying consistent as you grow",
-          "Finishing strong: shaping your message into a complete manuscript"
-        ];
-
-        const list = document.getElementById("outlineOut");
-        list.innerHTML = "";
-        outline.forEach((item) => {
-          const li = document.createElement("li");
-          li.textContent = item;
-          list.appendChild(li);
-        });
-
-        document.getElementById("result").style.display = "block";
-        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+    try {
+      const response = await fetch("/api/outline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, audience, blocker }),
       });
-    </script>
-  </body>
-</html>
 
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Request failed");
+
+      document.getElementById("titleOut").textContent = data.title || "Untitled";
+      document.getElementById("purposeOut").textContent = data.purpose || "";
+
+      const list = document.getElementById("outlineOut");
+      list.innerHTML = "";
+      (data.outline || []).forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+      });
+
+      document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      document.getElementById("titleOut").textContent = "Could not generate outline";
+      document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
+      document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
+    }
+  });
+</script>
