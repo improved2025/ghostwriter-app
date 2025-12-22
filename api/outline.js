@@ -36,38 +36,18 @@ Return JSON ONLY in this format:
       return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        input: prompt,
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(500).json({ error: "OpenAI error", details: text });
-    }
-
-    const data = await response.json();
-    const text =
-      data.output?.[0]?.content?.[0]?.text ||
-      data.output_text ||
-      "";
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({ error: "Model returned invalid JSON", raw: text });
-    }
-
-    return res.status(200).json(parsed);
-  } catch (err) {
-    return res.status(500).json({ error: "Server error", details: String(err) });
-  }
-}
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "gpt-4o-mini",
+    messages: [
+      { role: "system", content: "You are a helpful book coach." },
+      { role: "user", content: prompt }
+    ],
+    temperature: 0.7
+  }),
+});
