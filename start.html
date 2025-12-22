@@ -2,194 +2,393 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Authored – Start your book</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authored — Start</title>
+
+  <!-- Stops the favicon.ico 404 without affecting anything -->
+  <link rel="icon" href="data:,">
 
   <style>
-    body { font-family: Arial, sans-serif; margin: 60px; max-width: 900px; }
-    label { display: block; margin-top: 14px; font-weight: 700; }
-    input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; }
-    button { padding: 10px 14px; margin-top: 12px; cursor: pointer; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .row > div { flex: 1; min-width: 220px; }
-    .muted { color: #666; }
-    .card { border: 1px solid #ddd; padding: 14px; border-radius: 6px; margin-top: 16px; background: #fff; }
-    .pill { display: inline-block; padding: 4px 10px; border: 1px solid #ddd; border-radius: 999px; font-size: 12px; color: #444; }
-    ol { padding-left: 20px; }
-    li { margin: 10px 0; }
-    .small { font-size: 0.95em; }
-    .error { color: #b00020; font-weight: 700; }
-    .ok { color: #1b5e20; font-weight: 700; }
-    .actions { display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; align-items:center; }
-    .chapterBox { margin-top: 10px; padding: 10px; border-left: 3px solid #eee; background: #fafafa; border-radius: 6px; }
-    .link { margin-left: 10px; }
-    .miniBtn { margin-left: 10px; padding: 6px 10px; font-size: 12px; }
-    .notice { font-size: 0.9em; color: #666; margin-top: 6px; }
+    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
+    h1 { margin: 0 0 8px; }
+    p { color: #333; line-height: 1.5; }
+    label { display:block; font-weight: 700; margin-top: 14px; }
+    input[type="text"], textarea, select {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;
+    }
+    textarea { min-height: 80px; }
+    .row { display:flex; gap: 12px; align-items:center; flex-wrap: wrap; margin-top: 12px; }
+    .btn {
+      padding: 10px 14px; border: 1px solid #111; background:#111; color:#fff;
+      border-radius: 8px; cursor:pointer; font-weight: 700;
+    }
+    .btn.secondary { background:#fff; color:#111; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .muted { color:#666; font-size: 13px; }
+    hr { margin: 18px 0; border: none; border-top: 1px solid #eee; }
+
+    .notice {
+      background: #fff7d6;
+      border: 1px solid #f2d27a;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin: 14px 0 18px;
+      color: #5a4600;
+    }
+
+    #result { display:none; margin-top: 18px; }
+    .card {
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+    }
+    .pill {
+      display:inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+      color: #333;
+      margin-right: 8px;
+    }
+    ol { padding-left: 18px; }
+    .actions { display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; }
+    .two-col { display:flex; gap: 16px; flex-wrap: wrap; }
+    .two-col > div { flex: 1 1 320px; }
+    pre {
+      white-space: pre-wrap;
+      background: #fafafa;
+      border: 1px solid #eee;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
   </style>
 </head>
 
 <body>
   <h1>Start your book</h1>
-  <p class="muted">You don’t need a finished idea to begin. Just answer a few questions.</p>
+  <p class="muted">You don’t need a finished idea. Answer a few questions and get a title, purpose, and outline.</p>
 
-  <label for="topic">What do you want to write about?</label>
-  <textarea id="topic" rows="4" placeholder="It’s okay if you’re not sure yet."></textarea>
+  <!-- Free limit notice (informational only; doesn’t block your current flow) -->
+  <div class="notice" id="freeNotice">
+    <strong>Free version:</strong> Outline generation is free.
+    <span id="freeLimitText"></span>
+    <br />
+    <span class="muted">Full chapter drafts (Expand) are limited in the free version.</span>
+  </div>
 
-  <label for="audience">Who is this for?</label>
+  <label>What do you want to write about?</label>
+  <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
+
+  <label>Who is this for?</label>
   <input id="audience" type="text" placeholder="Who do you want to reach?" />
 
-  <label for="blocker">What’s been stopping you from writing?</label>
+  <label>What’s been stopping you from writing?</label>
   <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
 
-  <div class="row" style="margin-top:14px;">
-    <div>
-      <label for="chapters">How many chapters?</label>
+  <div class="row">
+    <div style="min-width:260px; flex: 1;">
+      <label style="margin-top:0;">How many chapters?</label>
       <select id="chapters">
-        <option value="5" selected>5 (fast start)</option>
+        <option value="5">5</option>
         <option value="8">8</option>
         <option value="10">10</option>
-        <option value="12">12</option>
+        <option value="12" selected>12</option>
+        <option value="15">15</option>
       </select>
-      <div class="muted small" style="margin-top:6px;">Start small. You can expand later.</div>
+      <div class="muted">Start small. You can expand later.</div>
     </div>
-    <div>
-      <label>&nbsp;</label>
-      <button id="beginBtn" type="button">Generate starting point</button>
-      <a class="link" href="index.html">Back to home</a>
-      <div class="muted small" style="margin-top:6px;">
-        You don’t need to know everything. This just helps you start.
+
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <button class="btn" id="beginBtn" type="button">Generate starting point</button>
+      <a href="index.html" style="align-self:center;">Back to home</a>
+    </div>
+  </div>
+
+  <hr />
+
+  <div id="result">
+    <p><strong>Done.</strong> You have a starting point.</p>
+
+    <div class="card">
+      <div>
+        <span class="pill">Working title</span>
+        <span class="pill">Starter outline</span>
+      </div>
+
+      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
+
+      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
+      <p id="purposeOut">Please wait...</p>
+
+      <h3 style="margin:14px 0 6px;">Outline</h3>
+      <ol id="outlineOut"><li>Creating your outline...</li></ol>
+
+      <!-- NEW: Copy + Download actions -->
+      <div class="actions">
+        <button class="btn secondary" id="copyBtn" type="button">Copy to clipboard</button>
+        <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
+      </div>
+    </div>
+
+    <!-- NEW: Expand outline -->
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
+      <div class="two-col">
+        <div>
+          <label style="margin-top:0;">Choose chapter</label>
+          <select id="chapterPick"></select>
+          <div class="muted" id="expandHint"></div>
+
+          <div class="actions" style="margin-top:10px;">
+            <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
+            <button class="btn secondary" id="copyExpandedBtn" type="button" disabled>Copy expanded text</button>
+            <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.txt)</button>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            <strong>Heads up:</strong> Expanding chapters costs more than generating an outline.
+            In the free version, expansion is limited.
+          </div>
+        </div>
+
+        <div>
+          <label style="margin-top:0;">Expanded draft</label>
+          <pre id="expandedOut">Choose a chapter and click Expand.</pre>
+        </div>
       </div>
     </div>
   </div>
 
-  <hr style="margin:28px 0;" />
-
-  <div id="status" class="muted"></div>
-
-  <div id="result" class="card" style="display:none;">
-    <p class="muted small">
-      This is a first draft to get you moving. You can refine it later.
-    </p>
-
-    <div class="row">
-      <div><span class="pill">Working title</span></div>
-      <div style="text-align:right;"><span id="modeTag" class="pill">Starter outline</span></div>
-    </div>
-
-    <h2 id="titleOut" style="margin-top:10px;"></h2>
-
-    <h3>One-sentence purpose</h3>
-    <p id="purposeOut"></p>
-
-    <h3>Outline</h3>
-    <ol id="outlineOut"></ol>
-
-    <div class="card" style="margin-top:18px;">
-      <p class="muted small">What to do next:</p>
-      <ul class="small">
-        <li>Pick one chapter and write freely for 15 minutes.</li>
-        <li>Don’t edit. Don’t polish. Just get it out.</li>
-        <li>Come back later and refine.</li>
-      </ul>
-      <p class="muted small">Progress beats perfection. Starting is the win.</p>
-    </div>
-
-    <div class="actions">
-      <button id="expandOutlineBtn" type="button">Expand this outline (deeper)</button>
-      <button id="downloadBtn" type="button">Download as TXT</button>
-      <button id="copyBtn" type="button">Copy to clipboard</button>
-    </div>
-
-    <!-- FREE LIMIT NOTICE -->
-    <div class="notice">
-      Free users can expand once. Unlimited expansion is part of the Authored Pass.
-    </div>
-
-    <div id="expandedOutline" class="chapterBox" style="display:none;"></div>
-
-    <div class="card" style="margin-top:18px;">
-      <p class="small">Want to continue building this later?</p>
-      <p class="muted small">Enter your email to save your progress and access future expansions.</p>
-
-      <input type="email" placeholder="your email address" disabled />
-      <button type="button" disabled style="opacity:0.6; cursor:not-allowed;">
-        Save my progress
-      </button>
-
-      <p class="muted small">(Coming soon. No spam.)</p>
-    </div>
-  </div>
-
-  <!-- JS unchanged (working version) -->
   <script>
-    function clean(text) { return (text || "").toString().trim(); }
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    function clean(v) { return (v ?? "").toString().trim(); }
 
-    const els = {
-      topic: document.getElementById("topic"),
-      audience: document.getElementById("audience"),
-      blocker: document.getElementById("blocker"),
-      chapters: document.getElementById("chapters"),
-      beginBtn: document.getElementById("beginBtn"),
-      expandOutlineBtn: document.getElementById("expandOutlineBtn"),
-      downloadBtn: document.getElementById("downloadBtn"),
-      copyBtn: document.getElementById("copyBtn"),
-      result: document.getElementById("result"),
-      status: document.getElementById("status"),
-      modeTag: document.getElementById("modeTag"),
-      titleOut: document.getElementById("titleOut"),
-      purposeOut: document.getElementById("purposeOut"),
-      outlineOut: document.getElementById("outlineOut"),
-      expandedOutline: document.getElementById("expandedOutline"),
-    };
-
-    let lastStarter = null;
-
-    function setStatus(msg, type="muted") {
-      els.status.className = type === "error" ? "error" : (type === "ok" ? "ok" : "muted");
-      els.status.textContent = msg || "";
+    function makeTextBundle() {
+      const title = clean(document.getElementById("titleOut").textContent);
+      const purpose = clean(document.getElementById("purposeOut").textContent);
+      const outlineItems = window.__outlineItems || [];
+      const outlineText = outlineItems.map((x, i) => `${i + 1}. ${x}`).join("\n");
+      return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
     }
 
-    function renderOutline(outlineArr) {
-      els.outlineOut.innerHTML = "";
-      (outlineArr || []).forEach((chapterTitle) => {
-        const li = document.createElement("li");
-        li.textContent = chapterTitle;
-        els.outlineOut.appendChild(li);
-      });
+    async function copyText(text) {
+      await navigator.clipboard.writeText(text);
+      alert("Copied.");
     }
 
-    els.beginBtn.addEventListener("click", async () => {
-      const topic = clean(els.topic.value) || "your message";
-      const audience = clean(els.audience.value) || "the people you want to reach";
-      const blocker = clean(els.blocker.value) || "self-doubt";
-      const chapters = parseInt(els.chapters.value, 10) || 5;
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
 
-      setStatus("Generating…");
-      els.result.style.display = "block";
-      els.titleOut.textContent = "Generating…";
-      els.purposeOut.textContent = "Please wait…";
-      els.outlineOut.innerHTML = "<li>Creating your outline…</li>";
+    // -----------------------------
+    // FREE LIMIT (simple + safe)
+    // This does NOT block outline generation.
+    // It only limits Expand in the free version.
+    // -----------------------------
+    const FREE_EXPANDS_PER_DAY = 2;
+
+    function todayKey() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function getFreeExpandCount() {
+      const key = `authored_expand_${todayKey()}`;
+      const v = parseInt(localStorage.getItem(key) || "0", 10);
+      return isNaN(v) ? 0 : v;
+    }
+
+    function incFreeExpandCount() {
+      const key = `authored_expand_${todayKey()}`;
+      const now = getFreeExpandCount() + 1;
+      localStorage.setItem(key, String(now));
+      return now;
+    }
+
+    function refreshFreeNotice() {
+      const used = getFreeExpandCount();
+      const remaining = Math.max(0, FREE_EXPANDS_PER_DAY - used);
+      document.getElementById("freeLimitText").textContent =
+        ` You get ${FREE_EXPANDS_PER_DAY} free chapter expansions per day. Remaining today: ${remaining}.`;
+      document.getElementById("expandHint").textContent =
+        `Free expands remaining today: ${remaining} (resets daily).`;
+    }
+
+    refreshFreeNotice();
+
+    // -----------------------------
+    // Generate starting point (outline)
+    // -----------------------------
+    const beginBtn = document.getElementById("beginBtn");
+    beginBtn.addEventListener("click", async () => {
+      const topic = clean(document.getElementById("topic").value) || "your message";
+      const audience = clean(document.getElementById("audience").value) || "the people you want to reach";
+      const blocker = clean(document.getElementById("blocker").value) || "self-doubt";
+      const chapters = parseInt(document.getElementById("chapters").value, 10) || 5;
+
+      // Show loading state
+      document.getElementById("result").style.display = "block";
+      document.getElementById("titleOut").textContent = "Generating...";
+      document.getElementById("purposeOut").textContent = "Please wait...";
+      document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
+      document.getElementById("expandedOut").textContent = "Choose a chapter and click Expand.";
+      document.getElementById("copyExpandedBtn").disabled = true;
+      document.getElementById("downloadExpandedBtn").disabled = true;
 
       try {
-        const res = await fetch("/api/outline", {
+        const resp = await fetch("/api/outline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ topic, audience, blocker, chapters })
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Request failed");
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "Request failed");
 
-        lastStarter = data;
-        els.titleOut.textContent = data.title;
-        els.purposeOut.textContent = data.purpose;
-        renderOutline(data.outline);
+        const title = data.title || "Untitled";
+        const purpose = data.purpose || "";
+        const outline = Array.isArray(data.outline) ? data.outline : [];
 
-        setStatus("Done. You have a starting point.", "ok");
-        els.result.scrollIntoView({ behavior: "smooth" });
-      } catch (e) {
-        setStatus("Something went wrong. Please try again.", "error");
+        window.__outlineItems = outline;
+        window.__title = title;
+        window.__purpose = purpose;
+
+        document.getElementById("titleOut").textContent = title;
+        document.getElementById("purposeOut").textContent = purpose;
+
+        // Render outline
+        const list = document.getElementById("outlineOut");
+        list.innerHTML = "";
+        outline.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        });
+
+        // Fill chapter picker for expansion
+        const picker = document.getElementById("chapterPick");
+        picker.innerHTML = "";
+        outline.forEach((item, idx) => {
+          const opt = document.createElement("option");
+          opt.value = String(idx);
+          opt.textContent = `Chapter ${idx + 1}: ${item}`;
+          picker.appendChild(opt);
+        });
+
+        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+      } catch (err) {
+        document.getElementById("titleOut").textContent = "Could not generate outline";
+        document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
+        document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
       }
+    });
+
+    // -----------------------------
+    // Copy + Download (outline bundle)
+    // -----------------------------
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      try {
+        await copyText(makeTextBundle());
+      } catch {
+        alert("Copy failed. Try again.");
+      }
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const title = clean(document.getElementById("titleOut").textContent) || "authored";
+      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+      downloadText(`${safe}_outline.txt`, makeTextBundle());
+    });
+
+    // -----------------------------
+    // Expand selected chapter (calls NEW /api/expand)
+    // -----------------------------
+    document.getElementById("expandBtn").addEventListener("click", async () => {
+      refreshFreeNotice();
+      const used = getFreeExpandCount();
+      if (used >= FREE_EXPANDS_PER_DAY) {
+        alert("Free expansion limit reached for today. Try tomorrow or upgrade to unlock unlimited chapter drafts.");
+        return;
+      }
+
+      const outline = window.__outlineItems || [];
+      if (!outline.length) {
+        alert("Generate your starting point first.");
+        return;
+      }
+
+      const idx = parseInt(document.getElementById("chapterPick").value, 10) || 0;
+      const chapterTitle = outline[idx] || `Chapter ${idx + 1}`;
+
+      const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
+      const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
+
+      document.getElementById("expandedOut").textContent = "Expanding...";
+
+      try {
+        const resp = await fetch("/api/expand", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookTitle: title,
+            purpose,
+            chapterNumber: idx + 1,
+            chapterTitle,
+            audience: clean(document.getElementById("audience").value),
+            topic: clean(document.getElementById("topic").value)
+          })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "Expand failed");
+
+        const expanded = data.expanded || "";
+        if (!expanded) throw new Error("No expanded text returned");
+
+        // count free usage only on success
+        incFreeExpandCount();
+        refreshFreeNotice();
+
+        window.__expandedText = expanded;
+        document.getElementById("expandedOut").textContent = expanded;
+        document.getElementById("copyExpandedBtn").disabled = false;
+        document.getElementById("downloadExpandedBtn").disabled = false;
+      } catch (err) {
+        document.getElementById("expandedOut").textContent =
+          "Could not expand this chapter. Please try again.";
+      }
+    });
+
+    document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
+      try {
+        await copyText(window.__expandedText || "");
+      } catch {
+        alert("Copy failed. Try again.");
+      }
+    });
+
+    document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
+      const title = window.__title || "authored";
+      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+      const text = window.__expandedText || "";
+      downloadText(`${safe}_expanded_chapter.txt`, text);
     });
   </script>
 </body>
