@@ -4,111 +4,96 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Log in</title>
-
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #fff; color: #111; }
-    .wrap { min-height: 100vh; display: grid; place-items: center; padding: 40px 16px; }
-    .card { width: 100%; max-width: 520px; border: 1px solid #e7e7e7; border-radius: 14px; padding: 28px; }
-    h1 { margin: 0 0 8px; font-size: 32px; }
-    p { margin: 0 0 18px; color: #444; line-height: 1.45; }
-    label { display:block; font-weight: 600; margin: 14px 0 8px; }
-    input { width: 100%; padding: 12px 12px; border-radius: 10px; border: 1px solid #cfcfcf; font-size: 16px; }
-    button { width: 100%; margin-top: 16px; padding: 12px 14px; border-radius: 10px; border: 0; background: #111; color: #fff; font-size: 16px; cursor: pointer; }
-    button[disabled] { opacity: 0.6; cursor: not-allowed; }
-    .row { display:flex; justify-content: space-between; align-items:center; margin-top: 14px; font-size: 14px; }
-    .row a { color: #1a66ff; text-decoration: none; }
+    body { font-family: Arial, sans-serif; background:#fff; }
+    .wrap { max-width: 420px; margin: 80px auto; padding: 24px; }
+    label { display:block; margin-top: 14px; font-size: 14px; }
+    input { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; margin-top: 16px; cursor:pointer; }
     .msg { margin-top: 12px; font-size: 14px; }
-    .err { color: #b00020; }
-    .ok { color: #0b7a28; }
+    .error { color: #b00020; }
+    .ok { color: #0b6b0b; }
+    .row { display:flex; justify-content:space-between; margin-top: 14px; font-size: 14px; }
   </style>
 
-  <!-- Load Supabase ONCE (UMD gives window.supabase) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Then load your account helper -->
-  <script src="/account.js"></script>
+  <!-- IMPORTANT: account.js must load BEFORE we use AuthoredAccount -->
+  <script src="./account.js" defer></script>
 </head>
-
 <body>
   <div class="wrap">
-    <div class="card">
-      <h1>Log in</h1>
-      <p>Use the same email and password you created.</p>
+    <h1>Log in</h1>
 
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
+    <label>Email</label>
+    <input id="email" type="email" autocomplete="email" />
 
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" />
 
-      <button id="loginBtn">Log in</button>
+    <button id="loginBtn">Log in</button>
 
-      <div id="msg" class="msg"></div>
+    <div id="status" class="msg"></div>
 
-      <div class="row">
-        <span>New here? <a href="/signup.html">Create account</a></span>
-        <a href="/start.html">Back to app</a>
-      </div>
+    <div class="row">
+      <a href="./signup.html">Create an account</a>
+      <a href="./start.html">Back to app</a>
     </div>
   </div>
 
   <script>
-    const emailEl = document.getElementById("email");
-    const passEl = document.getElementById("password");
-    const btn = document.getElementById("loginBtn");
-    const msg = document.getElementById("msg");
+    const statusEl = document.getElementById("status");
+    const loginBtn = document.getElementById("loginBtn");
 
-    function setMsg(text, type) {
-      msg.textContent = text || "";
-      msg.className = "msg " + (type || "");
+    function setStatus(text, kind) {
+      statusEl.textContent = text || "";
+      statusEl.className = "msg " + (kind || "");
     }
 
-    function setLoading(isLoading) {
-      btn.disabled = isLoading;
-      btn.textContent = isLoading ? "Logging in..." : "Log in";
-    }
-
-    // If already logged in, go straight to start
-    (async function () {
-      try {
-        if (!window.AuthoredAccount) return;
-        const user = await window.AuthoredAccount.getUser();
-        if (user) window.location.href = "/start.html";
-      } catch (_) {}
-    })();
-
-    btn.addEventListener("click", async () => {
-      setMsg("");
-      setLoading(true);
-
-      try {
-        if (!window.AuthoredAccount) {
-          throw new Error("Auth not loaded. account.js missing or keys are wrong.");
+    async function waitForAuthoredAccount(timeoutMs = 5000) {
+      const start = Date.now();
+      while (!window.AuthoredAccount) {
+        if (window.AuthoredAccountInitError) {
+          throw new Error(window.AuthoredAccountInitError);
         }
+        if (Date.now() - start > timeoutMs) {
+          throw new Error("Auth system not ready. account.js did not load.");
+        }
+        await new Promise(r => setTimeout(r, 50));
+      }
+    }
 
-        const email = (emailEl.value || "").trim();
-        const password = passEl.value || "";
+    loginBtn.addEventListener("click", async () => {
+      try {
+        setStatus("Logging in...", "");
+        loginBtn.disabled = true;
+
+        await waitForAuthoredAccount();
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
         if (!email || !password) {
-          setMsg("Enter your email and password.", "err");
-          setLoading(false);
+          setStatus("Enter email and password.", "error");
           return;
         }
 
-        const { error } = await window.AuthoredAccount.signIn(email, password);
-        if (error) throw error;
+        const { data, error } = await window.AuthoredAccount.signIn(email, password);
 
-        setMsg("Logged in. Redirecting…", "ok");
-        window.location.href = "/start.html";
-      } catch (err) {
-        setMsg(err?.message || "Login failed. Try again.", "err");
+        if (error) {
+          setStatus(error.message || "Login failed.", "error");
+          return;
+        }
+
+        // Success
+        setStatus("Logged in. Redirecting...", "ok");
+
+        // Send them to the app
+        window.location.href = "./start.html";
+      } catch (e) {
+        console.error(e);
+        setStatus(e.message || "Login failed.", "error");
       } finally {
-        setLoading(false);
+        loginBtn.disabled = false;
       }
-    });
-
-    passEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") btn.click();
     });
   </script>
 </body>
