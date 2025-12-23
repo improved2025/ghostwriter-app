@@ -5,66 +5,21 @@
   <title>Create your account</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #ffffff;
-      padding: 40px;
-      max-width: 420px;
-      margin: auto;
-    }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    p {
-      color: #555;
-      font-size: 14px;
-    }
-
-    label {
-      display: block;
-      margin-top: 20px;
-      font-weight: 600;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      font-size: 14px;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 10px;
-      width: 100%;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .status {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-
-    .error {
-      color: #b00020;
-    }
-
-    .success {
-      color: #006400;
-    }
-
-    a {
-      font-size: 14px;
-    }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background:#fff; padding:40px; max-width:420px; margin:auto; }
+    h1 { margin-bottom:10px; }
+    p { color:#555; font-size:14px; }
+    label { display:block; margin-top:20px; font-weight:600; }
+    input { width:100%; padding:10px; margin-top:6px; font-size:14px; }
+    button { margin-top:20px; padding:10px; width:100%; font-size:15px; cursor:pointer; }
+    .status { margin-top:15px; font-size:14px; white-space:pre-wrap; }
+    .error { color:#b00020; }
+    .success { color:#006400; }
   </style>
 </head>
 <body>
 
   <h1>Create your account</h1>
-  <p>Email + password. No confirmation email required.</p>
+  <p>Email + password.</p>
 
   <form id="signupForm">
     <label>Email</label>
@@ -79,42 +34,56 @@
   <div id="status" class="status"></div>
 
   <p style="margin-top: 20px;">
-    Already have an account?
-    <a href="login.html">Log in</a>
+    Already have an account? <a href="login.html">Log in</a>
   </p>
 
-  <!-- REQUIRED SCRIPTS (DO NOT CHANGE ORDER) -->
+  <!-- Load Supabase FIRST -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Then your account wrapper -->
   <script src="account.js"></script>
 
   <script>
     const form = document.getElementById("signupForm");
     const statusEl = document.getElementById("status");
 
+    function showError(msg) {
+      statusEl.textContent = msg;
+      statusEl.className = "status error";
+    }
+
+    function showSuccess(msg) {
+      statusEl.textContent = msg;
+      statusEl.className = "status success";
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      statusEl.textContent = "Creating account...";
       statusEl.className = "status";
-
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      statusEl.textContent = "Creating account...";
 
       try {
-        const { data, error } = await window.AuthoredAccount.signUp(email, password);
-
-        if (error) {
-          statusEl.textContent = error.message;
-          statusEl.classList.add("error");
+        if (!window.AuthoredAccount || !window.AuthoredAccount.signUp) {
+          showError("AuthoredAccount is not available. account.js did not load or has wrong keys.");
           return;
         }
 
-        statusEl.textContent = "Account created successfully.";
-        statusEl.classList.add("success");
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
+        const { data, error } = await window.AuthoredAccount.signUp(email, password);
+
+        if (error) {
+          // THIS is the real Supabase error
+          console.error("Supabase signUp error:", error);
+          showError("Signup failed:\n" + error.message);
+          return;
+        }
+
+        console.log("Signup success:", data);
+        showSuccess("Account created successfully.");
       } catch (err) {
-        statusEl.textContent = "Something went wrong. Please try again.";
-        statusEl.classList.add("error");
-        console.error(err);
+        console.error("Signup crashed:", err);
+        showError("Signup crashed:\n" + (err?.message || String(err)));
       }
     });
   </script>
