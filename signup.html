@@ -1,100 +1,141 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Create account</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create your account</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#fff; color:#111; }
-    .wrap { max-width: 520px; margin: 90px auto; padding: 0 18px; text-align:center; }
-    h1 { font-size: 34px; margin: 0 0 10px; }
-    p { color:#444; margin: 0 0 22px; }
-    .card { border:1px solid #e8e8e8; border-radius: 14px; padding: 26px; text-align:left; }
-    label { display:block; font-size: 13px; color:#333; margin: 14px 0 6px; }
-    input { width:100%; padding: 12px; border:1px solid #d9d9d9; border-radius: 10px; font-size: 15px; }
-    button { width:100%; margin-top: 16px; padding: 12px; border: 1px solid #111; background:#111; color:#fff; border-radius: 10px; font-size: 15px; cursor:pointer; }
-    button[disabled] { opacity: .6; cursor:not-allowed; }
-    .msg { margin-top: 12px; min-height: 18px; font-size: 13px; }
-    .err { color: #b00020; }
-    .ok { color: #0a7a2f; }
-    .row { display:flex; justify-content: space-between; align-items:center; margin-top: 10px; font-size: 13px; }
-    a { color:#1a57ff; text-decoration:none; }
-    a:hover { text-decoration:underline; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+      color: #111;
+    }
+    .wrap {
+      max-width: 520px;
+      margin: 80px auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 42px;
+      margin: 0 0 10px;
+      font-weight: 800;
+    }
+    .sub {
+      color: #444;
+      margin: 0 0 30px;
+    }
+    .card {
+      border: 1px solid #eee;
+      border-radius: 14px;
+      padding: 22px;
+      text-align: left;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 12px 0 6px;
+      color: #222;
+    }
+    input {
+      width: 100%;
+      padding: 12px 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    input:focus {
+      border-color: #aaa;
+    }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .msg {
+      margin-top: 12px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+    .msg.ok { color: #0a7a2f; }
+    .msg.err { color: #b00020; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    a { color: #1a73e8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Create your account</h1>
-    <p>Email + password. No confirmation email required.</p>
+    <p class="sub">Email + password. No confirmation email required.</p>
 
     <div class="card">
       <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
+      <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
 
       <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="new-password" placeholder="••••••••" />
+      <input id="password" type="password" placeholder="••••••••" autocomplete="new-password" />
 
-      <button id="signupBtn">Sign up</button>
-
+      <button id="btn">Sign up</button>
       <div id="msg" class="msg"></div>
 
       <div class="row">
-        <span>Already have an account?</span>
+        <div>Already have an account?</div>
         <a href="login.html">Log in</a>
       </div>
     </div>
   </div>
 
-  <!-- Supabase JS -->
+  <!-- Supabase JS v2 (global "supabase") -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // IMPORTANT: paste YOUR values below
+    // 1) Paste your values here
     const SUPABASE_URL = "https://siiivusryuotqmbcerqp.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpaWl2dXNyeXVvdHFtYmNlcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODc4NjIsImV4cCI6MjA4MjA2Mzg2Mn0.Sgx9Qy0t-8w6M2BeFyWRR3lCHcZkj_cLioJAq5XlNKc";
 
-    const msgEl = document.getElementById("msg");
-    const btn = document.getElementById("signupBtn");
+    // 2) Create client using a DIFFERENT variable name (avoid "supabase" double-declare)
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const emailEl = document.getElementById("email");
     const passEl = document.getElementById("password");
+    const btn = document.getElementById("btn");
+    const msg = document.getElementById("msg");
 
-    function setMsg(text, kind) {
-      msgEl.textContent = text || "";
-      msgEl.className = "msg " + (kind || "");
-    }
-
-    function looksConfigured() {
-      return (
-        SUPABASE_URL.startsWith("https://") &&
-        SUPABASE_URL.includes(".supabase.co") &&
-        SUPABASE_ANON_KEY.startsWith("eyJ")
-      );
-    }
-
-    let supabase;
-    try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (e) {
-      // falls through to message below
+    function setMsg(text, type) {
+      msg.textContent = text || "";
+      msg.className = "msg" + (type ? " " + type : "");
     }
 
     btn.addEventListener("click", async () => {
-      setMsg("");
-
-      if (!looksConfigured() || !supabase) {
-        setMsg("Supabase is not configured. Paste your Project URL + anon key into signup.html.", "err");
-        return;
-      }
-
+      setMsg("", "");
       const email = (emailEl.value || "").trim();
       const password = passEl.value || "";
 
       if (!email || !password) {
-        setMsg("Enter your email and password.", "err");
-        return;
-      }
-      if (password.length < 6) {
-        setMsg("Password must be at least 6 characters.", "err");
+        setMsg("Please enter email and password.", "err");
         return;
       }
 
@@ -102,22 +143,26 @@
       btn.textContent = "Creating account...";
 
       try {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password
+        });
 
         if (error) {
-          setMsg(error.message, "err");
+          setMsg(error.message || "Something went wrong. Please try again.", "err");
           return;
         }
 
-        // If email confirmations are OFF, user is created and may already be signed in.
-        setMsg("Account created. Redirecting...", "ok");
+        setMsg("Account created. You can log in now.", "ok");
 
+        // Optional: auto-redirect to login
         setTimeout(() => {
-          window.location.href = "start.html";
-        }, 700);
+          window.location.href = "login.html";
+        }, 900);
 
       } catch (e) {
         setMsg("Something went wrong. Please try again.", "err");
+        console.error(e);
       } finally {
         btn.disabled = false;
         btn.textContent = "Sign up";
