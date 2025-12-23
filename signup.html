@@ -1,55 +1,123 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sign up</title>
-</head>
-<body style="font-family:Arial; max-width:420px; margin:60px auto;">
-  <h2>Create your account</h2>
-  <p style="color:#666;">Email + password. No confirmation email required.</p>
-
-  <label>Email</label><br/>
-  <input id="email" type="email" style="width:100%; padding:10px; margin:6px 0 12px;" />
-
-  <label>Password</label><br/>
-  <input id="password" type="password" style="width:100%; padding:10px; margin:6px 0 12px;" />
-
-  <button id="btn" style="padding:10px 14px;">Sign up</button>
-  <p id="msg" style="margin-top:12px;"></p>
-
-  <p style="margin-top:14px;">
-    Already have an account? <a href="login.html">Log in</a>
-  </p>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="account.js"></script>
-  <script>
-    const btn = document.getElementById("btn");
-    const msg = document.getElementById("msg");
-
-    function getReturnTo() {
-      const p = new URLSearchParams(location.search);
-      return p.get("returnTo") || "start.html";
+  <meta charset="UTF-8" />
+  <title>Create your account</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      padding: 40px;
+      max-width: 420px;
+      margin: auto;
     }
 
-    btn.addEventListener("click", async () => {
-      msg.textContent = "Creating account...";
-      const email = document.getElementById("email").value.trim();
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #555;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    .success {
+      color: #006400;
+    }
+
+    a {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Create your account</h1>
+  <p>Email + password. No confirmation email required.</p>
+
+  <form id="signupForm">
+    <label>Email</label>
+    <input type="email" id="email" required />
+
+    <label>Password</label>
+    <input type="password" id="password" required />
+
+    <button type="submit">Sign up</button>
+  </form>
+
+  <div id="status" class="status"></div>
+
+  <p style="margin-top: 20px;">
+    Already have an account?
+    <a href="login.html">Log in</a>
+  </p>
+
+  <!-- REQUIRED SCRIPTS (DO NOT CHANGE ORDER) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="account.js"></script>
+
+  <script>
+    const form = document.getElementById("signupForm");
+    const statusEl = document.getElementById("status");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "Creating account...";
+      statusEl.className = "status";
+
+      const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      const { data, error } = await window.AuthoredAccount.signUp(email, password);
-      if (error) { msg.textContent = error.message; return; }
+      try {
+        const { data, error } = await window.AuthoredAccount.signUp(email, password);
 
-      // Make sure user usage row exists (we’ll create the table next)
-      const user = data.user;
-      if (user) {
-        try { await window.AuthoredAccount.ensureUsageRow(user.id); } catch {}
+        if (error) {
+          statusEl.textContent = error.message;
+          statusEl.classList.add("error");
+          return;
+        }
+
+        statusEl.textContent = "Account created successfully.";
+        statusEl.classList.add("success");
+
+      } catch (err) {
+        statusEl.textContent = "Something went wrong. Please try again.";
+        statusEl.classList.add("error");
+        console.error(err);
       }
-
-      msg.textContent = "Account created. Redirecting...";
-      location.href = getReturnTo();
     });
   </script>
+
 </body>
 </html>
