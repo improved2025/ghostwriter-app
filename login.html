@@ -1,52 +1,114 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Log in</title>
-</head>
-<body style="font-family:Arial; max-width:420px; margin:60px auto;">
-  <h2>Log in</h2>
 
-  <label>Email</label><br/>
-  <input id="email" type="email" style="width:100%; padding:10px; margin:6px 0 12px;" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #fff; color: #111; }
+    .wrap { min-height: 100vh; display: grid; place-items: center; padding: 40px 16px; }
+    .card { width: 100%; max-width: 520px; border: 1px solid #e7e7e7; border-radius: 14px; padding: 28px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    p { margin: 0 0 18px; color: #444; line-height: 1.45; }
+    label { display:block; font-weight: 600; margin: 14px 0 8px; }
+    input { width: 100%; padding: 12px 12px; border-radius: 10px; border: 1px solid #cfcfcf; font-size: 16px; }
+    button { width: 100%; margin-top: 16px; padding: 12px 14px; border-radius: 10px; border: 0; background: #111; color: #fff; font-size: 16px; cursor: pointer; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    .row { display:flex; justify-content: space-between; align-items:center; margin-top: 14px; font-size: 14px; }
+    .row a { color: #1a66ff; text-decoration: none; }
+    .msg { margin-top: 12px; font-size: 14px; }
+    .err { color: #b00020; }
+    .ok { color: #0b7a28; }
+  </style>
 
-  <label>Password</label><br/>
-  <input id="password" type="password" style="width:100%; padding:10px; margin:6px 0 12px;" />
-
-  <button id="btn" style="padding:10px 14px;">Log in</button>
-  <p id="msg" style="margin-top:12px;"></p>
-
-  <p style="margin-top:14px;">
-    New here? <a href="signup.html">Create an account</a>
-  </p>
-
+  <!-- Load Supabase ONCE (UMD gives window.supabase) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="account.js"></script>
+
+  <!-- Then load your account helper -->
+  <script src="/account.js"></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Log in</h1>
+      <p>Use the same email and password you created.</p>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+
+      <button id="loginBtn">Log in</button>
+
+      <div id="msg" class="msg"></div>
+
+      <div class="row">
+        <span>New here? <a href="/signup.html">Create account</a></span>
+        <a href="/start.html">Back to app</a>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const btn = document.getElementById("btn");
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const btn = document.getElementById("loginBtn");
     const msg = document.getElementById("msg");
 
-    function getReturnTo() {
-      const p = new URLSearchParams(location.search);
-      return p.get("returnTo") || "start.html";
+    function setMsg(text, type) {
+      msg.textContent = text || "";
+      msg.className = "msg " + (type || "");
     }
 
+    function setLoading(isLoading) {
+      btn.disabled = isLoading;
+      btn.textContent = isLoading ? "Logging in..." : "Log in";
+    }
+
+    // If already logged in, go straight to start
+    (async function () {
+      try {
+        if (!window.AuthoredAccount) return;
+        const user = await window.AuthoredAccount.getUser();
+        if (user) window.location.href = "/start.html";
+      } catch (_) {}
+    })();
+
     btn.addEventListener("click", async () => {
-      msg.textContent = "Logging in...";
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      setMsg("");
+      setLoading(true);
 
-      const { data, error } = await window.AuthoredAccount.signIn(email, password);
-      if (error) { msg.textContent = error.message; return; }
+      try {
+        if (!window.AuthoredAccount) {
+          throw new Error("Auth not loaded. account.js missing or keys are wrong.");
+        }
 
-      const user = data.user;
-      if (user) {
-        try { await window.AuthoredAccount.ensureUsageRow(user.id); } catch {}
+        const email = (emailEl.value || "").trim();
+        const password = passEl.value || "";
+
+        if (!email || !password) {
+          setMsg("Enter your email and password.", "err");
+          setLoading(false);
+          return;
+        }
+
+        const { error } = await window.AuthoredAccount.signIn(email, password);
+        if (error) throw error;
+
+        setMsg("Logged in. Redirecting…", "ok");
+        window.location.href = "/start.html";
+      } catch (err) {
+        setMsg(err?.message || "Login failed. Try again.", "err");
+      } finally {
+        setLoading(false);
       }
+    });
 
-      msg.textContent = "Logged in. Redirecting...";
-      location.href = getReturnTo();
+    passEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btn.click();
     });
   </script>
 </body>
