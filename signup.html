@@ -1,92 +1,128 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Create your account</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create account</title>
   <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background:#fff; padding:40px; max-width:420px; margin:auto; }
-    h1 { margin-bottom:10px; }
-    p { color:#555; font-size:14px; }
-    label { display:block; margin-top:20px; font-weight:600; }
-    input { width:100%; padding:10px; margin-top:6px; font-size:14px; }
-    button { margin-top:20px; padding:10px; width:100%; font-size:15px; cursor:pointer; }
-    .status { margin-top:15px; font-size:14px; white-space:pre-wrap; }
-    .error { color:#b00020; }
-    .success { color:#006400; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#fff; color:#111; }
+    .wrap { max-width: 520px; margin: 90px auto; padding: 0 18px; text-align:center; }
+    h1 { font-size: 34px; margin: 0 0 10px; }
+    p { color:#444; margin: 0 0 22px; }
+    .card { border:1px solid #e8e8e8; border-radius: 14px; padding: 26px; text-align:left; }
+    label { display:block; font-size: 13px; color:#333; margin: 14px 0 6px; }
+    input { width:100%; padding: 12px; border:1px solid #d9d9d9; border-radius: 10px; font-size: 15px; }
+    button { width:100%; margin-top: 16px; padding: 12px; border: 1px solid #111; background:#111; color:#fff; border-radius: 10px; font-size: 15px; cursor:pointer; }
+    button[disabled] { opacity: .6; cursor:not-allowed; }
+    .msg { margin-top: 12px; min-height: 18px; font-size: 13px; }
+    .err { color: #b00020; }
+    .ok { color: #0a7a2f; }
+    .row { display:flex; justify-content: space-between; align-items:center; margin-top: 10px; font-size: 13px; }
+    a { color:#1a57ff; text-decoration:none; }
+    a:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>Create your account</h1>
+    <p>Email + password. No confirmation email required.</p>
 
-  <h1>Create your account</h1>
-  <p>Email + password.</p>
+    <div class="card">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
 
-  <form id="signupForm">
-    <label>Email</label>
-    <input type="email" id="email" required />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="new-password" placeholder="••••••••" />
 
-    <label>Password</label>
-    <input type="password" id="password" required />
+      <button id="signupBtn">Sign up</button>
 
-    <button type="submit">Sign up</button>
-  </form>
+      <div id="msg" class="msg"></div>
 
-  <div id="status" class="status"></div>
+      <div class="row">
+        <span>Already have an account?</span>
+        <a href="login.html">Log in</a>
+      </div>
+    </div>
+  </div>
 
-  <p style="margin-top: 20px;">
-    Already have an account? <a href="login.html">Log in</a>
-  </p>
-
-  <!-- Load Supabase FIRST -->
+  <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Then your account wrapper -->
-  <script src="account.js"></script>
 
   <script>
-    const form = document.getElementById("signupForm");
-    const statusEl = document.getElementById("status");
+    // IMPORTANT: paste YOUR values below
+    const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
 
-    function showError(msg) {
-      statusEl.textContent = msg;
-      statusEl.className = "status error";
+    const msgEl = document.getElementById("msg");
+    const btn = document.getElementById("signupBtn");
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+
+    function setMsg(text, kind) {
+      msgEl.textContent = text || "";
+      msgEl.className = "msg " + (kind || "");
     }
 
-    function showSuccess(msg) {
-      statusEl.textContent = msg;
-      statusEl.className = "status success";
+    function looksConfigured() {
+      return (
+        SUPABASE_URL.startsWith("https://") &&
+        SUPABASE_URL.includes(".supabase.co") &&
+        SUPABASE_ANON_KEY.startsWith("eyJ")
+      );
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      statusEl.className = "status";
-      statusEl.textContent = "Creating account...";
+    let supabase;
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+      // falls through to message below
+    }
+
+    btn.addEventListener("click", async () => {
+      setMsg("");
+
+      if (!looksConfigured() || !supabase) {
+        setMsg("Supabase is not configured. Paste your Project URL + anon key into signup.html.", "err");
+        return;
+      }
+
+      const email = (emailEl.value || "").trim();
+      const password = passEl.value || "";
+
+      if (!email || !password) {
+        setMsg("Enter your email and password.", "err");
+        return;
+      }
+      if (password.length < 6) {
+        setMsg("Password must be at least 6 characters.", "err");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Creating account...";
 
       try {
-        if (!window.AuthoredAccount || !window.AuthoredAccount.signUp) {
-          showError("AuthoredAccount is not available. account.js did not load or has wrong keys.");
-          return;
-        }
-
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-
-        const { data, error } = await window.AuthoredAccount.signUp(email, password);
+        const { data, error } = await supabase.auth.signUp({ email, password });
 
         if (error) {
-          // THIS is the real Supabase error
-          console.error("Supabase signUp error:", error);
-          showError("Signup failed:\n" + error.message);
+          setMsg(error.message, "err");
           return;
         }
 
-        console.log("Signup success:", data);
-        showSuccess("Account created successfully.");
-      } catch (err) {
-        console.error("Signup crashed:", err);
-        showError("Signup crashed:\n" + (err?.message || String(err)));
+        // If email confirmations are OFF, user is created and may already be signed in.
+        setMsg("Account created. Redirecting...", "ok");
+
+        setTimeout(() => {
+          window.location.href = "start.html";
+        }, 700);
+
+      } catch (e) {
+        setMsg("Something went wrong. Please try again.", "err");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Sign up";
       }
     });
   </script>
-
 </body>
 </html>
