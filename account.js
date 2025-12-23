@@ -1,31 +1,46 @@
-// account.js (NO modules, works in plain HTML)
-
+// account.js
 (function () {
-  // IMPORTANT:
-  // Paste your Supabase Project URL and Anon Key below (from Supabase settings).
-  const SUPABASE_URL = https://siiivusryuotqmbcerqp.supabase.co;
-  const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpaWl2dXNyeXVvdHFtYmNlcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODc4NjIsImV4cCI6MjA4MjA2Mzg2Mn0.Sgx9Qy0t-8w6M2BeFyWRR3lCHcZkj_cLioJAq5XlNKc;
+  const SUPABASE_URL = "https://siiivusryuotqmbcerqp.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpaWl2dXNyeXVvdHFtYmNlcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODc4NjIsImV4cCI6MjA4MjA2Mzg2Mn0.Sgx9Qy0t-8w6M2BeFyWRR3lCHcZkj_cLioJAq5XlNKc";
 
-  if (!window.supabase) {
-    console.error("Supabase SDK not loaded. Check the CDN script tag.");
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_ANON_KEY ||
+    SUPABASE_URL.includes("PASTE_") ||
+    SUPABASE_ANON_KEY.includes("PASTE_")
+  ) {
+    console.error("AuthoredAccount: Missing Supabase URL or anon key in account.js");
+    window.AuthoredAccount = null;
     return;
   }
 
-  const { createClient } = window.supabase;
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Supabase UMD must be loaded in the HTML first (window.supabase exists)
+  const client = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  if (!client) {
+    console.error("AuthoredAccount: Supabase library not loaded (window.supabase missing).");
+    window.AuthoredAccount = null;
+    return;
+  }
 
   window.AuthoredAccount = {
-    signUp: async (email, password) => {
-      return await client.auth.signUp({ email, password });
+    client,
+
+    async signUp(email, password) {
+      return client.auth.signUp({ email, password });
     },
-    signIn: async (email, password) => {
-      return await client.auth.signInWithPassword({ email, password });
+
+    async signIn(email, password) {
+      return client.auth.signInWithPassword({ email, password });
     },
-    signOut: async () => {
-      return await client.auth.signOut();
+
+    async signOut() {
+      return client.auth.signOut();
     },
-    getUser: async () => {
-      return await client.auth.getUser();
-    },
+
+    async getUser() {
+      const { data } = await client.auth.getUser();
+      return data?.user || null;
+    }
   };
 })();
