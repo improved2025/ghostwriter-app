@@ -150,7 +150,6 @@
           <select id="chapterPick"></select>
           <div class="muted" id="expandHint"></div>
           <div class="muted" id="limitNote" style="margin-top:8px;"></div>
-          <div id="limitNote" class="muted" style="margin-top:6px;"></div>
 
           <div class="actions" style="margin-top:10px;">
             <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
@@ -174,6 +173,41 @@
 
   <script>
     // -----------------------------
+    // --- FREE LIMIT ENFORCEMENT ---
+const sb =
+  window.supabaseClient ||
+  window.supabase ||
+  window._supabase ||
+  (typeof supabase !== "undefined" ? supabase : null);
+
+async function consumeFree(kind) {
+  if (!sb) return { ok: false };
+
+  const variants = [
+    { kind },
+    { p_kind: kind },
+    { action: kind },
+    { p_action: kind }
+  ];
+
+  for (const v of variants) {
+    const res = await sb.rpc("consume_free_limit", v);
+    if (!res.error) {
+      if (typeof res.data === "boolean") return { ok: res.data };
+      if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
+      return { ok: true };
+    }
+  }
+  return { ok: false };
+}
+
+function showLimitNotice(msg) {
+  const el = document.getElementById("limitNote");
+  if (el) el.textContent = msg;
+  else alert(msg);
+}
+// --- END FREE LIMIT ENFORCEMENT ---
+
     // Helpers
     // -----------------------------
     function clean(v) { return (v ?? "").toString().trim(); }
