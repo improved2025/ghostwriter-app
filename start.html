@@ -149,6 +149,8 @@
           <label style="margin-top:0;">Choose chapter</label>
           <select id="chapterPick"></select>
           <div class="muted" id="expandHint"></div>
+          <div class="muted" id="limitNote" style="margin-top:8px;"></div>
+          <div id="limitNote" class="muted" style="margin-top:6px;"></div>
 
           <div class="actions" style="margin-top:10px;">
             <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
@@ -397,6 +399,13 @@
       const text = window.__expandedText || "";
       downloadText(`${safe}_expanded_chapter.txt`, text);
     });
+    // Free plan notice (display only)
+const limitNote = document.getElementById("limitNote");
+if (limitNote) {
+  limitNote.textContent =
+    "Free plan: 1 outline + 1 expanded chapter per account. Regenerate counts toward the same limit.";
+}
+
   </script>
 </body>
 </html>
