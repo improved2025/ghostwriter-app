@@ -1,28 +1,49 @@
 // auth-guard.js
 (async function () {
   try {
-    // If Supabase library didn't load, fail closed (redirect)
-    if (!window.supabase || !window.AuthoredAccount || !window.AuthoredAccount.supabase) {
-      window.location.href = "./login.html";
+    const page = (location.pathname.split("/").pop() || "").toLowerCase();
+
+    // Public pages allowed without session
+    const PUBLIC_PAGES = new Set(["login.html", "signup.html", "index.html"]);
+
+    // Wait briefly for Supabase to load
+    const start = Date.now();
+    while (!window.supabase && Date.now() - start < 4000) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+
+    // If Supabase still isn't available, fail closed only for protected pages
+    if (!window.supabase) {
+      if (!PUBLIC_PAGES.has(page)) location.href = "./login.html";
       return;
     }
 
-    const supa = window.AuthoredAccount.supabase;
-
-    const { data, error } = await supa.auth.getSession();
+    // Read current session
+    const { data, error } = await window.supabase.auth.getSession();
     if (error) {
-      window.location.href = "./login.html";
+      if (!PUBLIC_PAGES.has(page)) location.href = "./login.html";
       return;
     }
 
     const session = data?.session;
-    if (!session) {
-      window.location.href = "./login.html";
+
+    // If not logged in and page is protected -> go to login
+    if (!session && !PUBLIC_PAGES.has(page)) {
+      location.href = "./login.html";
       return;
     }
 
-    // If session exists, allow page
-  } catch (e) {
-    window.location.href = "./login.html";
+    // If logged in and user is on login/signup -> send to start
+    if (session && (page === "login.html" || page === "signup.html")) {
+      location.href = "./start.html";
+      return;
+    }
+
+    // Otherwise do nothing
+  } catch {
+    // If anything fails, only force login on protected pages
+    const page = (location.pathname.split("/").pop() || "").toLowerCase();
+    const PUBLIC_PAGES = new Set(["login.html", "signup.html", "index.html"]);
+    if (!PUBLIC_PAGES.has(page)) location.href = "./login.html";
   }
 })();
