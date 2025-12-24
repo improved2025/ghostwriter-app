@@ -367,7 +367,7 @@ function showLimitNotice(msg) {
       refreshFreeNotice();
       const used = getFreeExpandCount();
       if (used >= FREE_EXPANDS_PER_DAY) {
-        alert("Free expansion limit reached for today. Try tomorrow or upgrade to unlock unlimited chapter drafts.");
+       showLimitNotice("Free plan: 1 expanded chapter per account. Regenerate counts toward the same limit.");
         return;
       }
 
