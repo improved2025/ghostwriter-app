@@ -49,7 +49,7 @@
       statusEl.className = "msg " + (kind || "");
     }
 
-    async function waitForAuthoredAccount(timeoutMs = 5000) {
+    async function waitForAuthoredAccount(timeoutMs = 15000) {
       const start = Date.now();
       while (!window.AuthoredAccount) {
         if (window.AuthoredAccountInitError) {
