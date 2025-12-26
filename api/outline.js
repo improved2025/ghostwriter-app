@@ -1,59 +1,105 @@
 import OpenAI from "openai";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
-    // 1. Get API key
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res
-        .status(500)
-        .json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+
+    const openai = new OpenAI({ apiKey });
+
+    const body = req.body || {};
+    const clean = (v) => (v ?? "").toString().trim();
+
+    const topic = clean(body.topic);
+    const audience = clean(body.audience);
+    const blocker = clean(body.blocker);
+    const chapters = Number.isFinite(parseInt(body.chapters, 10)) ? parseInt(body.chapters, 10) : 12;
+
+    // If user didn't type anything, don't generate garbage defaults like "love"
+    if (!topic) {
+      return res.status(400).json({ error: "Missing topic" });
     }
 
-    // 2. Create OpenAI client
-    const openai = new OpenAI({
-      apiKey,
-    });
+    const system = `
+You are a professional ghostwriter.
+Return ONLY valid JSON (no markdown, no commentary).
+The JSON schema must be EXACTLY:
+{
+  "title": "string",
+  "purpose": "string",
+  "outline": [
+    { "chapter": 1, "title": "string", "bullets": ["string", "string", "string"] }
+  ]
+}
+Rules:
+- outline length must equal the requested chapter count
+- chapter numbers must start at 1 and be sequential
+- bullets: 3 to 5 items each
+`.trim();
 
-    // 3. Read request body
-    const body = req.body || {};
-    const topic = (body.topic || "Untitled book").toString();
-    const chapters = Number(body.chapters || 10);
+    const user = `
+Topic: ${topic}
+Audience: ${audience || "general readers"}
+Main blocker: ${blocker || "none"}
+Chapters requested: ${chapters}
 
-    // 4. Call OpenAI (simple + reliable)
-    const completion = await openai.chat.completions.create({
+Create a clear, practical book outline.
+`.trim();
+
+    const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.6,
       messages: [
-        {
-          role: "system",
-          content:
-            "You are a professional book outlining assistant. Respond clearly.",
-        },
-        {
-          role: "user",
-          content: `Create a ${chapters}-chapter book outline for a book titled: "${topic}". 
-Include a short purpose statement and numbered chapter titles.`,
-        },
+        { role: "system", content: system },
+        { role: "user", content: user }
       ],
+      // This helps the model stay in JSON
+      response_format: { type: "json_object" }
     });
 
-    const text = completion.choices[0].message.content;
+    const content = resp?.choices?.[0]?.message?.content || "";
+    let data;
 
-    // 5. Return result
-    return res.status(200).json({
-      title: topic,
-      purpose: "AI-generated book outline",
-      outline: text,
-    });
+    try {
+      data = JSON.parse(content);
+    } catch (e) {
+      return res.status(500).json({
+        error: "OpenAI returned non-JSON. Update prompt or model.",
+        raw: content.slice(0, 2000)
+      });
+    }
+
+    // Hard validation so the UI ALWAYS gets what it expects
+    if (!data || typeof data !== "object") throw new Error("Bad JSON object");
+    if (!Array.isArray(data.outline)) throw new Error("Missing outline array");
+
+    // Ensure chapters count matches
+    if (data.outline.length !== chapters) {
+      // If model returns wrong count, trim or pad minimally
+      data.outline = data.outline.slice(0, chapters);
+      while (data.outline.length < chapters) {
+        const n = data.outline.length + 1;
+        data.outline.push({
+          chapter: n,
+          title: `Chapter ${n}`,
+          bullets: ["Key idea", "Example", "Action step"]
+        });
+      }
+    }
+
+    // Normalize
+    data.title = clean(data.title) || topic;
+    data.purpose = clean(data.purpose) || `A practical guide on ${topic}.`;
+    data.outline = data.outline.map((c, i) => ({
+      chapter: Number.isFinite(c.chapter) ? c.chapter : i + 1,
+      title: clean(c.title) || `Chapter ${i + 1}`,
+      bullets: Array.isArray(c.bullets) && c.bullets.length ? c.bullets.map(clean).filter(Boolean) : ["Key idea", "Example", "Action step"]
+    }));
+
+    return res.status(200).json(data);
   } catch (err) {
-    console.error("Outline API error:", err);
-    return res.status(500).json({
-      error: "Outline generation failed",
-      details: err.message,
-    });
+    return res.status(500).json({ error: err?.message || "Server error" });
   }
 }
