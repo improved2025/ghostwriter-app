@@ -319,11 +319,11 @@ function showLimitNotice(msg) {
         // Render outline
         const list = document.getElementById("outlineOut");
         list.innerHTML = "";
-        outline.forEach((item) => {
-          const li = document.createElement("li");
-          li.textContent = item;
-          list.appendChild(li);
-        });
+        outline.forEach((item, idx) => {
+  const li = document.createElement("li");
+  li.textContent = item.title;
+  list.appendChild(li);
+});
 
         // Fill chapter picker for expansion
        const picker = document.getElementById("chapterPick");
