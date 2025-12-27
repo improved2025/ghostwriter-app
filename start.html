@@ -326,10 +326,10 @@ function showLimitNotice(msg) {
 });
 
         // Fill chapter picker for expansion
-       const picker = document.getElementById("chapterPick");
-picker.innerHTML = "";
+     const picker = document.getElementById("chapterPick");
+const chapterIdx = Number(picker.value);
 
-outline.forEach((item, idx) => {
+const chapter = window.__outlineItems[chapterIdx];
   const opt = document.createElement("option");
   opt.value = idx;
   opt.textContent = `Chapter ${idx + 1}: ${(item && item.title) ? item.title : JSON.stringify(item)}`;
