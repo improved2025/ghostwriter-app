@@ -332,7 +332,7 @@ picker.innerHTML = "";
 outline.forEach((item, idx) => {
   const opt = document.createElement("option");
   opt.value = idx;
-  opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
+  opt.textContent = `Chapter ${idx + 1}: ${(item && item.title) ? item.title : JSON.stringify(item)}`;
   picker.appendChild(opt);
 });
 
