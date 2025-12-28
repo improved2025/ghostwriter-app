@@ -368,44 +368,60 @@ window.__outlineItems.forEach((item, idx) => {
     // Expand selected chapter (calls NEW /api/expand)
     // -----------------------------
     document.getElementById("expandBtn").addEventListener("click", async () => {
-      refreshFreeNotice();
-      const used = getFreeExpandCount();
-      if (used >= FREE_EXPANDS_PER_DAY) {
-       showLimitNotice("Free plan: 1 expanded chapter per account. Regenerate counts toward the same limit.");
-        return;
-      }
+  try {
+    const outline = window.__outlineItems || [];
+    if (!outline.length) {
+      alert("Generate an outline first.");
+      return;
+    }
 
-      const outline = window.__outlineItems || [];
-      if (!outline.length) {
-        alert("Generate your starting point first.");
-        return;
-      }
-const picker = document.getElementById("chapterPick");
-const chapterIdx = Number(picker.value);
-const chapter = outline[chapterIdx];
+    const picker = document.getElementById("chapterPick");
+    const chapterIdx = Number(picker.value);
+    const chapterObj = outline[chapterIdx];
 
-if (!chapter) { alert("Pick a chapter first."); return; }
-      const idx = parseInt(document.getElementById("chapterPick").value, 10) || 0;
-      const chapterTitle = outline[idx] || `Chapter ${idx + 1}`;
+    if (!chapterObj) {
+      alert("Pick a chapter first.");
+      return;
+    }
 
-      const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
-      const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
+    const chapterTitle = chapterObj.title || `Chapter ${chapterIdx + 1}`;
 
-      document.getElementById("expandedOut").textContent = "Expanding...";
+    // Show loading
+    const expandedOut = document.getElementById("expandedOut");
+    expandedOut.textContent = "Expanding...";
 
-      try {
-        const resp = await fetch("/api/expand", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookTitle: title,
-            purpose,
-            chapterNumber: idx + 1,
-            chapterTitle,
-            audience: clean(document.getElementById("audience").value),
-            topic: clean(document.getElementById("topic").value)
-          })
-        });
+    const resp = await fetch("/api/expand", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: chapterTitle,
+        chapterNumber: chapterIdx + 1,
+        outline: chapterObj
+      })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      expandedOut.textContent = "";
+      alert(data.error || "Could not expand chapter.");
+      return;
+    }
+
+    // Expect expand API to return { text: "..." } or { chapter: "..." }
+    const text = data.text || data.chapter || data.content || "";
+    if (!text) {
+      expandedOut.textContent = "";
+      alert("Expand worked but returned empty text.");
+      return;
+    }
+
+    expandedOut.textContent = text;
+  } catch (e) {
+    console.error(e);
+    alert("Could not expand chapter.");
+  }
+});
 
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error || "Expand failed");
