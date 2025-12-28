@@ -216,7 +216,10 @@ function showLimitNotice(msg) {
       const title = clean(document.getElementById("titleOut").textContent);
       const purpose = clean(document.getElementById("purposeOut").textContent);
       const outlineItems = window.__outlineItems || [];
-      const outlineText = outlineItems.map((x,i)=> `${i+1}. ${x.title}`).join("\n");
+      const outlineText = outlineItems.map((x,i)=> {
+        const t = (x && typeof x === "object") ? (x.title || `Chapter ${i+1}`) : String(x);
+        return `${i+1}. ${t}`;
+      }).join("\n");
       return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
     }
 
@@ -239,8 +242,6 @@ function showLimitNotice(msg) {
 
     // -----------------------------
     // FREE LIMIT (simple + safe)
-    // This does NOT block outline generation.
-    // It only limits Expand in the free version.
     // -----------------------------
     const FREE_EXPANDS_PER_DAY = 2;
 
@@ -319,25 +320,21 @@ function showLimitNotice(msg) {
         // Render outline
         const list = document.getElementById("outlineOut");
         list.innerHTML = "";
-        outline.forEach((item, idx) => {
-  const li = document.createElement("li");
-  li.textContent = item.title;
-  list.appendChild(li);
-});
+        outline.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item.title;
+          list.appendChild(li);
+        });
 
-        // Fill chapter picker for expansion
- // Fill chapter picker for expansion
-window.__outlineItems = outline; // keep the exact same list for Expand
-
-const picker = document.getElementById("chapterPick");
-picker.innerHTML = "";
-
-window.__outlineItems.forEach((item, idx) => {
-  const opt = document.createElement("option");
-  opt.value = String(idx); // IMPORTANT: value must be idx
-  opt.textContent = `Chapter ${idx + 1}: ${(item && item.title) ? item.title : String(item)}`;
-  picker.appendChild(opt);
-});
+        // Fill chapter picker for expansion (value = index)
+        const picker = document.getElementById("chapterPick");
+        picker.innerHTML = "";
+        window.__outlineItems.forEach((item, idx) => {
+          const opt = document.createElement("option");
+          opt.value = String(idx);
+          opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
+          picker.appendChild(opt);
+        });
 
         document.getElementById("result").scrollIntoView({ behavior: "smooth" });
       } catch (err) {
@@ -365,13 +362,13 @@ window.__outlineItems.forEach((item, idx) => {
     });
 
     // -----------------------------
-    // Expand selected chapter (calls NEW /api/expand)
+    // Expand selected chapter (calls /api/expand)
     // -----------------------------
     document.getElementById("expandBtn").addEventListener("click", async () => {
       refreshFreeNotice();
       const used = getFreeExpandCount();
       if (used >= FREE_EXPANDS_PER_DAY) {
-       showLimitNotice("Free plan: 1 expanded chapter per account. Regenerate counts toward the same limit.");
+        showLimitNotice(`Free plan: You have used all ${FREE_EXPANDS_PER_DAY} expansions for today.`);
         return;
       }
 
@@ -380,13 +377,18 @@ window.__outlineItems.forEach((item, idx) => {
         alert("Generate your starting point first.");
         return;
       }
-const picker = document.getElementById("chapterPick");
-const chapterIdx = Number(picker.value);
-const chapter = outline[chapterIdx];
 
-if (!chapter) { alert("Pick a chapter first."); return; }
-      const idx = parseInt(document.getElementById("chapterPick").value, 10) || 0;
-      const chapterTitle = outline[idx] || `Chapter ${idx + 1}`;
+      const picker = document.getElementById("chapterPick");
+      const chapterIdx = Number(picker.value);
+      const chapterObj = outline[chapterIdx];
+
+      if (!chapterObj) {
+        alert("Pick a chapter first.");
+        return;
+      }
+
+      const chapterTitle = chapterObj.title;
+      const chapterNumber = chapterIdx + 1;
 
       const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
       const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
@@ -400,7 +402,7 @@ if (!chapter) { alert("Pick a chapter first."); return; }
           body: JSON.stringify({
             bookTitle: title,
             purpose,
-            chapterNumber: idx + 1,
+            chapterNumber,
             chapterTitle,
             audience: clean(document.getElementById("audience").value),
             topic: clean(document.getElementById("topic").value)
@@ -441,13 +443,13 @@ if (!chapter) { alert("Pick a chapter first."); return; }
       const text = window.__expandedText || "";
       downloadText(`${safe}_expanded_chapter.txt`, text);
     });
-    // Free plan notice (display only)
-const limitNote = document.getElementById("limitNote");
-if (limitNote) {
-  limitNote.textContent =
-    "Free plan: 1 outline + 1 expanded chapter per account. Regenerate counts toward the same limit.";
-}
 
+    // Free plan notice (display only)
+    const limitNote = document.getElementById("limitNote");
+    if (limitNote) {
+      limitNote.textContent =
+        "Free plan: Outline generation is free. Chapter expansion is limited.";
+    }
   </script>
 </body>
 </html>
