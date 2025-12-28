@@ -380,7 +380,11 @@ window.__outlineItems.forEach((item, idx) => {
         alert("Generate your starting point first.");
         return;
       }
+const picker = document.getElementById("chapterPick");
+const chapterIdx = Number(picker.value);
+const chapter = outline[chapterIdx];
 
+if (!chapter) { alert("Pick a chapter first."); return; }
       const idx = parseInt(document.getElementById("chapterPick").value, 10) || 0;
       const chapterTitle = outline[idx] || `Chapter ${idx + 1}`;
 
