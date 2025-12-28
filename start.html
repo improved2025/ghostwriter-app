@@ -326,13 +326,16 @@ function showLimitNotice(msg) {
 });
 
         // Fill chapter picker for expansion
-   const picker = document.getElementById("chapterPick");
+ // Fill chapter picker for expansion
+window.__outlineItems = outline; // keep the exact same list for Expand
+
+const picker = document.getElementById("chapterPick");
 picker.innerHTML = "";
 
-outline.forEach((item, idx) => {
+window.__outlineItems.forEach((item, idx) => {
   const opt = document.createElement("option");
-  opt.value = idx;
-  opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
+  opt.value = String(idx); // IMPORTANT: value must be idx
+  opt.textContent = `Chapter ${idx + 1}: ${(item && item.title) ? item.title : String(item)}`;
   picker.appendChild(opt);
 });
 
