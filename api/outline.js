@@ -5,7 +5,9 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+    }
 
     const openai = new OpenAI({ apiKey });
 
@@ -22,60 +24,69 @@ export default async function handler(req, res) {
 
     if (!topic) return res.status(400).json({ error: "Missing topic" });
 
+    // Strict, non-robotic, voice-matching system rules
     const system = `
-You are Authored, a writing partner.
-NON-NEGOTIABLE: You do NOT write for the user. You write WITH the user in the user's voice.
+You are Authored: a book-coach and writing partner.
+You do NOT write "for" the user. You write WITH the user.
+You must match the user's voice and writing patterns when a writing sample is provided.
+You must never sound generic, corporate, robotic, or like a template.
 
-STRICT VOICE ENFORCEMENT
-1) If a voice sample is provided, you MUST imitate its tone, rhythm, sentence length tendency, vocabulary choices, and emotional temperature.
-2) You MUST NOT sound like an assistant, consultant, or generic AI writing.
-3) You MUST NOT use filler openers or hype phrases like:
-   "In today’s world", "Let’s dive in", "Unlock", "Transform", "This guide will", "In this chapter", "Journey", "Game-changer".
-4) You MUST match the user’s writing level (simple vs advanced). Do not over-polish.
-5) You MUST NOT copy sentences from the sample. Mimic style only.
-
-OUTPUT RULES (STRICT)
-Return ONLY valid JSON (no markdown, no commentary, no extra keys).
-Schema must be EXACTLY:
+OUTPUT RULE:
+Return ONLY valid JSON (no markdown, no commentary). Use EXACT schema:
 {
   "title": "string",
   "purpose": "string",
   "outline": [
-    { "chapter": 1, "title": "string", "bullets": ["string", "string", "string"] }
+    { "chapter": 1, "title": "string", "bullets": ["string","string","string"] }
   ]
 }
 
-CONTENT RULES
+CONTENT RULES:
 - outline length MUST equal requested chapter count
-- chapter numbers start at 1 and increment by 1
-- bullets: 3 to 5 per chapter
-- bullets must be specific ideas or actions (no vague fluff)
-- the title must sound like something the user would actually choose
-- purpose must be ONE sentence, concrete, and in the user’s voice
+- chapter numbers start at 1 and are sequential
+- bullets: 3 to 5 items each
+- Keep chapter titles specific and non-generic (avoid "Introduction to...", "Overview of...")
+- Bullets must be actionable and concrete (avoid fluff: "explore", "delve", "unlock", "journey")
+- Never mention OpenAI, ChatGPT, "as an AI", "I can't", or policies
+- Avoid repeating the user's input verbatim; transform it into a useful plan
+`.trim();
 
-FINAL SELF-CHECK (INTERNAL)
-Before returning JSON, verify:
-- It matches the sample’s voice (if provided)
-- No banned phrases appear
-- No lines are copied from the sample
-If any check fails, rewrite before returning JSON.
+    // Voice constraints (very strict). If no sample, still force natural human tone.
+    const voiceBlock = `
+VOICE REQUIREMENTS (STRICT):
+- If a writing sample exists: mirror its sentence length, rhythm, vocabulary level, and punctuation habits.
+- Keep the user's natural phrases and cadence.
+- Do not add preachy/academic/corporate tone unless the sample clearly is.
+- No filler. No hype. No buzzwords.
+- Prefer clear, direct sentences.
+- When uncertain, choose simpler wording over fancy wording.
+
+Voice Notes (user preferences):
+${voiceNotes || "(none)"}
+
+User Writing Sample:
+${voiceSample ? `"""${voiceSample}"""` : "(none provided)"}
 `.trim();
 
     const user = `
-TOPIC: ${topic}
-AUDIENCE: ${audience || "general readers"}
-BLOCKER: ${blocker || "none"}
-CHAPTERS: ${chapters}
+Topic: ${topic}
+Audience: ${audience || "general readers"}
+Main blocker: ${blocker || "none"}
+Chapters requested: ${chapters}
 
-VOICE NOTES:
-${voiceNotes || "none"}
+TASK:
+Create:
+1) A working title the user would actually choose
+2) A one-sentence purpose (plain, specific)
+3) A chapter outline with ${chapters} chapters
 
-VOICE SAMPLE:
-${voiceSample || "none"}
+Each chapter object MUST include:
+- chapter number
+- title
+- 3–5 bullets (practical subtopics or steps)
 
-Task:
-Create a title, a one-sentence purpose, and an outline that matches the user's voice.
-Write it the way the user would naturally speak to their audience.
+IMPORTANT:
+The outline must feel like it came from the same person as the writing sample (if provided).
 `.trim();
 
     const resp = await openai.chat.completions.create({
@@ -83,6 +94,7 @@ Write it the way the user would naturally speak to their audience.
       temperature: 0.55,
       messages: [
         { role: "system", content: system },
+        { role: "system", content: voiceBlock },
         { role: "user", content: user }
       ],
       response_format: { type: "json_object" }
@@ -100,10 +112,11 @@ Write it the way the user would naturally speak to their audience.
       });
     }
 
+    // Hard validation
     if (!data || typeof data !== "object") throw new Error("Bad JSON object");
     if (!Array.isArray(data.outline)) throw new Error("Missing outline array");
 
-    // Ensure chapters count matches
+    // Fix count
     if (data.outline.length !== chapters) {
       data.outline = data.outline.slice(0, chapters);
       while (data.outline.length < chapters) {
