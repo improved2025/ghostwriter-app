@@ -17,13 +17,21 @@ export default async function handler(req, res) {
     const blocker = clean(body.blocker);
     const chapters = Number.isFinite(parseInt(body.chapters, 10)) ? parseInt(body.chapters, 10) : 12;
 
-    // If user didn't type anything, don't generate garbage defaults like "love"
+    // NEW: voice capture (optional)
+    const voiceSample = clean(body.voiceSample);
+    const voiceNotes = clean(body.voiceNotes);
+
     if (!topic) {
       return res.status(400).json({ error: "Missing topic" });
     }
 
+    // We are not "writing the whole book", we are helping them write.
+    // The outline should feel like THEIR thinking + THEIR voice.
     const system = `
-You are a professional ghostwriter.
+You are Authored, a writing partner.
+You do NOT write for the user. You write WITH the user.
+Your job is to create a clear starting point they can refine.
+
 Return ONLY valid JSON (no markdown, no commentary).
 The JSON schema must be EXACTLY:
 {
@@ -33,10 +41,14 @@ The JSON schema must be EXACTLY:
     { "chapter": 1, "title": "string", "bullets": ["string", "string", "string"] }
   ]
 }
+
 Rules:
 - outline length must equal the requested chapter count
 - chapter numbers must start at 1 and be sequential
 - bullets: 3 to 5 items each
+- be specific, practical, and non-robotic
+- avoid filler phrases and generic clichés
+- if a voice sample is provided, match its tone, rhythm, and word choice (without copying lines)
 `.trim();
 
     const user = `
@@ -45,17 +57,24 @@ Audience: ${audience || "general readers"}
 Main blocker: ${blocker || "none"}
 Chapters requested: ${chapters}
 
-Create a clear, practical book outline.
+VOICE SAMPLE (if provided, match it):
+${voiceSample ? voiceSample : "[No sample provided]"}
+
+VOICE NOTES (if provided, follow them):
+${voiceNotes ? voiceNotes : "[No notes provided]"}
+
+Task:
+Create a clear book starter package (title, one-sentence purpose, and chapter outline).
+This should feel like the user's voice and thinking.
 `.trim();
 
     const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.6,
+      temperature: 0.55,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user }
       ],
-      // This helps the model stay in JSON
       response_format: { type: "json_object" }
     });
 
@@ -77,7 +96,6 @@ Create a clear, practical book outline.
 
     // Ensure chapters count matches
     if (data.outline.length !== chapters) {
-      // If model returns wrong count, trim or pad minimally
       data.outline = data.outline.slice(0, chapters);
       while (data.outline.length < chapters) {
         const n = data.outline.length + 1;
@@ -95,7 +113,10 @@ Create a clear, practical book outline.
     data.outline = data.outline.map((c, i) => ({
       chapter: Number.isFinite(c.chapter) ? c.chapter : i + 1,
       title: clean(c.title) || `Chapter ${i + 1}`,
-      bullets: Array.isArray(c.bullets) && c.bullets.length ? c.bullets.map(clean).filter(Boolean) : ["Key idea", "Example", "Action step"]
+      bullets:
+        Array.isArray(c.bullets) && c.bullets.length
+          ? c.bullets.map(clean).filter(Boolean).slice(0, 5)
+          : ["Key idea", "Example", "Action step"]
     }));
 
     return res.status(200).json(data);
