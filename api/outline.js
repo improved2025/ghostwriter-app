@@ -17,23 +17,26 @@ export default async function handler(req, res) {
     const blocker = clean(body.blocker);
     const chapters = Number.isFinite(parseInt(body.chapters, 10)) ? parseInt(body.chapters, 10) : 12;
 
-    // NEW: voice capture (optional)
     const voiceSample = clean(body.voiceSample);
     const voiceNotes = clean(body.voiceNotes);
 
-    if (!topic) {
-      return res.status(400).json({ error: "Missing topic" });
-    }
+    if (!topic) return res.status(400).json({ error: "Missing topic" });
 
-    // We are not "writing the whole book", we are helping them write.
-    // The outline should feel like THEIR thinking + THEIR voice.
     const system = `
 You are Authored, a writing partner.
-You do NOT write for the user. You write WITH the user.
-Your job is to create a clear starting point they can refine.
+NON-NEGOTIABLE: You do NOT write for the user. You write WITH the user in the user's voice.
 
-Return ONLY valid JSON (no markdown, no commentary).
-The JSON schema must be EXACTLY:
+STRICT VOICE ENFORCEMENT
+1) If a voice sample is provided, you MUST imitate its tone, rhythm, sentence length tendency, vocabulary choices, and emotional temperature.
+2) You MUST NOT sound like an assistant, consultant, or generic AI writing.
+3) You MUST NOT use filler openers or hype phrases like:
+   "In today’s world", "Let’s dive in", "Unlock", "Transform", "This guide will", "In this chapter", "Journey", "Game-changer".
+4) You MUST match the user’s writing level (simple vs advanced). Do not over-polish.
+5) You MUST NOT copy sentences from the sample. Mimic style only.
+
+OUTPUT RULES (STRICT)
+Return ONLY valid JSON (no markdown, no commentary, no extra keys).
+Schema must be EXACTLY:
 {
   "title": "string",
   "purpose": "string",
@@ -42,30 +45,37 @@ The JSON schema must be EXACTLY:
   ]
 }
 
-Rules:
-- outline length must equal the requested chapter count
-- chapter numbers must start at 1 and be sequential
-- bullets: 3 to 5 items each
-- be specific, practical, and non-robotic
-- avoid filler phrases and generic clichés
-- if a voice sample is provided, match its tone, rhythm, and word choice (without copying lines)
+CONTENT RULES
+- outline length MUST equal requested chapter count
+- chapter numbers start at 1 and increment by 1
+- bullets: 3 to 5 per chapter
+- bullets must be specific ideas or actions (no vague fluff)
+- the title must sound like something the user would actually choose
+- purpose must be ONE sentence, concrete, and in the user’s voice
+
+FINAL SELF-CHECK (INTERNAL)
+Before returning JSON, verify:
+- It matches the sample’s voice (if provided)
+- No banned phrases appear
+- No lines are copied from the sample
+If any check fails, rewrite before returning JSON.
 `.trim();
 
     const user = `
-Topic: ${topic}
-Audience: ${audience || "general readers"}
-Main blocker: ${blocker || "none"}
-Chapters requested: ${chapters}
+TOPIC: ${topic}
+AUDIENCE: ${audience || "general readers"}
+BLOCKER: ${blocker || "none"}
+CHAPTERS: ${chapters}
 
-VOICE SAMPLE (if provided, match it):
-${voiceSample ? voiceSample : "[No sample provided]"}
+VOICE NOTES:
+${voiceNotes || "none"}
 
-VOICE NOTES (if provided, follow them):
-${voiceNotes ? voiceNotes : "[No notes provided]"}
+VOICE SAMPLE:
+${voiceSample || "none"}
 
 Task:
-Create a clear book starter package (title, one-sentence purpose, and chapter outline).
-This should feel like the user's voice and thinking.
+Create a title, a one-sentence purpose, and an outline that matches the user's voice.
+Write it the way the user would naturally speak to their audience.
 `.trim();
 
     const resp = await openai.chat.completions.create({
@@ -83,14 +93,13 @@ This should feel like the user's voice and thinking.
 
     try {
       data = JSON.parse(content);
-    } catch (e) {
+    } catch {
       return res.status(500).json({
         error: "OpenAI returned non-JSON. Update prompt or model.",
         raw: content.slice(0, 2000)
       });
     }
 
-    // Hard validation so the UI ALWAYS gets what it expects
     if (!data || typeof data !== "object") throw new Error("Bad JSON object");
     if (!Array.isArray(data.outline)) throw new Error("Missing outline array");
 
