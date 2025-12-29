@@ -7,10 +7,10 @@
 
   <!-- Stops the favicon.ico 404 without affecting anything -->
   <link rel="icon" href="data:,">
-  
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./account.js" defer></script>
-<script src="./auth-guard.js" defer></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./account.js" defer></script>
+  <script src="./auth-guard.js" defer></script>
 
   <style>
     body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
@@ -105,9 +105,9 @@
       </select>
       <div class="muted">Start small. You can expand later.</div>
     </div>
-    
-<div id="limitNote" style="margin:8px 0;color:#555;font-size:14px;"></div>
-<div id="limitError" style="margin:6px 0;color:#b00020;font-size:14px;"></div>
+
+    <div id="limitNote" style="margin:8px 0;color:#555;font-size:14px;"></div>
+    <div id="limitError" style="margin:6px 0;color:#b00020;font-size:14px;"></div>
 
     <div style="display:flex; gap:10px; align-items:flex-end;">
       <button class="btn" id="beginBtn" type="button">Generate starting point</button>
@@ -134,14 +134,15 @@
       <h3 style="margin:14px 0 6px;">Outline</h3>
       <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
-      <!-- NEW: Copy + Download actions -->
+      <!-- Copy + Download + Regenerate outline -->
       <div class="actions">
         <button class="btn secondary" id="copyBtn" type="button">Copy to clipboard</button>
         <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
+        <button class="btn secondary" id="regenOutlineBtn" type="button">Regenerate outline</button>
       </div>
     </div>
 
-    <!-- NEW: Expand outline -->
+    <!-- Expand outline -->
     <div class="card" style="margin-top:14px;">
       <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
       <div class="two-col">
@@ -155,6 +156,7 @@
             <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
             <button class="btn secondary" id="copyExpandedBtn" type="button" disabled>Copy expanded text</button>
             <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.txt)</button>
+            <button class="btn secondary" id="regenExpandedBtn" type="button" disabled>Regenerate expanded chapter</button>
           </div>
 
           <div class="notice" style="margin-top:12px;">
@@ -174,42 +176,41 @@
   <script>
     // -----------------------------
     // --- FREE LIMIT ENFORCEMENT ---
-const sb =
-  window.supabaseClient ||
-  window.supabase ||
-  window._supabase ||
-  (typeof supabase !== "undefined" ? supabase : null);
+    const sb =
+      window.supabaseClient ||
+      window.supabase ||
+      window._supabase ||
+      (typeof supabase !== "undefined" ? supabase : null);
 
-async function consumeFree(kind) {
-  if (!sb) return { ok: false };
+    async function consumeFree(kind) {
+      if (!sb) return { ok: false };
 
-  const variants = [
-    { kind },
-    { p_kind: kind },
-    { action: kind },
-    { p_action: kind }
-  ];
+      const variants = [
+        { kind },
+        { p_kind: kind },
+        { action: kind },
+        { p_action: kind }
+      ];
 
-  for (const v of variants) {
-    const res = await sb.rpc("consume_free_limit", v);
-    if (!res.error) {
-      if (typeof res.data === "boolean") return { ok: res.data };
-      if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
-      return { ok: true };
+      for (const v of variants) {
+        const res = await sb.rpc("consume_free_limit", v);
+        if (!res.error) {
+          if (typeof res.data === "boolean") return { ok: res.data };
+          if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
+          return { ok: true };
+        }
+      }
+      return { ok: false };
     }
-  }
-  return { ok: false };
-}
 
-function showLimitNotice(msg) {
-  const el = document.getElementById("limitNote");
-  if (el) el.textContent = msg;
-  else alert(msg);
-}
-// --- END FREE LIMIT ENFORCEMENT ---
+    function showLimitNotice(msg) {
+      const el = document.getElementById("limitNote");
+      if (el) el.textContent = msg;
+      else alert(msg);
+    }
+    // --- END FREE LIMIT ENFORCEMENT ---
 
     // Helpers
-    // -----------------------------
     function clean(v) { return (v ?? "").toString().trim(); }
 
     function makeTextBundle() {
@@ -287,6 +288,9 @@ function showLimitNotice(msg) {
       const blocker = clean(document.getElementById("blocker").value) || "self-doubt";
       const chapters = parseInt(document.getElementById("chapters").value, 10) || 5;
 
+      // Save last outline request so "Regenerate outline" can re-run it
+      window.__lastOutlinePayload = { topic, audience, blocker, chapters };
+
       // Show loading state
       document.getElementById("result").style.display = "block";
       document.getElementById("titleOut").textContent = "Generating...";
@@ -295,6 +299,7 @@ function showLimitNotice(msg) {
       document.getElementById("expandedOut").textContent = "Choose a chapter and click Expand.";
       document.getElementById("copyExpandedBtn").disabled = true;
       document.getElementById("downloadExpandedBtn").disabled = true;
+      document.getElementById("regenExpandedBtn").disabled = true;
 
       try {
         const resp = await fetch("/api/outline", {
@@ -362,9 +367,29 @@ function showLimitNotice(msg) {
     });
 
     // -----------------------------
+    // Regenerate outline
+    // -----------------------------
+    document.getElementById("regenOutlineBtn").addEventListener("click", () => {
+      const last = window.__lastOutlinePayload;
+      if (!last) {
+        alert("Generate an outline first.");
+        return;
+      }
+
+      // Re-run generate with same inputs
+      document.getElementById("topic").value = last.topic;
+      document.getElementById("audience").value = last.audience;
+      document.getElementById("blocker").value = last.blocker;
+      document.getElementById("chapters").value = String(last.chapters);
+
+      document.getElementById("beginBtn").click();
+    });
+
+    // -----------------------------
     // Expand selected chapter (calls /api/expand)
     // -----------------------------
-    document.getElementById("expandBtn").addEventListener("click", async () => {
+    async function runExpandRequest(mode) {
+      // mode: "expand" | "regen"
       refreshFreeNotice();
       const used = getFreeExpandCount();
       if (used >= FREE_EXPANDS_PER_DAY) {
@@ -393,7 +418,7 @@ function showLimitNotice(msg) {
       const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
       const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
 
-      document.getElementById("expandedOut").textContent = "Expanding...";
+      document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
 
       try {
         const resp = await fetch("/api/expand", {
@@ -405,7 +430,8 @@ function showLimitNotice(msg) {
             chapterNumber,
             chapterTitle,
             audience: clean(document.getElementById("audience").value),
-            topic: clean(document.getElementById("topic").value)
+            topic: clean(document.getElementById("topic").value),
+            regenerate: mode === "regen"
           })
         });
 
@@ -415,7 +441,7 @@ function showLimitNotice(msg) {
         const expanded = data.expanded || "";
         if (!expanded) throw new Error("No expanded text returned");
 
-        // count free usage only on success
+        // count free usage only on success (regen counts too)
         incFreeExpandCount();
         refreshFreeNotice();
 
@@ -423,10 +449,19 @@ function showLimitNotice(msg) {
         document.getElementById("expandedOut").textContent = expanded;
         document.getElementById("copyExpandedBtn").disabled = false;
         document.getElementById("downloadExpandedBtn").disabled = false;
+        document.getElementById("regenExpandedBtn").disabled = false;
       } catch (err) {
         document.getElementById("expandedOut").textContent =
           "Could not expand this chapter. Please try again.";
       }
+    }
+
+    document.getElementById("expandBtn").addEventListener("click", async () => {
+      await runExpandRequest("expand");
+    });
+
+    document.getElementById("regenExpandedBtn").addEventListener("click", async () => {
+      await runExpandRequest("regen");
     });
 
     document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
@@ -448,7 +483,7 @@ function showLimitNotice(msg) {
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
-        "Free plan: Outline generation is free. Chapter expansion is limited.";
+        "Free plan: Outline generation is free. Chapter expansion is limited. Regenerate counts toward the same limit.";
     }
   </script>
 </body>
