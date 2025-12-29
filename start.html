@@ -14,59 +14,61 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
     h1 { margin: 0 0 8px; }
-    p { color: #333; line-height: 1.5; }
-    label { display:block; font-weight: 700; margin-top: 14px; }
+    p { color:#333; line-height:1.5; }
+    label { display:block; font-weight:700; margin-top:14px; }
     input[type="text"], textarea, select {
-      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
     }
-    textarea { min-height: 80px; }
-    .row { display:flex; gap: 12px; align-items:center; flex-wrap: wrap; margin-top: 12px; }
+    textarea { min-height:80px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
     .btn {
-      padding: 10px 14px; border: 1px solid #111; background:#111; color:#fff;
-      border-radius: 8px; cursor:pointer; font-weight: 700;
+      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
+      border-radius:8px; cursor:pointer; font-weight:700;
     }
     .btn.secondary { background:#fff; color:#111; }
     .btn:disabled { opacity:0.5; cursor:not-allowed; }
-    .muted { color:#666; font-size: 13px; }
-    hr { margin: 18px 0; border: none; border-top: 1px solid #eee; }
+    .muted { color:#666; font-size:13px; }
+    hr { margin:18px 0; border:none; border-top:1px solid #eee; }
 
     .notice {
-      background: #fff7d6;
-      border: 1px solid #f2d27a;
-      padding: 12px 14px;
-      border-radius: 10px;
-      margin: 14px 0 18px;
-      color: #5a4600;
+      background:#fff7d6;
+      border:1px solid #f2d27a;
+      padding:12px 14px;
+      border-radius:10px;
+      margin:14px 0 18px;
+      color:#5a4600;
     }
 
-    #result { display:none; margin-top: 18px; }
+    #result { display:none; margin-top:18px; }
     .card {
-      border: 1px solid #e6e6e6;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fff;
+      border:1px solid #e6e6e6;
+      border-radius:12px;
+      padding:16px;
+      background:#fff;
     }
     .pill {
       display:inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid #ddd;
-      font-size: 12px;
-      color: #333;
-      margin-right: 8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid #ddd;
+      font-size:12px;
+      color:#333;
+      margin-right:8px;
+      margin-bottom:6px;
     }
-    ol { padding-left: 18px; }
-    .actions { display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; }
-    .two-col { display:flex; gap: 16px; flex-wrap: wrap; }
-    .two-col > div { flex: 1 1 320px; }
+    ol { padding-left:18px; }
+    ul { padding-left:18px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .two-col { display:flex; gap:16px; flex-wrap:wrap; }
+    .two-col > div { flex:1 1 320px; }
     pre {
       white-space: pre-wrap;
-      background: #fafafa;
-      border: 1px solid #eee;
-      padding: 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.45;
+      background:#fafafa;
+      border:1px solid #eee;
+      padding:12px;
+      border-radius:10px;
+      font-size:13px;
+      line-height:1.45;
     }
   </style>
 </head>
@@ -142,6 +144,13 @@
 
       <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
 
+      <!-- NEW: Title suggestions -->
+      <div class="actions" style="margin-top:6px;">
+        <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
+        <span class="muted" id="titlesHint">10 options you can pick from.</span>
+      </div>
+      <ul id="titleIdeasOut" class="muted" style="margin-top:8px;"></ul>
+
       <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
       <p id="purposeOut">Please wait...</p>
 
@@ -153,16 +162,42 @@
         <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
         <button class="btn secondary" id="regenOutlineBtn" type="button">Regenerate outline</button>
       </div>
+
+      <!-- NEW: Introduction -->
+      <hr />
+      <h3 style="margin: 0 0 8px;">Introduction</h3>
+      <div class="actions">
+        <button class="btn secondary" id="genIntroBtn" type="button">Generate introduction</button>
+        <span class="muted" id="introHint">Optional: 400–700 words that sets the tone.</span>
+      </div>
+      <pre id="introOut">Click “Generate introduction” to create an optional intro.</pre>
+      <div class="actions">
+        <button class="btn secondary" id="copyIntroBtn" type="button" disabled>Copy introduction</button>
+        <button class="btn secondary" id="downloadIntroBtn" type="button" disabled>Download intro (.txt)</button>
+      </div>
     </div>
 
     <div class="card" style="margin-top:14px;">
       <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
+
+      <!-- NEW: Draft length selector -->
+      <div class="row" style="margin-top:0;">
+        <div style="min-width:260px; flex: 1;">
+          <label style="margin-top:0;">Draft length</label>
+          <select id="draftLength">
+            <option value="standard" selected>Standard (900–1300 words)</option>
+            <option value="long">Long (1500–2200 words)</option>
+            <option value="very_long">Very long (2500–3500 words)</option>
+          </select>
+          <div class="muted" id="draftLengthHint">Longer drafts cost more.</div>
+        </div>
+      </div>
+
       <div class="two-col">
         <div>
           <label style="margin-top:0;">Choose chapter</label>
           <select id="chapterPick"></select>
           <div class="muted" id="expandHint"></div>
-          <div class="muted" id="limitNote" style="margin-top:8px;"></div>
 
           <div class="actions" style="margin-top:10px;">
             <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
@@ -249,6 +284,7 @@
       URL.revokeObjectURL(url);
     }
 
+    // FREE LIMIT (local only for now)
     const FREE_EXPANDS_PER_DAY = 2;
 
     function todayKey() {
@@ -281,14 +317,22 @@
         `Free expands remaining today: ${remaining} (resets daily).`;
     }
 
+    function getDraftWordRange() {
+      const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
+      if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
+      if (v === "very_long") return { draftLength: "very_long", minWords: 2500, maxWords: 3500 };
+      return { draftLength: "standard", minWords: 900, maxWords: 1300 };
+    }
+
     refreshFreeNotice();
 
+    // Generate starting point (outline)
     const beginBtn = document.getElementById("beginBtn");
     beginBtn.addEventListener("click", async () => {
-      const topic = clean(document.getElementById("topic").value) || "your message";
-      const audience = clean(document.getElementById("audience").value) || "the people you want to reach";
-      const blocker = clean(document.getElementById("blocker").value) || "self-doubt";
-      const chapters = parseInt(document.getElementById("chapters").value, 10) || 5;
+      const topic = clean(document.getElementById("topic").value);
+      const audience = clean(document.getElementById("audience").value);
+      const blocker = clean(document.getElementById("blocker").value);
+      const chapters = parseInt(document.getElementById("chapters").value, 10) || 12;
 
       const voiceSample = clean(document.getElementById("voiceSample").value);
       const voiceNotes = clean(document.getElementById("voiceNotes").value);
@@ -303,6 +347,13 @@
       document.getElementById("copyExpandedBtn").disabled = true;
       document.getElementById("downloadExpandedBtn").disabled = true;
       document.getElementById("regenExpandedBtn").disabled = true;
+
+      // reset titles + intro displays
+      document.getElementById("titleIdeasOut").innerHTML = "";
+      document.getElementById("introOut").textContent = "Click “Generate introduction” to create an optional intro.";
+      document.getElementById("copyIntroBtn").disabled = true;
+      document.getElementById("downloadIntroBtn").disabled = true;
+      window.__introText = "";
 
       try {
         const resp = await fetch("/api/outline", {
@@ -352,6 +403,7 @@
       }
     });
 
+    // Copy + Download outline bundle
     document.getElementById("copyBtn").addEventListener("click", async () => {
       try { await copyText(makeTextBundle()); }
       catch { alert("Copy failed. Try again."); }
@@ -363,20 +415,128 @@
       downloadText(`${safe}_outline.txt`, makeTextBundle());
     });
 
+    // Regenerate outline
     document.getElementById("regenOutlineBtn").addEventListener("click", () => {
       const last = window.__lastOutlinePayload;
       if (!last) { alert("Generate an outline first."); return; }
 
-      document.getElementById("topic").value = last.topic;
-      document.getElementById("audience").value = last.audience;
-      document.getElementById("blocker").value = last.blocker;
-      document.getElementById("chapters").value = String(last.chapters);
+      document.getElementById("topic").value = last.topic || "";
+      document.getElementById("audience").value = last.audience || "";
+      document.getElementById("blocker").value = last.blocker || "";
+      document.getElementById("chapters").value = String(last.chapters || 12);
       document.getElementById("voiceSample").value = last.voiceSample || "";
       document.getElementById("voiceNotes").value = last.voiceNotes || "";
 
       document.getElementById("beginBtn").click();
     });
 
+    // NEW: Title suggestions (won't break anything if API not added yet)
+    document.getElementById("genTitlesBtn").addEventListener("click", async () => {
+      const topic = clean(document.getElementById("topic").value);
+      const audience = clean(document.getElementById("audience").value);
+      const blocker = clean(document.getElementById("blocker").value);
+      const voiceSample = clean(document.getElementById("voiceSample").value);
+      const voiceNotes = clean(document.getElementById("voiceNotes").value);
+
+      const currentTitle = window.__title || clean(document.getElementById("titleOut").textContent);
+
+      const out = document.getElementById("titleIdeasOut");
+      out.innerHTML = "<li>Generating title ideas...</li>";
+
+      try {
+        const resp = await fetch("/api/titles", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, audience, blocker, currentTitle, voiceSample, voiceNotes })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data?.error || "Titles API not set yet");
+
+        const titles = Array.isArray(data.titles) ? data.titles : [];
+        if (!titles.length) throw new Error("No titles returned");
+
+        out.innerHTML = "";
+        titles.slice(0, 10).forEach((t) => {
+          const li = document.createElement("li");
+          li.style.marginBottom = "6px";
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn secondary";
+          btn.textContent = "Use";
+          btn.style.marginRight = "10px";
+          btn.addEventListener("click", () => {
+            window.__title = String(t);
+            document.getElementById("titleOut").textContent = String(t);
+            alert("Title updated.");
+          });
+
+          const span = document.createElement("span");
+          span.textContent = String(t);
+
+          li.appendChild(btn);
+          li.appendChild(span);
+          out.appendChild(li);
+        });
+      } catch (e) {
+        out.innerHTML = "";
+        alert("Title suggestions will work after we add /api/titles. Start.html is ready.");
+      }
+    });
+
+    // NEW: Introduction (won't break anything if API not added yet)
+    document.getElementById("genIntroBtn").addEventListener("click", async () => {
+      const introOut = document.getElementById("introOut");
+      introOut.textContent = "Generating introduction...";
+
+      const payload = {
+        topic: clean(document.getElementById("topic").value),
+        audience: clean(document.getElementById("audience").value),
+        blocker: clean(document.getElementById("blocker").value),
+        bookTitle: window.__title || clean(document.getElementById("titleOut").textContent),
+        purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent),
+        outline: window.__outlineItems || [],
+        voiceSample: clean(document.getElementById("voiceSample").value),
+        voiceNotes: clean(document.getElementById("voiceNotes").value)
+      };
+
+      try {
+        const resp = await fetch("/api/intro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data?.error || "Intro API not set yet");
+
+        const intro = (data.introduction || "").toString().trim();
+        if (!intro) throw new Error("No introduction returned");
+
+        window.__introText = intro;
+        introOut.textContent = intro;
+        document.getElementById("copyIntroBtn").disabled = false;
+        document.getElementById("downloadIntroBtn").disabled = false;
+      } catch (e) {
+        introOut.textContent = "Click “Generate introduction” to create an optional intro.";
+        alert("Introduction will work after we add /api/intro. Start.html is ready.");
+      }
+    });
+
+    document.getElementById("copyIntroBtn").addEventListener("click", async () => {
+      try { await copyText(window.__introText || ""); }
+      catch { alert("Copy failed. Try again."); }
+    });
+
+    document.getElementById("downloadIntroBtn").addEventListener("click", () => {
+      const title = window.__title || "authored";
+      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+      const text = window.__introText || "";
+      downloadText(`${safe}_introduction.txt`, text);
+    });
+
+    // Expand / Regenerate expanded (with draft length support)
     async function runExpandRequest(mode) {
       refreshFreeNotice();
       const used = getFreeExpandCount();
@@ -402,6 +562,8 @@
       const voiceSample = window.__voiceSample || clean(document.getElementById("voiceSample").value);
       const voiceNotes = window.__voiceNotes || clean(document.getElementById("voiceNotes").value);
 
+      const { draftLength, minWords, maxWords } = getDraftWordRange();
+
       document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
 
       try {
@@ -417,14 +579,17 @@
             topic: clean(document.getElementById("topic").value),
             voiceSample,
             voiceNotes,
-            regenerate: mode === "regen"
+            regenerate: mode === "regen",
+            draftLength,
+            minWords,
+            maxWords
           })
         });
 
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error || "Expand failed");
 
-        const expanded = data.expanded || "";
+        const expanded = (data.expanded || "").toString().trim();
         if (!expanded) throw new Error("No expanded text returned");
 
         incFreeExpandCount();
@@ -461,6 +626,7 @@
       downloadText(`${safe}_expanded_chapter.txt`, text);
     });
 
+    // Free plan notice (display only)
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
