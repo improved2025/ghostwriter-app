@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Authored — Start</title>
 
-  <!-- Stops the favicon.ico 404 without affecting anything -->
   <link rel="icon" href="data:,">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -74,9 +73,8 @@
 
 <body>
   <h1>Start your book</h1>
-  <p class="muted">You don’t need a finished idea. Answer a few questions and get a title, purpose, and outline.</p>
+  <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
 
-  <!-- Free limit notice (informational only; doesn’t block your current flow) -->
   <div class="notice" id="freeNotice">
     <strong>Free version:</strong> Outline generation is free.
     <span id="freeLimitText"></span>
@@ -92,6 +90,22 @@
 
   <label>What’s been stopping you from writing?</label>
   <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
+
+  <hr />
+
+  <h3 style="margin: 0 0 8px;">Your voice</h3>
+  <p class="muted" style="margin: 0 0 10px;">
+    If you want Authored to sound like you, paste a short sample of your writing below.
+    A page is enough. The better the sample, the better the voice match.
+  </p>
+
+  <label>Your writing sample (optional but recommended)</label>
+  <textarea id="voiceSample" placeholder="Paste something you wrote: a sermon excerpt, a blog post, a letter, a chapter draft, anything that sounds like you."></textarea>
+
+  <label>Voice notes (optional)</label>
+  <input id="voiceNotes" type="text" placeholder="Example: warm, pastoral, simple, no fluff, avoid robotic tone, use my natural phrases." />
+
+  <hr />
 
   <div class="row">
     <div style="min-width:260px; flex: 1;">
@@ -115,15 +129,15 @@
     </div>
   </div>
 
-  <hr />
-
   <div id="result">
-    <p><strong>Done.</strong> You have a starting point.</p>
+    <hr />
+    <p><strong>Done.</strong> You have a starting point you can refine.</p>
 
     <div class="card">
       <div>
         <span class="pill">Working title</span>
         <span class="pill">Starter outline</span>
+        <span class="pill">Writing with you</span>
       </div>
 
       <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
@@ -134,7 +148,6 @@
       <h3 style="margin:14px 0 6px;">Outline</h3>
       <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
-      <!-- Copy + Download + Regenerate outline -->
       <div class="actions">
         <button class="btn secondary" id="copyBtn" type="button">Copy to clipboard</button>
         <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
@@ -142,7 +155,6 @@
       </div>
     </div>
 
-    <!-- Expand outline -->
     <div class="card" style="margin-top:14px;">
       <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
       <div class="two-col">
@@ -161,7 +173,7 @@
 
           <div class="notice" style="margin-top:12px;">
             <strong>Heads up:</strong> Expanding chapters costs more than generating an outline.
-            In the free version, expansion is limited.
+            In the free version, expansion is limited. Regenerate counts toward the same limit.
           </div>
         </div>
 
@@ -174,8 +186,6 @@
   </div>
 
   <script>
-    // -----------------------------
-    // --- FREE LIMIT ENFORCEMENT ---
     const sb =
       window.supabaseClient ||
       window.supabase ||
@@ -208,9 +218,7 @@
       if (el) el.textContent = msg;
       else alert(msg);
     }
-    // --- END FREE LIMIT ENFORCEMENT ---
 
-    // Helpers
     function clean(v) { return (v ?? "").toString().trim(); }
 
     function makeTextBundle() {
@@ -241,9 +249,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // -----------------------------
-    // FREE LIMIT (simple + safe)
-    // -----------------------------
     const FREE_EXPANDS_PER_DAY = 2;
 
     function todayKey() {
@@ -278,9 +283,6 @@
 
     refreshFreeNotice();
 
-    // -----------------------------
-    // Generate starting point (outline)
-    // -----------------------------
     const beginBtn = document.getElementById("beginBtn");
     beginBtn.addEventListener("click", async () => {
       const topic = clean(document.getElementById("topic").value) || "your message";
@@ -288,10 +290,11 @@
       const blocker = clean(document.getElementById("blocker").value) || "self-doubt";
       const chapters = parseInt(document.getElementById("chapters").value, 10) || 5;
 
-      // Save last outline request so "Regenerate outline" can re-run it
-      window.__lastOutlinePayload = { topic, audience, blocker, chapters };
+      const voiceSample = clean(document.getElementById("voiceSample").value);
+      const voiceNotes = clean(document.getElementById("voiceNotes").value);
 
-      // Show loading state
+      window.__lastOutlinePayload = { topic, audience, blocker, chapters, voiceSample, voiceNotes };
+
       document.getElementById("result").style.display = "block";
       document.getElementById("titleOut").textContent = "Generating...";
       document.getElementById("purposeOut").textContent = "Please wait...";
@@ -305,7 +308,7 @@
         const resp = await fetch("/api/outline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, audience, blocker, chapters })
+          body: JSON.stringify({ topic, audience, blocker, chapters, voiceSample, voiceNotes })
         });
 
         const data = await resp.json();
@@ -318,11 +321,12 @@
         window.__outlineItems = outline;
         window.__title = title;
         window.__purpose = purpose;
+        window.__voiceSample = voiceSample;
+        window.__voiceNotes = voiceNotes;
 
         document.getElementById("titleOut").textContent = title;
         document.getElementById("purposeOut").textContent = purpose;
 
-        // Render outline
         const list = document.getElementById("outlineOut");
         list.innerHTML = "";
         outline.forEach((item) => {
@@ -331,7 +335,6 @@
           list.appendChild(li);
         });
 
-        // Fill chapter picker for expansion (value = index)
         const picker = document.getElementById("chapterPick");
         picker.innerHTML = "";
         window.__outlineItems.forEach((item, idx) => {
@@ -349,15 +352,9 @@
       }
     });
 
-    // -----------------------------
-    // Copy + Download (outline bundle)
-    // -----------------------------
     document.getElementById("copyBtn").addEventListener("click", async () => {
-      try {
-        await copyText(makeTextBundle());
-      } catch {
-        alert("Copy failed. Try again.");
-      }
+      try { await copyText(makeTextBundle()); }
+      catch { alert("Copy failed. Try again."); }
     });
 
     document.getElementById("downloadBtn").addEventListener("click", () => {
@@ -366,30 +363,21 @@
       downloadText(`${safe}_outline.txt`, makeTextBundle());
     });
 
-    // -----------------------------
-    // Regenerate outline
-    // -----------------------------
     document.getElementById("regenOutlineBtn").addEventListener("click", () => {
       const last = window.__lastOutlinePayload;
-      if (!last) {
-        alert("Generate an outline first.");
-        return;
-      }
+      if (!last) { alert("Generate an outline first."); return; }
 
-      // Re-run generate with same inputs
       document.getElementById("topic").value = last.topic;
       document.getElementById("audience").value = last.audience;
       document.getElementById("blocker").value = last.blocker;
       document.getElementById("chapters").value = String(last.chapters);
+      document.getElementById("voiceSample").value = last.voiceSample || "";
+      document.getElementById("voiceNotes").value = last.voiceNotes || "";
 
       document.getElementById("beginBtn").click();
     });
 
-    // -----------------------------
-    // Expand selected chapter (calls /api/expand)
-    // -----------------------------
     async function runExpandRequest(mode) {
-      // mode: "expand" | "regen"
       refreshFreeNotice();
       const used = getFreeExpandCount();
       if (used >= FREE_EXPANDS_PER_DAY) {
@@ -398,25 +386,21 @@
       }
 
       const outline = window.__outlineItems || [];
-      if (!outline.length) {
-        alert("Generate your starting point first.");
-        return;
-      }
+      if (!outline.length) { alert("Generate your starting point first."); return; }
 
       const picker = document.getElementById("chapterPick");
       const chapterIdx = Number(picker.value);
       const chapterObj = outline[chapterIdx];
-
-      if (!chapterObj) {
-        alert("Pick a chapter first.");
-        return;
-      }
+      if (!chapterObj) { alert("Pick a chapter first."); return; }
 
       const chapterTitle = chapterObj.title;
       const chapterNumber = chapterIdx + 1;
 
       const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
       const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
+
+      const voiceSample = window.__voiceSample || clean(document.getElementById("voiceSample").value);
+      const voiceNotes = window.__voiceNotes || clean(document.getElementById("voiceNotes").value);
 
       document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
 
@@ -431,6 +415,8 @@
             chapterTitle,
             audience: clean(document.getElementById("audience").value),
             topic: clean(document.getElementById("topic").value),
+            voiceSample,
+            voiceNotes,
             regenerate: mode === "regen"
           })
         });
@@ -441,7 +427,6 @@
         const expanded = data.expanded || "";
         if (!expanded) throw new Error("No expanded text returned");
 
-        // count free usage only on success (regen counts too)
         incFreeExpandCount();
         refreshFreeNotice();
 
@@ -465,11 +450,8 @@
     });
 
     document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
-      try {
-        await copyText(window.__expandedText || "");
-      } catch {
-        alert("Copy failed. Try again.");
-      }
+      try { await copyText(window.__expandedText || ""); }
+      catch { alert("Copy failed. Try again."); }
     });
 
     document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
@@ -479,7 +461,6 @@
       downloadText(`${safe}_expanded_chapter.txt`, text);
     });
 
-    // Free plan notice (display only)
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
