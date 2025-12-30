@@ -1,4 +1,3 @@
-// api/docx.js
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 
 function cleanName(name = "authored.docx") {
