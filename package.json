@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "openai": "^4.30.0"
+    "openai": "^4.30.0",
+    "docx": "^8.5.0"
   }
 }
