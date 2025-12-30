@@ -1,15 +1,17 @@
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
-    }
-
-    const openai = new OpenAI({ apiKey });
+    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
 
     const body = req.body || {};
     const clean = (v) => (v ?? "").toString().trim();
@@ -22,17 +24,19 @@ export default async function handler(req, res) {
     const voiceSample = clean(body.voiceSample);
     const voiceNotes = clean(body.voiceNotes);
 
+    // Must have topic
     if (!topic) return res.status(400).json({ error: "Missing topic" });
 
-    // Strict, non-robotic, voice-matching system rules
-    const system = `
-You are Authored: a book-coach and writing partner.
-You do NOT write "for" the user. You write WITH the user.
-You must match the user's voice and writing patterns when a writing sample is provided.
-You must never sound generic, corporate, robotic, or like a template.
+    // Get user from Supabase auth (token sent automatically by supabase-js on frontend)
+    // We accept userId from client for now to keep it simple.
+    const userId = clean(body.userId);
 
-OUTPUT RULE:
-Return ONLY valid JSON (no markdown, no commentary). Use EXACT schema:
+    const openai = new OpenAI({ apiKey });
+
+    const system = `
+You are a professional ghostwriter.
+Return ONLY valid JSON (no markdown, no commentary).
+JSON schema:
 {
   "title": "string",
   "purpose": "string",
@@ -40,32 +44,10 @@ Return ONLY valid JSON (no markdown, no commentary). Use EXACT schema:
     { "chapter": 1, "title": "string", "bullets": ["string","string","string"] }
   ]
 }
-
-CONTENT RULES:
-- outline length MUST equal requested chapter count
+Rules:
+- outline length must equal requested chapters
 - chapter numbers start at 1 and are sequential
 - bullets: 3 to 5 items each
-- Keep chapter titles specific and non-generic (avoid "Introduction to...", "Overview of...")
-- Bullets must be actionable and concrete (avoid fluff: "explore", "delve", "unlock", "journey")
-- Never mention OpenAI, ChatGPT, "as an AI", "I can't", or policies
-- Avoid repeating the user's input verbatim; transform it into a useful plan
-`.trim();
-
-    // Voice constraints (very strict). If no sample, still force natural human tone.
-    const voiceBlock = `
-VOICE REQUIREMENTS (STRICT):
-- If a writing sample exists: mirror its sentence length, rhythm, vocabulary level, and punctuation habits.
-- Keep the user's natural phrases and cadence.
-- Do not add preachy/academic/corporate tone unless the sample clearly is.
-- No filler. No hype. No buzzwords.
-- Prefer clear, direct sentences.
-- When uncertain, choose simpler wording over fancy wording.
-
-Voice Notes (user preferences):
-${voiceNotes || "(none)"}
-
-User Writing Sample:
-${voiceSample ? `"""${voiceSample}"""` : "(none provided)"}
 `.trim();
 
     const user = `
@@ -74,27 +56,20 @@ Audience: ${audience || "general readers"}
 Main blocker: ${blocker || "none"}
 Chapters requested: ${chapters}
 
-TASK:
-Create:
-1) A working title the user would actually choose
-2) A one-sentence purpose (plain, specific)
-3) A chapter outline with ${chapters} chapters
+Voice sample:
+${voiceSample || "none"}
 
-Each chapter object MUST include:
-- chapter number
-- title
-- 3–5 bullets (practical subtopics or steps)
+Voice notes:
+${voiceNotes || "none"}
 
-IMPORTANT:
-The outline must feel like it came from the same person as the writing sample (if provided).
+Create a clear, practical book outline.
 `.trim();
 
     const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.55,
+      temperature: 0.6,
       messages: [
         { role: "system", content: system },
-        { role: "system", content: voiceBlock },
         { role: "user", content: user }
       ],
       response_format: { type: "json_object" }
@@ -107,41 +82,58 @@ The outline must feel like it came from the same person as the writing sample (i
       data = JSON.parse(content);
     } catch {
       return res.status(500).json({
-        error: "OpenAI returned non-JSON. Update prompt or model.",
-        raw: content.slice(0, 2000)
+        error: "OpenAI returned non-JSON.",
+        raw: content.slice(0, 1200)
       });
     }
 
-    // Hard validation
-    if (!data || typeof data !== "object") throw new Error("Bad JSON object");
-    if (!Array.isArray(data.outline)) throw new Error("Missing outline array");
+    // Normalize + validate
+    if (!data || typeof data !== "object" || !Array.isArray(data.outline)) {
+      return res.status(500).json({ error: "Bad outline format returned" });
+    }
 
-    // Fix count
     if (data.outline.length !== chapters) {
       data.outline = data.outline.slice(0, chapters);
       while (data.outline.length < chapters) {
         const n = data.outline.length + 1;
-        data.outline.push({
-          chapter: n,
-          title: `Chapter ${n}`,
-          bullets: ["Key idea", "Example", "Action step"]
-        });
+        data.outline.push({ chapter: n, title: `Chapter ${n}`, bullets: ["Key idea", "Example", "Action step"] });
       }
     }
 
-    // Normalize
     data.title = clean(data.title) || topic;
     data.purpose = clean(data.purpose) || `A practical guide on ${topic}.`;
+
     data.outline = data.outline.map((c, i) => ({
       chapter: Number.isFinite(c.chapter) ? c.chapter : i + 1,
       title: clean(c.title) || `Chapter ${i + 1}`,
-      bullets:
-        Array.isArray(c.bullets) && c.bullets.length
-          ? c.bullets.map(clean).filter(Boolean).slice(0, 5)
-          : ["Key idea", "Example", "Action step"]
+      bullets: Array.isArray(c.bullets) ? c.bullets.map(clean).filter(Boolean).slice(0, 5) : ["Key idea", "Example", "Action step"]
     }));
 
-    return res.status(200).json(data);
+    // ✅ Create a project row and return the ID
+    const insert = await supabase
+      .from("projects")
+      .insert([{
+        user_id: userId || null,
+        title: data.title,
+        topic,
+        audience,
+        blocker,
+        outline: data.outline,
+        purpose: data.purpose,
+        plan: "free"
+      }])
+      .select("id")
+      .single();
+
+    if (insert.error || !insert.data?.id) {
+      return res.status(500).json({ error: "Could not create project row in Supabase" });
+    }
+
+    return res.status(200).json({
+      ...data,
+      projectId: insert.data.id
+    });
+
   } catch (err) {
     return res.status(500).json({ error: err?.message || "Server error" });
   }
