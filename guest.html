@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authored — Free Outline</title>
+  <link rel="icon" href="data:,">
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
+    h1 { margin: 0 0 8px; }
+    p { color:#333; line-height:1.5; }
+    label { display:block; font-weight:700; margin-top:14px; }
+    input[type="text"], textarea, select {
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
+    }
+    textarea { min-height:80px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+    .btn {
+      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
+      border-radius:8px; cursor:pointer; font-weight:700;
+    }
+    .btn.secondary { background:#fff; color:#111; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .muted { color:#666; font-size:13px; }
+    hr { margin:18px 0; border:none; border-top:1px solid #eee; }
+    .notice {
+      background:#fff7d6; border:1px solid #f2d27a;
+      padding:12px 14px; border-radius:10px;
+      margin:14px 0 18px; color:#5a4600;
+    }
+    #result { display:none; margin-top:18px; }
+    .card { border:1px solid #e6e6e6; border-radius:12px; padding:16px; background:#fff; }
+    .pill {
+      display:inline-block; padding:4px 10px; border-radius:999px;
+      border:1px solid #ddd; font-size:12px; color:#333; margin-right:8px; margin-bottom:6px;
+    }
+    ol { padding-left:18px; }
+    ul { padding-left:18px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    pre {
+      white-space: pre-wrap; background:#fafafa; border:1px solid #eee;
+      padding:12px; border-radius:10px; font-size:13px; line-height:1.45;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Start your book (free outline)</h1>
+  <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
+
+  <div class="notice">
+    <strong>Free:</strong> Generate an outline without an account.
+    <br />
+    <span class="muted">Account required for expansions, introductions, and downloads.</span>
+  </div>
+
+  <label>What do you want to write about?</label>
+  <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
+
+  <label>Who is this for?</label>
+  <input id="audience" type="text" placeholder="Who do you want to reach?" />
+
+  <label>What’s been stopping you from writing?</label>
+  <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
+
+  <hr />
+
+  <h3 style="margin: 0 0 8px;">Your voice</h3>
+  <p class="muted" style="margin: 0 0 10px;">
+    Optional but recommended. Paste a short sample of your writing so Authored can match your tone.
+  </p>
+
+  <label>Your writing sample</label>
+  <textarea id="voiceSample" placeholder="Paste a sermon excerpt, blog post, letter, or chapter draft."></textarea>
+
+  <label>Voice notes</label>
+  <input id="voiceNotes" type="text" placeholder="Example: warm, pastoral, simple, no fluff, avoid robotic tone." />
+
+  <hr />
+
+  <div class="row">
+    <div style="min-width:260px; flex: 1;">
+      <label style="margin-top:0;">How many chapters?</label>
+      <select id="chapters">
+        <option value="5">5</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+        <option value="12" selected>12</option>
+        <option value="15">15</option>
+      </select>
+      <div class="muted">Start small. You can expand later.</div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <button class="btn" id="beginBtn" type="button">Generate outline</button>
+      <a href="index.html" style="align-self:center;">Back to home</a>
+    </div>
+  </div>
+
+  <div id="result">
+    <hr />
+    <p><strong>Done.</strong> Here’s your starting point.</p>
+
+    <div class="card">
+      <div>
+        <span class="pill">Working title</span>
+        <span class="pill">Starter outline</span>
+      </div>
+
+      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
+
+      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
+      <p id="purposeOut">Please wait...</p>
+
+      <h3 style="margin:14px 0 6px;">Outline</h3>
+      <ol id="outlineOut"><li>Creating your outline...</li></ol>
+
+      <div class="notice" style="margin-top:14px;">
+        <strong>Want chapter drafts, intro, and Word download?</strong><br/>
+        Create a free account to continue and we’ll save this project for you.
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="createAccountBtn" type="button">Create free account</button>
+          <button class="btn secondary" id="loginBtn" type="button">Log in</button>
+        </div>
+      </div>
+
+      <pre id="debugOut" style="display:none;"></pre>
+    </div>
+  </div>
+
+  <script>
+    function clean(v) { return (v ?? "").toString().trim(); }
+
+    function getPayloadFromForm() {
+      return {
+        topic: clean(document.getElementById("topic").value),
+        audience: clean(document.getElementById("audience").value),
+        blocker: clean(document.getElementById("blocker").value),
+        chapters: parseInt(document.getElementById("chapters").value, 10) || 12,
+        voiceSample: clean(document.getElementById("voiceSample").value),
+        voiceNotes: clean(document.getElementById("voiceNotes").value)
+      };
+    }
+
+    function savePendingToLocalStorage(extra = {}) {
+      const base = getPayloadFromForm();
+      const pending = {
+        ...base,
+        ...extra,
+        savedAt: new Date().toISOString(),
+        source: "guest"
+      };
+      localStorage.setItem("authored_pending", JSON.stringify(pending));
+    }
+
+    function goToAuth(page) {
+      // returnTo=start.html so after login/signup they land in the app
+      window.location.href = `${page}?returnTo=${encodeURIComponent("start.html")}`;
+    }
+
+    async function generateOutline() {
+      const payload = getPayloadFromForm();
+      if (!payload.topic) { alert("Type what you want to write about."); return; }
+
+      document.getElementById("result").style.display = "block";
+      document.getElementById("titleOut").textContent = "Generating...";
+      document.getElementById("purposeOut").textContent = "Please wait...";
+      document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
+
+      try {
+        const resp = await fetch("/api/outline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "Request failed");
+
+        const title = data.title || "Untitled";
+        const purpose = data.purpose || "";
+        const outline = Array.isArray(data.outline) ? data.outline : [];
+
+        document.getElementById("titleOut").textContent = title;
+        document.getElementById("purposeOut").textContent = purpose;
+
+        const list = document.getElementById("outlineOut");
+        list.innerHTML = "";
+        outline.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = item?.title || `Chapter ${idx+1}`;
+          list.appendChild(li);
+        });
+
+        // Save pending so signup/login can continue smoothly
+        savePendingToLocalStorage({ title, purpose, outline });
+
+        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+      } catch (e) {
+        document.getElementById("titleOut").textContent = "Could not generate outline";
+        document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
+        document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
+      }
+    }
+
+    document.getElementById("beginBtn").addEventListener("click", generateOutline);
+
+    document.getElementById("createAccountBtn").addEventListener("click", () => {
+      // ensure latest form state saved (even if they didn't generate yet)
+      savePendingToLocalStorage();
+      goToAuth("signup.html");
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      savePendingToLocalStorage();
+      goToAuth("login.html");
+    });
+  </script>
+</body>
+</html>
