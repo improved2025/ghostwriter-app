@@ -144,6 +144,7 @@
 
       <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
 
+      <!-- Title suggestions -->
       <div class="actions" style="margin-top:6px;">
         <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
         <span class="muted" id="titlesHint">10 options you can pick from.</span>
@@ -162,6 +163,7 @@
         <button class="btn secondary" id="regenOutlineBtn" type="button">Regenerate outline</button>
       </div>
 
+      <!-- Introduction -->
       <hr />
       <h3 style="margin: 0 0 8px;">Introduction</h3>
       <div class="actions">
@@ -178,6 +180,7 @@
     <div class="card" style="margin-top:14px;">
       <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
 
+      <!-- Draft length selector -->
       <div class="row" style="margin-top:0;">
         <div style="min-width:260px; flex: 1;">
           <label style="margin-top:0;">Draft length</label>
@@ -218,35 +221,41 @@
   </div>
 
   <script>
+    // --- Supabase client helper ---
     function getSbClient() {
       return window.AuthoredAccount?.client || null;
     }
 
-    async function consumeFree(kind) {
-      const sb = getSbClient();
-      if (!sb) return { ok: false };
-
-      const variants = [{ kind }, { p_kind: kind }, { action: kind }, { p_action: kind }];
-
-      for (const v of variants) {
-        const res = await sb.rpc("consume_free_limit", v);
-        if (!res.error) {
-          if (typeof res.data === "boolean") return { ok: res.data };
-          if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
-          return { ok: true };
-        }
-      }
-      return { ok: false };
-    }
-
-    function showLimitNotice(msg) {
-      const el = document.getElementById("limitNote");
-      if (el) el.textContent = msg;
-      else alert(msg);
-    }
-
     function clean(v) { return (v ?? "").toString().trim(); }
 
+    // ---------------------------------------------
+    // NEW: Guest → Account handoff (NO BREAKAGE)
+    // ---------------------------------------------
+    function consumeGuestDraft() {
+      try {
+        const raw = localStorage.getItem("authored_pending");
+        if (!raw) return null;
+        localStorage.removeItem("authored_pending");
+        const obj = JSON.parse(raw);
+        return (obj && typeof obj === "object") ? obj : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyGuestDraftToForm(d) {
+      if (!d) return;
+      if (d.topic !== undefined) document.getElementById("topic").value = d.topic || "";
+      if (d.audience !== undefined) document.getElementById("audience").value = d.audience || "";
+      if (d.blocker !== undefined) document.getElementById("blocker").value = d.blocker || "";
+      if (d.chapters !== undefined) document.getElementById("chapters").value = String(d.chapters || 12);
+      if (d.voiceSample !== undefined) document.getElementById("voiceSample").value = d.voiceSample || "";
+      if (d.voiceNotes !== undefined) document.getElementById("voiceNotes").value = d.voiceNotes || "";
+    }
+
+    // -----------------------------
+    // Copy/download helpers
+    // -----------------------------
     function makeTextBundle() {
       const title = clean(document.getElementById("titleOut").textContent);
       const purpose = clean(document.getElementById("purposeOut").textContent);
@@ -275,7 +284,9 @@
       URL.revokeObjectURL(url);
     }
 
+    // -----------------------------
     // FREE LIMIT (local only for now)
+    // -----------------------------
     const FREE_EXPANDS_PER_DAY = 2;
 
     function todayKey() {
@@ -308,6 +319,12 @@
         `Free expands remaining today: ${remaining} (resets daily).`;
     }
 
+    function showLimitNotice(msg) {
+      const el = document.getElementById("limitNote");
+      if (el) el.textContent = msg;
+      else alert(msg);
+    }
+
     function getDraftWordRange() {
       const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
       if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
@@ -317,9 +334,9 @@
 
     refreshFreeNotice();
 
-    // -----------------------------
-    // Project persistence helpers
-    // -----------------------------
+    // -----------------------------------
+    // Project persistence hooks (unchanged)
+    // -----------------------------------
     async function ensureActiveProject(payload) {
       if (!window.AuthoredAccount?.projects?.getOrCreateActiveProject) return null;
       try {
@@ -343,9 +360,6 @@
       }
     }
 
-    // -----------------------------
-    // NEW: Load active project on page open
-    // -----------------------------
     async function renderFromProject(p) {
       if (!p) return;
 
@@ -370,7 +384,6 @@
       const outline = window.__outlineItems || [];
       const list = document.getElementById("outlineOut");
       list.innerHTML = "";
-
       outline.forEach((item, idx) => {
         const li = document.createElement("li");
         const t = (item && typeof item === "object") ? (item.title || `Chapter ${idx+1}`) : String(item);
@@ -425,11 +438,26 @@
       }
     }
 
+    // -----------------------------------
+    // IMPORTANT: Load flow (guest wins)
+    // -----------------------------------
     window.addEventListener("load", () => {
+      const guest = consumeGuestDraft();
+      if (guest) {
+        applyGuestDraftToForm(guest);
+        // Auto-generate inside account so it saves to Supabase correctly
+        setTimeout(() => {
+          const btn = document.getElementById("beginBtn");
+          if (btn) btn.click();
+        }, 50);
+        return;
+      }
       loadActiveProjectOnOpen();
     });
 
+    // -----------------------------
     // Generate starting point (outline)
+    // -----------------------------
     const beginBtn = document.getElementById("beginBtn");
     beginBtn.addEventListener("click", async () => {
       const topic = clean(document.getElementById("topic").value);
@@ -519,6 +547,7 @@
       }
     });
 
+    // Copy + Download outline bundle
     document.getElementById("copyBtn").addEventListener("click", async () => {
       try { await copyText(makeTextBundle()); }
       catch { alert("Copy failed. Try again."); }
@@ -530,6 +559,7 @@
       downloadText(`${safe}_outline.txt`, makeTextBundle());
     });
 
+    // Regenerate outline
     document.getElementById("regenOutlineBtn").addEventListener("click", () => {
       const last = window.__lastOutlinePayload;
       if (!last) { alert("Generate an outline first."); return; }
@@ -544,21 +574,24 @@
       document.getElementById("beginBtn").click();
     });
 
+    // Title suggestions
     document.getElementById("genTitlesBtn").addEventListener("click", async () => {
+      const topic = clean(document.getElementById("topic").value);
+      const audience = clean(document.getElementById("audience").value);
+      const blocker = clean(document.getElementById("blocker").value);
+      const voiceSample = clean(document.getElementById("voiceSample").value);
+      const voiceNotes = clean(document.getElementById("voiceNotes").value);
+
+      const currentTitle = window.__title || clean(document.getElementById("titleOut").textContent);
+
       const out = document.getElementById("titleIdeasOut");
       out.innerHTML = "<li>Generating title ideas...</li>";
+
       try {
         const resp = await fetch("/api/titles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            topic: clean(document.getElementById("topic").value),
-            audience: clean(document.getElementById("audience").value),
-            blocker: clean(document.getElementById("blocker").value),
-            currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-            voiceSample: clean(document.getElementById("voiceSample").value),
-            voiceNotes: clean(document.getElementById("voiceNotes").value)
-          })
+          body: JSON.stringify({ topic, audience, blocker, currentTitle, voiceSample, voiceNotes })
         });
 
         const data = await resp.json().catch(() => ({}));
@@ -597,6 +630,7 @@
       }
     });
 
+    // Introduction
     document.getElementById("genIntroBtn").addEventListener("click", async () => {
       const introOut = document.getElementById("introOut");
       introOut.textContent = "Generating introduction...";
@@ -649,6 +683,7 @@
       downloadText(`${safe}_introduction.txt`, text);
     });
 
+    // Expand / Regenerate expanded
     async function runExpandRequest(mode) {
       refreshFreeNotice();
       const used = getFreeExpandCount();
@@ -738,6 +773,7 @@
       downloadText(`${safe}_expanded_chapter.txt`, text);
     });
 
+    // Free plan notice
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
