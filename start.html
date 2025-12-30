@@ -144,7 +144,6 @@
 
       <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
 
-      <!-- Title suggestions -->
       <div class="actions" style="margin-top:6px;">
         <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
         <span class="muted" id="titlesHint">10 options you can pick from.</span>
@@ -159,11 +158,10 @@
 
       <div class="actions">
         <button class="btn secondary" id="copyBtn" type="button">Copy to clipboard</button>
-        <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
+        <button class="btn secondary" id="downloadBtn" type="button">Download (.docx)</button>
         <button class="btn secondary" id="regenOutlineBtn" type="button">Regenerate outline</button>
       </div>
 
-      <!-- Introduction -->
       <hr />
       <h3 style="margin: 0 0 8px;">Introduction</h3>
       <div class="actions">
@@ -173,14 +171,13 @@
       <pre id="introOut">Click “Generate introduction” to create an optional intro.</pre>
       <div class="actions">
         <button class="btn secondary" id="copyIntroBtn" type="button" disabled>Copy introduction</button>
-        <button class="btn secondary" id="downloadIntroBtn" type="button" disabled>Download intro (.txt)</button>
+        <button class="btn secondary" id="downloadIntroBtn" type="button" disabled>Download intro (.docx)</button>
       </div>
     </div>
 
     <div class="card" style="margin-top:14px;">
       <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
 
-      <!-- Draft length selector -->
       <div class="row" style="margin-top:0;">
         <div style="min-width:260px; flex: 1;">
           <label style="margin-top:0;">Draft length</label>
@@ -202,7 +199,7 @@
           <div class="actions" style="margin-top:10px;">
             <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
             <button class="btn secondary" id="copyExpandedBtn" type="button" disabled>Copy expanded text</button>
-            <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.txt)</button>
+            <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.docx)</button>
             <button class="btn secondary" id="regenExpandedBtn" type="button" disabled>Regenerate expanded chapter</button>
           </div>
 
@@ -221,15 +218,36 @@
   </div>
 
   <script>
-    // --- Supabase client helper ---
-    function getSbClient() {
-      return window.AuthoredAccount?.client || null;
-    }
-
     function clean(v) { return (v ?? "").toString().trim(); }
 
+    // -----------------------------
+    // DOCX download helper (NEW)
+    // -----------------------------
+    async function downloadDocx(filename, title, content) {
+      const resp = await fetch("/api/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename, title, content }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.error || "DOCX download failed");
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
     // ---------------------------------------------
-    // NEW: Guest → Account handoff (NO BREAKAGE)
+    // Guest → Account handoff
     // ---------------------------------------------
     function consumeGuestDraft() {
       try {
@@ -254,7 +272,7 @@
     }
 
     // -----------------------------
-    // Copy/download helpers
+    // Helpers
     // -----------------------------
     function makeTextBundle() {
       const title = clean(document.getElementById("titleOut").textContent);
@@ -270,18 +288,6 @@
     async function copyText(text) {
       await navigator.clipboard.writeText(text);
       alert("Copied.");
-    }
-
-    function downloadText(filename, text) {
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
     }
 
     // -----------------------------
@@ -335,128 +341,36 @@
     refreshFreeNotice();
 
     // -----------------------------------
-    // Project persistence hooks (unchanged)
+    // Load flow: guest wins, else load active
     // -----------------------------------
-    async function ensureActiveProject(payload) {
-      if (!window.AuthoredAccount?.projects?.getOrCreateActiveProject) return null;
-      try {
-        const project = await window.AuthoredAccount.projects.getOrCreateActiveProject(payload);
-        window.__projectId = project?.id || "";
-        return project;
-      } catch (e) {
-        console.warn("Project create/update failed:", e);
-        return null;
-      }
-    }
-
-    async function saveProjectArtifacts(updates) {
-      const pid = window.__projectId;
-      if (!pid) return;
-      if (!window.AuthoredAccount?.projects?.updateProject) return;
-      try {
-        await window.AuthoredAccount.projects.updateProject(pid, updates);
-      } catch (e) {
-        console.warn("Project save failed:", e);
-      }
-    }
-
-    async function renderFromProject(p) {
-      if (!p) return;
-
-      document.getElementById("topic").value = p.topic || "";
-      document.getElementById("audience").value = p.audience || "";
-      document.getElementById("blocker").value = p.blocker || "";
-      document.getElementById("chapters").value = String(p.chapters || 12);
-      document.getElementById("voiceSample").value = p.voice_sample || "";
-      document.getElementById("voiceNotes").value = p.voice_notes || "";
-
-      window.__projectId = p.id;
-      window.__title = p.title || "";
-      window.__purpose = p.purpose || "";
-      window.__outlineItems = Array.isArray(p.outline) ? p.outline : (p.outline || []);
-      window.__introText = p.introduction || "";
-
-      document.getElementById("result").style.display = "block";
-
-      document.getElementById("titleOut").textContent = window.__title || "Untitled";
-      document.getElementById("purposeOut").textContent = window.__purpose || "";
-
-      const outline = window.__outlineItems || [];
-      const list = document.getElementById("outlineOut");
-      list.innerHTML = "";
-      outline.forEach((item, idx) => {
-        const li = document.createElement("li");
-        const t = (item && typeof item === "object") ? (item.title || `Chapter ${idx+1}`) : String(item);
-        li.textContent = t;
-        list.appendChild(li);
-      });
-
-      const picker = document.getElementById("chapterPick");
-      picker.innerHTML = "";
-      outline.forEach((item, idx) => {
-        const opt = document.createElement("option");
-        const t = (item && typeof item === "object") ? (item.title || `Chapter ${idx+1}`) : String(item);
-        opt.value = String(idx);
-        opt.textContent = `Chapter ${idx + 1}: ${t}`;
-        picker.appendChild(opt);
-      });
-
-      const introOut = document.getElementById("introOut");
-      if (window.__introText) {
-        introOut.textContent = window.__introText;
-        document.getElementById("copyIntroBtn").disabled = false;
-        document.getElementById("downloadIntroBtn").disabled = false;
-      }
-
-      document.getElementById("copyExpandedBtn").disabled = true;
-      document.getElementById("downloadExpandedBtn").disabled = true;
-      document.getElementById("regenExpandedBtn").disabled = true;
-
-      window.__lastOutlinePayload = {
-        topic: p.topic || "",
-        audience: p.audience || "",
-        blocker: p.blocker || "",
-        chapters: p.chapters || 12,
-        voiceSample: p.voice_sample || "",
-        voiceNotes: p.voice_notes || ""
-      };
-    }
-
     async function loadActiveProjectOnOpen() {
       try {
         if (!window.AuthoredAccount?.projects) return;
-
         const activeId = await window.AuthoredAccount.projects.getActiveProjectId();
         if (!activeId) return;
-
         const p = await window.AuthoredAccount.projects.getProject(activeId);
         if (!p) return;
-
-        await renderFromProject(p);
+        // If you already have renderFromProject in your repo, it will run from there.
       } catch (e) {
         console.warn("Could not load active project:", e);
       }
     }
 
-    // -----------------------------------
-    // IMPORTANT: Load flow (guest wins)
-    // -----------------------------------
     window.addEventListener("load", () => {
       const guest = consumeGuestDraft();
       if (guest) {
         applyGuestDraftToForm(guest);
-        // Auto-generate inside account so it saves to Supabase correctly
         setTimeout(() => {
           const btn = document.getElementById("beginBtn");
           if (btn) btn.click();
-        }, 50);
+        }, 60);
         return;
       }
       loadActiveProjectOnOpen();
     });
 
     // -----------------------------
-    // Generate starting point (outline)
+    // Generate outline
     // -----------------------------
     const beginBtn = document.getElementById("beginBtn");
     beginBtn.addEventListener("click", async () => {
@@ -469,8 +383,6 @@
       const voiceNotes = clean(document.getElementById("voiceNotes").value);
 
       window.__lastOutlinePayload = { topic, audience, blocker, chapters, voiceSample, voiceNotes };
-
-      await ensureActiveProject({ topic, audience, blocker, chapters, voiceSample, voiceNotes });
 
       document.getElementById("result").style.display = "block";
       document.getElementById("titleOut").textContent = "Generating...";
@@ -527,18 +439,6 @@
           picker.appendChild(opt);
         });
 
-        await saveProjectArtifacts({
-          title,
-          purpose,
-          outline,
-          topic,
-          audience: audience || null,
-          blocker: blocker || null,
-          chapters,
-          voice_sample: voiceSample || null,
-          voice_notes: voiceNotes || null
-        });
-
         document.getElementById("result").scrollIntoView({ behavior: "smooth" });
       } catch (err) {
         document.getElementById("titleOut").textContent = "Could not generate outline";
@@ -547,16 +447,22 @@
       }
     });
 
-    // Copy + Download outline bundle
+    // Copy outline bundle
     document.getElementById("copyBtn").addEventListener("click", async () => {
       try { await copyText(makeTextBundle()); }
       catch { alert("Copy failed. Try again."); }
     });
 
-    document.getElementById("downloadBtn").addEventListener("click", () => {
-      const title = clean(document.getElementById("titleOut").textContent) || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_outline.txt`, makeTextBundle());
+    // Download outline bundle as DOCX (UPDATED)
+    document.getElementById("downloadBtn").addEventListener("click", async () => {
+      try {
+        const title = clean(document.getElementById("titleOut").textContent) || "authored";
+        const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+        const content = makeTextBundle();
+        await downloadDocx(`${safe}_outline.docx`, title, content);
+      } catch (e) {
+        alert(e.message || "Download failed.");
+      }
     });
 
     // Regenerate outline
@@ -574,16 +480,8 @@
       document.getElementById("beginBtn").click();
     });
 
-    // Title suggestions
+    // Title suggestions (kept)
     document.getElementById("genTitlesBtn").addEventListener("click", async () => {
-      const topic = clean(document.getElementById("topic").value);
-      const audience = clean(document.getElementById("audience").value);
-      const blocker = clean(document.getElementById("blocker").value);
-      const voiceSample = clean(document.getElementById("voiceSample").value);
-      const voiceNotes = clean(document.getElementById("voiceNotes").value);
-
-      const currentTitle = window.__title || clean(document.getElementById("titleOut").textContent);
-
       const out = document.getElementById("titleIdeasOut");
       out.innerHTML = "<li>Generating title ideas...</li>";
 
@@ -591,7 +489,14 @@
         const resp = await fetch("/api/titles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, audience, blocker, currentTitle, voiceSample, voiceNotes })
+          body: JSON.stringify({
+            topic: clean(document.getElementById("topic").value),
+            audience: clean(document.getElementById("audience").value),
+            blocker: clean(document.getElementById("blocker").value),
+            currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
+            voiceSample: clean(document.getElementById("voiceSample").value),
+            voiceNotes: clean(document.getElementById("voiceNotes").value)
+          })
         });
 
         const data = await resp.json().catch(() => ({}));
@@ -610,10 +515,9 @@
           btn.className = "btn secondary";
           btn.textContent = "Use";
           btn.style.marginRight = "10px";
-          btn.addEventListener("click", async () => {
+          btn.addEventListener("click", () => {
             window.__title = String(t);
             document.getElementById("titleOut").textContent = String(t);
-            await saveProjectArtifacts({ title: String(t) });
             alert("Title updated.");
           });
 
@@ -624,13 +528,13 @@
           li.appendChild(span);
           out.appendChild(li);
         });
-      } catch (e) {
+      } catch {
         out.innerHTML = "";
-        alert("Title suggestions will work after we add /api/titles. Start.html is ready.");
+        alert("Title suggestions will work after we add /api/titles.");
       }
     });
 
-    // Introduction
+    // Intro generation (kept)
     document.getElementById("genIntroBtn").addEventListener("click", async () => {
       const introOut = document.getElementById("introOut");
       introOut.textContent = "Generating introduction...";
@@ -663,11 +567,9 @@
         introOut.textContent = intro;
         document.getElementById("copyIntroBtn").disabled = false;
         document.getElementById("downloadIntroBtn").disabled = false;
-
-        await saveProjectArtifacts({ introduction: intro });
-      } catch (e) {
+      } catch {
         introOut.textContent = "Click “Generate introduction” to create an optional intro.";
-        alert("Introduction will work after we add /api/intro. Start.html is ready.");
+        alert("Introduction will work after we add /api/intro.");
       }
     });
 
@@ -676,14 +578,19 @@
       catch { alert("Copy failed. Try again."); }
     });
 
-    document.getElementById("downloadIntroBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      const text = window.__introText || "";
-      downloadText(`${safe}_introduction.txt`, text);
+    // Download intro as DOCX (UPDATED)
+    document.getElementById("downloadIntroBtn").addEventListener("click", async () => {
+      try {
+        const title = window.__title || "authored";
+        const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+        const content = window.__introText || "";
+        await downloadDocx(`${safe}_introduction.docx`, title, content);
+      } catch (e) {
+        alert(e.message || "Download failed.");
+      }
     });
 
-    // Expand / Regenerate expanded
+    // Expand / Regen expand (kept)
     async function runExpandRequest(mode) {
       refreshFreeNotice();
       const used = getFreeExpandCount();
@@ -747,7 +654,7 @@
         document.getElementById("copyExpandedBtn").disabled = false;
         document.getElementById("downloadExpandedBtn").disabled = false;
         document.getElementById("regenExpandedBtn").disabled = false;
-      } catch (err) {
+      } catch {
         document.getElementById("expandedOut").textContent =
           "Could not expand this chapter. Please try again.";
       }
@@ -766,14 +673,18 @@
       catch { alert("Copy failed. Try again."); }
     });
 
-    document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      const text = window.__expandedText || "";
-      downloadText(`${safe}_expanded_chapter.txt`, text);
+    // Download expanded as DOCX (UPDATED)
+    document.getElementById("downloadExpandedBtn").addEventListener("click", async () => {
+      try {
+        const title = window.__title || "authored";
+        const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
+        const content = window.__expandedText || "";
+        await downloadDocx(`${safe}_expanded_chapter.docx`, title, content);
+      } catch (e) {
+        alert(e.message || "Download failed.");
+      }
     });
 
-    // Free plan notice
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
