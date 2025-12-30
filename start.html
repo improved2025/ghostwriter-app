@@ -146,7 +146,7 @@
 
       <!-- Title suggestions -->
       <div class="actions" style="margin-top:6px;">
-        <button class="btn secondary" id="genTitlesBtn" type="button" disabled>Generate title suggestions</button>
+        <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
         <span class="muted" id="titlesHint">10 options you can pick from.</span>
       </div>
       <ul id="titleIdeasOut" class="muted" style="margin-top:8px;"></ul>
@@ -167,10 +167,10 @@
       <hr />
       <h3 style="margin: 0 0 8px;">Introduction</h3>
       <div class="actions">
-        <button class="btn secondary" id="genIntroBtn" type="button" disabled>Generate introduction</button>
+        <button class="btn secondary" id="genIntroBtn" type="button">Generate introduction</button>
         <span class="muted" id="introHint">Optional: 400–700 words that sets the tone.</span>
       </div>
-      <pre id="introOut">Generate an outline first, then you can generate an introduction.</pre>
+      <pre id="introOut">Click “Generate introduction” to create an optional intro.</pre>
       <div class="actions">
         <button class="btn secondary" id="copyIntroBtn" type="button" disabled>Copy introduction</button>
         <button class="btn secondary" id="downloadIntroBtn" type="button" disabled>Download intro (.txt)</button>
@@ -221,29 +221,45 @@
   </div>
 
   <script>
-    function clean(v) { return (v ?? "").toString().trim(); }
+    // Use the same Supabase client created in account.js
+    function getSbClient() {
+      return window.AuthoredAccount?.client || null;
+    }
 
-    function setTitlesIntroEnabled(enabled) {
-      document.getElementById("genTitlesBtn").disabled = !enabled;
-      document.getElementById("genIntroBtn").disabled = !enabled;
-      if (!enabled) {
-        document.getElementById("titleIdeasOut").innerHTML = "";
-        document.getElementById("introOut").textContent = "Generate an outline first, then you can generate an introduction.";
-        document.getElementById("copyIntroBtn").disabled = true;
-        document.getElementById("downloadIntroBtn").disabled = true;
+    // RPC free limit helper (kept)
+    async function consumeFree(kind) {
+      const sb = getSbClient();
+      if (!sb) return { ok: false };
+
+      const variants = [{ kind }, { p_kind: kind }, { action: kind }, { p_action: kind }];
+
+      for (const v of variants) {
+        const res = await sb.rpc("consume_free_limit", v);
+        if (!res.error) {
+          if (typeof res.data === "boolean") return { ok: res.data };
+          if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
+          return { ok: true };
+        }
       }
+      return { ok: false };
     }
 
-    function safeChapterTitle(item, idx) {
-      if (item && typeof item === "object") return clean(item.title) || `Chapter ${idx + 1}`;
-      return clean(String(item)) || `Chapter ${idx + 1}`;
+    function showLimitNotice(msg) {
+      const el = document.getElementById("limitNote");
+      if (el) el.textContent = msg;
+      else alert(msg);
     }
+
+    function clean(v) { return (v ?? "").toString().trim(); }
 
     function makeTextBundle() {
       const title = clean(document.getElementById("titleOut").textContent);
       const purpose = clean(document.getElementById("purposeOut").textContent);
       const outlineItems = window.__outlineItems || [];
-      const outlineText = outlineItems.map((x,i)=> `${i+1}. ${safeChapterTitle(x,i)}`).join("\n");
+      const outlineText = outlineItems.map((x,i)=> {
+        const t = (x && typeof x === "object") ? (x.title || `Chapter ${i+1}`) : String(x);
+        return `${i+1}. ${t}`;
+      }).join("\n");
       return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
     }
 
@@ -297,12 +313,6 @@
         `Free expands remaining today: ${remaining} (resets daily).`;
     }
 
-    function showLimitNotice(msg) {
-      const el = document.getElementById("limitNote");
-      if (el) el.textContent = msg;
-      else alert(msg);
-    }
-
     function getDraftWordRange() {
       const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
       if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
@@ -311,7 +321,32 @@
     }
 
     refreshFreeNotice();
-    setTitlesIntroEnabled(false);
+
+    // -----------------------------
+    // NEW: Project persistence helpers
+    // -----------------------------
+    async function ensureActiveProject(payload) {
+      if (!window.AuthoredAccount?.projects?.getOrCreateActiveProject) return null;
+      try {
+        const project = await window.AuthoredAccount.projects.getOrCreateActiveProject(payload);
+        window.__projectId = project?.id || "";
+        return project;
+      } catch (e) {
+        console.warn("Project create/update failed:", e);
+        return null;
+      }
+    }
+
+    async function saveProjectArtifacts(updates) {
+      const pid = window.__projectId;
+      if (!pid) return;
+      if (!window.AuthoredAccount?.projects?.updateProject) return;
+      try {
+        await window.AuthoredAccount.projects.updateProject(pid, updates);
+      } catch (e) {
+        console.warn("Project save failed:", e);
+      }
+    }
 
     // Generate starting point (outline)
     const beginBtn = document.getElementById("beginBtn");
@@ -326,6 +361,9 @@
 
       window.__lastOutlinePayload = { topic, audience, blocker, chapters, voiceSample, voiceNotes };
 
+      // NEW: create/reuse the active project before calling the API
+      await ensureActiveProject({ topic, audience, blocker, chapters, voiceSample, voiceNotes });
+
       document.getElementById("result").style.display = "block";
       document.getElementById("titleOut").textContent = "Generating...";
       document.getElementById("purposeOut").textContent = "Please wait...";
@@ -337,11 +375,10 @@
 
       // reset titles + intro displays
       document.getElementById("titleIdeasOut").innerHTML = "";
-      document.getElementById("introOut").textContent = "Generate an outline first, then you can generate an introduction.";
+      document.getElementById("introOut").textContent = "Click “Generate introduction” to create an optional intro.";
       document.getElementById("copyIntroBtn").disabled = true;
       document.getElementById("downloadIntroBtn").disabled = true;
       window.__introText = "";
-      setTitlesIntroEnabled(false);
 
       try {
         const resp = await fetch("/api/outline", {
@@ -368,28 +405,40 @@
 
         const list = document.getElementById("outlineOut");
         list.innerHTML = "";
-        outline.forEach((item, idx) => {
+        outline.forEach((item) => {
           const li = document.createElement("li");
-          li.textContent = safeChapterTitle(item, idx);
+          li.textContent = item.title;
           list.appendChild(li);
         });
 
         const picker = document.getElementById("chapterPick");
         picker.innerHTML = "";
-        outline.forEach((item, idx) => {
+        window.__outlineItems.forEach((item, idx) => {
           const opt = document.createElement("option");
           opt.value = String(idx);
-          opt.textContent = `Chapter ${idx + 1}: ${safeChapterTitle(item, idx)}`;
+          opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
           picker.appendChild(opt);
         });
 
-        setTitlesIntroEnabled(true);
+        // NEW: Save generated artifacts into the active project
+        await saveProjectArtifacts({
+          title,
+          purpose,
+          outline,
+          // also persist definition fields (helps if user changes them)
+          topic,
+          audience: audience || null,
+          blocker: blocker || null,
+          chapters,
+          voice_sample: voiceSample || null,
+          voice_notes: voiceNotes || null
+        });
+
         document.getElementById("result").scrollIntoView({ behavior: "smooth" });
       } catch (err) {
         document.getElementById("titleOut").textContent = "Could not generate outline";
         document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
         document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
-        setTitlesIntroEnabled(false);
       }
     });
 
@@ -420,34 +469,28 @@
       document.getElementById("beginBtn").click();
     });
 
-    // Title suggestions (needs /api/titles)
+    // Title suggestions (works after /api/titles exists)
     document.getElementById("genTitlesBtn").addEventListener("click", async () => {
+      const topic = clean(document.getElementById("topic").value);
+      const audience = clean(document.getElementById("audience").value);
+      const blocker = clean(document.getElementById("blocker").value);
+      const voiceSample = clean(document.getElementById("voiceSample").value);
+      const voiceNotes = clean(document.getElementById("voiceNotes").value);
+
+      const currentTitle = window.__title || clean(document.getElementById("titleOut").textContent);
+
       const out = document.getElementById("titleIdeasOut");
-      if (!(window.__outlineItems || []).length) {
-        out.innerHTML = "<li>Generate an outline first.</li>";
-        return;
-      }
-
-      const payload = {
-        topic: clean(document.getElementById("topic").value),
-        audience: clean(document.getElementById("audience").value),
-        blocker: clean(document.getElementById("blocker").value),
-        currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-        voiceSample: clean(document.getElementById("voiceSample").value),
-        voiceNotes: clean(document.getElementById("voiceNotes").value)
-      };
-
       out.innerHTML = "<li>Generating title ideas...</li>";
 
       try {
         const resp = await fetch("/api/titles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ topic, audience, blocker, currentTitle, voiceSample, voiceNotes })
         });
 
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(data?.error || "Titles API missing");
+        if (!resp.ok) throw new Error(data?.error || "Titles API not set yet");
 
         const titles = Array.isArray(data.titles) ? data.titles : [];
         if (!titles.length) throw new Error("No titles returned");
@@ -462,9 +505,14 @@
           btn.className = "btn secondary";
           btn.textContent = "Use";
           btn.style.marginRight = "10px";
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", async () => {
             window.__title = String(t);
             document.getElementById("titleOut").textContent = String(t);
+
+            // NEW: save chosen title to project
+            await saveProjectArtifacts({ title: String(t) });
+
+            alert("Title updated.");
           });
 
           const span = document.createElement("span");
@@ -474,19 +522,15 @@
           li.appendChild(span);
           out.appendChild(li);
         });
-      } catch {
-        out.innerHTML = "<li>Add <strong>/api/titles</strong> to enable title suggestions.</li>";
+      } catch (e) {
+        out.innerHTML = "";
+        alert("Title suggestions will work after we add /api/titles. Start.html is ready.");
       }
     });
 
-    // Introduction (needs /api/intro)
+    // Introduction (works after /api/intro exists)
     document.getElementById("genIntroBtn").addEventListener("click", async () => {
       const introOut = document.getElementById("introOut");
-      if (!(window.__outlineItems || []).length) {
-        introOut.textContent = "Generate an outline first.";
-        return;
-      }
-
       introOut.textContent = "Generating introduction...";
 
       const payload = {
@@ -508,7 +552,7 @@
         });
 
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok) throw new Error(data?.error || "Intro API missing");
+        if (!resp.ok) throw new Error(data?.error || "Intro API not set yet");
 
         const intro = (data.introduction || "").toString().trim();
         if (!intro) throw new Error("No introduction returned");
@@ -517,11 +561,12 @@
         introOut.textContent = intro;
         document.getElementById("copyIntroBtn").disabled = false;
         document.getElementById("downloadIntroBtn").disabled = false;
-      } catch {
-        introOut.textContent = "Add /api/intro to enable introduction generation.";
-        document.getElementById("copyIntroBtn").disabled = true;
-        document.getElementById("downloadIntroBtn").disabled = true;
-        window.__introText = "";
+
+        // NEW: save intro to project
+        await saveProjectArtifacts({ introduction: intro });
+      } catch (e) {
+        introOut.textContent = "Click “Generate introduction” to create an optional intro.";
+        alert("Introduction will work after we add /api/intro. Start.html is ready.");
       }
     });
 
@@ -533,10 +578,11 @@
     document.getElementById("downloadIntroBtn").addEventListener("click", () => {
       const title = window.__title || "authored";
       const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_introduction.txt`, window.__introText || "");
+      const text = window.__introText || "";
+      downloadText(`${safe}_introduction.txt`, text);
     });
 
-    // Expand / Regenerate expanded
+    // Expand / Regenerate expanded (with draft length support)
     async function runExpandRequest(mode) {
       refreshFreeNotice();
       const used = getFreeExpandCount();
@@ -553,7 +599,7 @@
       const chapterObj = outline[chapterIdx];
       if (!chapterObj) { alert("Pick a chapter first."); return; }
 
-      const chapterTitle = safeChapterTitle(chapterObj, chapterIdx);
+      const chapterTitle = chapterObj.title;
       const chapterNumber = chapterIdx + 1;
 
       const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
@@ -600,14 +646,19 @@
         document.getElementById("copyExpandedBtn").disabled = false;
         document.getElementById("downloadExpandedBtn").disabled = false;
         document.getElementById("regenExpandedBtn").disabled = false;
-      } catch {
+      } catch (err) {
         document.getElementById("expandedOut").textContent =
           "Could not expand this chapter. Please try again.";
       }
     }
 
-    document.getElementById("expandBtn").addEventListener("click", async () => runExpandRequest("expand"));
-    document.getElementById("regenExpandedBtn").addEventListener("click", async () => runExpandRequest("regen"));
+    document.getElementById("expandBtn").addEventListener("click", async () => {
+      await runExpandRequest("expand");
+    });
+
+    document.getElementById("regenExpandedBtn").addEventListener("click", async () => {
+      await runExpandRequest("regen");
+    });
 
     document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
       try { await copyText(window.__expandedText || ""); }
@@ -617,10 +668,11 @@
     document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
       const title = window.__title || "authored";
       const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_expanded_chapter.txt`, window.__expandedText || "");
+      const text = window.__expandedText || "";
+      downloadText(`${safe}_expanded_chapter.txt`, text);
     });
 
-    // Free plan notice
+    // Free plan notice (display only)
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
