@@ -2,11 +2,15 @@ import OpenAI from "openai";
 import { supabaseAdmin } from "./_supabase.js";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Use POST" });
+  }
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
+    }
 
     const openai = new OpenAI({ apiKey });
     const supabase = supabaseAdmin();
@@ -14,91 +18,89 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const clean = (v) => (v ?? "").toString().trim();
 
-    const projectId = clean(body.projectId);
-    const chapterTitle = clean(body.chapterTitle);
+    const {
+      projectId,
+      userId,
+      topic,
+      audience,
+      bookTitle,
+      purpose,
+      chapterTitle,
+      chapterNumber,
+      voiceSample,
+      voiceNotes,
+      minWords = 900,
+      maxWords = 1300,
+      regenerate = false
+    } = body;
 
-    const bookTitle = clean(body.bookTitle) || "Untitled";
-    const purpose = clean(body.purpose) || "N/A";
-    const chapterNumber = Number.isFinite(parseInt(body.chapterNumber, 10)) ? parseInt(body.chapterNumber, 10) : null;
-
-    const topic = clean(body.topic) || "";
-    const audience = clean(body.audience) || "";
-    const voiceSample = clean(body.voiceSample) || "";
-    const voiceNotes = clean(body.voiceNotes) || "";
-
-    const regenerate = !!body.regenerate;
-    const minWords = Number.isFinite(parseInt(body.minWords, 10)) ? parseInt(body.minWords, 10) : 900;
-    const maxWords = Number.isFinite(parseInt(body.maxWords, 10)) ? parseInt(body.maxWords, 10) : 1300;
-
-    // Optional: pass userId from client when logged in
-    let userId = clean(body.userId) || null;
-
-    if (!projectId || !chapterTitle) {
-      return res.status(400).json({ error: "Missing projectId or chapterTitle" });
+    if (!chapterTitle || !topic) {
+      return res.status(400).json({ error: "Missing chapterTitle or topic" });
     }
 
-    // If userId not provided, try to read it from the project row
-    if (!userId) {
-      const { data: proj, error: projErr } = await supabase
+    let pid = projectId;
+
+    // Create project ONLY HERE (first paid / limited action)
+    if (!pid) {
+      const { data: proj, error } = await supabase
         .from("projects")
-        .select("user_id, is_paid")
-        .eq("id", projectId)
+        .insert({
+          user_id: userId || null,
+          topic,
+          audience,
+          chapters: null,
+          is_paid: false
+        })
+        .select("id")
         .single();
 
-      if (projErr) {
-        return res.status(500).json({ error: "Failed to read project", details: projErr });
+      if (error) {
+        return res.status(500).json({ error: "Failed to create project", details: error });
       }
-      userId = proj?.user_id || null;
 
-      // If project is guest (no user_id), block expand for now (strong protection)
-      if (!userId) {
-        return res.status(403).json({ error: "auth_required" });
-      }
+      pid = proj.id;
     }
 
-    // Enforce limit (regen counts as expand)
-    const kind = regenerate ? "regen" : "expand";
-    const { data: limitData, error: limitErr } = await supabase.rpc("consume_limit", {
-      p_user_id: userId,
-      p_project_id: projectId,
-      p_kind: kind,
-    });
+    // Enforce limits
+    if (userId) {
+      const kind = regenerate ? "regen" : "expand";
+      const { data: limit } = await supabase.rpc("consume_limit", {
+        p_user_id: userId,
+        p_project_id: pid,
+        p_kind: kind
+      });
 
-    if (limitErr) {
-      return res.status(500).json({ error: "limit_check_failed", details: limitErr });
-    }
-
-    if (!limitData?.allowed) {
-      return res.status(403).json({ error: "limit_reached", reason: limitData?.reason || null });
+      if (!limit?.allowed) {
+        return res.status(403).json({ error: "limit_reached" });
+      }
     }
 
     const voiceBlock = voiceSample
-      ? `VOICE SAMPLE (match tone, cadence, phrasing; avoid generic AI voice):
+      ? `VOICE SAMPLE (match style strictly):
 ${voiceSample}
 
 VOICE NOTES:
 ${voiceNotes || "none"}`
       : `VOICE NOTES:
-${voiceNotes || "none"} (Keep voice natural and human; avoid robotic phrasing.)`;
+${voiceNotes || "none"} (Keep voice human.)`;
 
     const prompt = `
-You are a strict book coach.
-Write an expanded draft for ONE chapter.
+Write a chapter draft.
 
-Book title: ${bookTitle}
+Book: ${bookTitle}
 Purpose: ${purpose}
-Chapter ${chapterNumber || ""}: ${chapterTitle}
-Topic context: ${topic}
+Chapter ${chapterNumber}: ${chapterTitle}
 Audience: ${audience}
+Topic context: ${topic}
 
 ${voiceBlock}
 
 Rules:
-- Do NOT mention AI/ChatGPT.
-- Write like a human, in the user's voice.
-- Use clear headings.
-- Target length: ${minWords} to ${maxWords} words.
-- End with 5 bullet reflection questions.
+- Human voice only
+- No AI mentions
+- ${minWords}–${maxWords} words
+- Headings + flow
+- End with 5 reflection questions
 
 Return JSON only:
 { "expanded": "..." }
@@ -108,22 +110,23 @@ Return JSON only:
       model: "gpt-4o-mini",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a strict book coach who matches the user's voice." },
-        { role: "user", content: prompt },
+        { role: "system", content: "You are a strict writing coach." },
+        { role: "user", content: prompt }
       ],
-      response_format: { type: "json_object" },
+      response_format: { type: "json_object" }
     });
 
-    const text = resp?.choices?.[0]?.message?.content || "";
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch { parsed = { expanded: text }; }
+    const parsed = JSON.parse(resp.choices[0].message.content);
 
-    const expanded = (parsed?.expanded || "").toString().trim();
-    if (!expanded) return res.status(500).json({ error: "No expanded text returned" });
+    return res.status(200).json({
+      projectId: pid,
+      expanded: parsed.expanded
+    });
 
-    return res.status(200).json({ expanded });
   } catch (err) {
-    return res.status(500).json({ error: err?.message || "Server error" });
+    return res.status(500).json({
+      error: "Expand failed",
+      details: err.message
+    });
   }
 }
