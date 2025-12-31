@@ -1,165 +1,129 @@
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // REQUIRED for server enforcement
-);
+import { supabaseAdmin } from "./_supabase.js";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
-    }
+    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
+
+    const openai = new OpenAI({ apiKey });
+    const supabase = supabaseAdmin();
 
     const body = req.body || {};
     const clean = (v) => (v ?? "").toString().trim();
 
-    const {
-      projectId,
-      bookTitle,
-      purpose,
-      chapterNumber,
-      chapterTitle,
-      topic,
-      audience,
-      voiceSample,
-      voiceNotes,
-      regenerate,
-      draftLength,
-      minWords,
-      maxWords
-    } = body;
+    const projectId = clean(body.projectId);
+    const chapterTitle = clean(body.chapterTitle);
+
+    const bookTitle = clean(body.bookTitle) || "Untitled";
+    const purpose = clean(body.purpose) || "N/A";
+    const chapterNumber = Number.isFinite(parseInt(body.chapterNumber, 10)) ? parseInt(body.chapterNumber, 10) : null;
+
+    const topic = clean(body.topic) || "";
+    const audience = clean(body.audience) || "";
+    const voiceSample = clean(body.voiceSample) || "";
+    const voiceNotes = clean(body.voiceNotes) || "";
+
+    const regenerate = !!body.regenerate;
+    const minWords = Number.isFinite(parseInt(body.minWords, 10)) ? parseInt(body.minWords, 10) : 900;
+    const maxWords = Number.isFinite(parseInt(body.maxWords, 10)) ? parseInt(body.maxWords, 10) : 1300;
+
+    // Optional: pass userId from client when logged in
+    let userId = clean(body.userId) || null;
 
     if (!projectId || !chapterTitle) {
       return res.status(400).json({ error: "Missing projectId or chapterTitle" });
     }
 
-    // 1️⃣ Load project + usage
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("id", projectId)
-      .single();
+    // If userId not provided, try to read it from the project row
+    if (!userId) {
+      const { data: proj, error: projErr } = await supabase
+        .from("projects")
+        .select("user_id, is_paid")
+        .eq("id", projectId)
+        .single();
 
-    if (error || !project) {
-      return res.status(404).json({ error: "Project not found" });
-    }
-
-    const plan = project.plan || "free";
-    const expandedCount = project.expanded_count || 0;
-    const regenCount = project.regeneration_count || 0;
-
-    // 2️⃣ Enforce limits BEFORE OpenAI
-    if (plan === "free") {
-      return res.status(403).json({ error: "limit_reached" });
-    }
-
-    if (plan === "single") {
-      if (expandedCount >= 12) {
-        return res.status(403).json({ error: "limit_reached" });
+      if (projErr) {
+        return res.status(500).json({ error: "Failed to read project", details: projErr });
       }
-      if (regenerate && regenCount >= 12) {
-        return res.status(403).json({ error: "limit_reached" });
-      }
-      if (draftLength === "very_long") {
-        return res.status(403).json({ error: "upgrade_required" });
+      userId = proj?.user_id || null;
+
+      // If project is guest (no user_id), block expand for now (strong protection)
+      if (!userId) {
+        return res.status(403).json({ error: "auth_required" });
       }
     }
 
-    if (plan === "lifetime") {
-      if (expandedCount >= 20) {
-        return res.status(403).json({ error: "limit_reached" });
-      }
-      if (regenCount >= 40) {
-        return res.status(403).json({ error: "limit_reached" });
-      }
+    // Enforce limit (regen counts as expand)
+    const kind = regenerate ? "regen" : "expand";
+    const { data: limitData, error: limitErr } = await supabase.rpc("consume_limit", {
+      p_user_id: userId,
+      p_project_id: projectId,
+      p_kind: kind,
+    });
+
+    if (limitErr) {
+      return res.status(500).json({ error: "limit_check_failed", details: limitErr });
     }
 
-    // 3️⃣ Build prompt (voice-aware)
+    if (!limitData?.allowed) {
+      return res.status(403).json({ error: "limit_reached", reason: limitData?.reason || null });
+    }
+
+    const voiceBlock = voiceSample
+      ? `VOICE SAMPLE (match tone, cadence, phrasing; avoid generic AI voice):
+${voiceSample}
+
+VOICE NOTES:
+${voiceNotes || "none"}`
+      : `VOICE NOTES:
+${voiceNotes || "none"} (Keep voice natural and human; avoid robotic phrasing.)`;
+
     const prompt = `
-You are a book coach writing WITH the author, not for them.
+You are a strict book coach.
+Write an expanded draft for ONE chapter.
 
-BOOK TITLE:
-${bookTitle}
+Book title: ${bookTitle}
+Purpose: ${purpose}
+Chapter ${chapterNumber || ""}: ${chapterTitle}
+Topic context: ${topic}
+Audience: ${audience}
 
-PURPOSE:
-${purpose}
+${voiceBlock}
 
-CHAPTER ${chapterNumber}:
-${chapterTitle}
+Rules:
+- Do NOT mention AI/ChatGPT.
+- Write like a human, in the user's voice.
+- Use clear headings.
+- Target length: ${minWords} to ${maxWords} words.
+- End with 5 bullet reflection questions.
 
-AUDIENCE:
-${audience}
-
-TOPIC:
-${topic}
-
-AUTHOR VOICE SAMPLE:
-${voiceSample || "None provided"}
-
-AUTHOR VOICE NOTES:
-${voiceNotes || "Write naturally, human, non-robotic."}
-
-RULES:
-- Match the author's voice, rhythm, and tone strictly
-- Do NOT sound generic or AI-written
-- ${minWords}–${maxWords} words
-- Clear headings
-- Practical and grounded
-- End with 5 reflection questions
-
-Return JSON ONLY:
+Return JSON only:
 { "expanded": "..." }
 `.trim();
 
-    const openai = new OpenAI({ apiKey });
-
-    const completion = await openai.chat.completions.create({
+    const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a professional book coach." },
-        { role: "user", content: prompt }
-      ]
+        { role: "system", content: "You are a strict book coach who matches the user's voice." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
     });
 
-    const raw = completion.choices?.[0]?.message?.content || "";
+    const text = resp?.choices?.[0]?.message?.content || "";
     let parsed;
+    try { parsed = JSON.parse(text); }
+    catch { parsed = { expanded: text }; }
 
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = { expanded: raw };
-    }
+    const expanded = (parsed?.expanded || "").toString().trim();
+    if (!expanded) return res.status(500).json({ error: "No expanded text returned" });
 
-    if (!parsed.expanded) {
-      throw new Error("No expanded content returned");
-    }
-
-    // 4️⃣ Update usage counters
-    const updates = {
-      expanded_count: expandedCount + 1
-    };
-
-    if (regenerate) {
-      updates.regeneration_count = regenCount + 1;
-    }
-
-    await supabase
-      .from("projects")
-      .update(updates)
-      .eq("id", projectId);
-
-    return res.status(200).json({ expanded: parsed.expanded });
-
+    return res.status(200).json({ expanded });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: err?.message || "Server error" });
   }
 }
