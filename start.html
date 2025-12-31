@@ -6,674 +6,178 @@
   <title>Authored — Start</title>
 
   <link rel="icon" href="data:,">
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./account.js" defer></script>
   <script src="./auth-guard.js" defer></script>
 
   <style>
-    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
-    h1 { margin: 0 0 8px; }
+    body { font-family: Arial, sans-serif; margin:48px; max-width:900px; }
+    h1,h2,h3 { margin-bottom:8px; }
     p { color:#333; line-height:1.5; }
-    label { display:block; font-weight:700; margin-top:14px; }
-    input[type="text"], textarea, select {
-      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
-    }
-    textarea { min-height:80px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
-    .btn {
-      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
-      border-radius:8px; cursor:pointer; font-weight:700;
-      text-decoration:none; display:inline-block;
-    }
-    .btn.secondary { background:#fff; color:#111; }
-    .btn:disabled { opacity:0.5; cursor:not-allowed; }
-    .muted { color:#666; font-size:13px; }
-    hr { margin:18px 0; border:none; border-top:1px solid #eee; }
-
-    .notice {
-      background:#fff7d6;
-      border:1px solid #f2d27a;
-      padding:12px 14px;
-      border-radius:10px;
-      margin:14px 0 18px;
-      color:#5a4600;
-    }
-
-    #result { display:none; margin-top:18px; }
-    .card {
-      border:1px solid #e6e6e6;
-      border-radius:12px;
-      padding:16px;
-      background:#fff;
-    }
-    .pill {
-      display:inline-block;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid #ddd;
-      font-size:12px;
-      color:#333;
-      margin-right:8px;
-      margin-bottom:6px;
-    }
-    ol { padding-left:18px; }
-    ul { padding-left:18px; }
-    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    .two-col { display:flex; gap:16px; flex-wrap:wrap; }
-    .two-col > div { flex:1 1 320px; }
-    pre {
-      white-space: pre-wrap;
-      background:#fafafa;
-      border:1px solid #eee;
-      padding:12px;
-      border-radius:10px;
-      font-size:13px;
-      line-height:1.45;
-    }
-
-    .upgrade-box {
-      display:none;
-      border:1px solid #e6e6e6;
-      border-radius:12px;
-      padding:14px;
-      background:#fff;
-      margin-top:12px;
-    }
-    .upgrade-box h3 { margin:0 0 6px; }
-    .upgrade-grid { display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; }
-    .plan {
-      flex:1 1 260px;
-      border:1px solid #eee;
-      border-radius:12px;
-      padding:12px;
-      background:#fafafa;
-    }
-    .plan h4 { margin:0 0 6px; }
-    .plan ul { margin:8px 0 0 18px; }
-    .plan li { margin:6px 0; }
+    label { font-weight:700; margin-top:14px; display:block; }
+    textarea,input,select { width:100%; padding:10px; margin-top:6px; }
+    textarea { min-height:90px; }
+    button { padding:10px 14px; border-radius:6px; cursor:pointer; }
+    .btn { background:#000; color:#fff; border:none; }
+    .btn.secondary { background:#fff; color:#000; border:1px solid #000; }
+    .notice { background:#fff7d6; border:1px solid #f2d27a; padding:12px; margin:14px 0; }
+    .card { border:1px solid #ddd; border-radius:10px; padding:16px; margin-top:14px; }
+    pre { white-space:pre-wrap; background:#fafafa; padding:12px; border-radius:8px; }
   </style>
 </head>
 
 <body>
-  <h1>Start your book</h1>
-  <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
+<h1>Start your book</h1>
+<p class="muted">Authored writes with you, not for you.</p>
 
-  <div class="notice" id="freeNotice">
-    <strong>Free version:</strong> Outline generation is free.
-    <span id="freeLimitText"></span>
-    <br />
-    <span class="muted">Full chapter drafts (Expand) are limited in the free version.</span>
+<div class="notice">
+  <strong>Free plan:</strong>
+  1 introduction + 2 chapter expansions.
+</div>
+
+<label>What are you writing about?</label>
+<textarea id="topic"></textarea>
+
+<label>Who is this for?</label>
+<input id="audience" />
+
+<label>Your writing sample (optional)</label>
+<textarea id="voiceSample"></textarea>
+
+<button class="btn" id="beginBtn">Generate outline</button>
+
+<div id="result" style="display:none;">
+  <div class="card">
+    <h2 id="titleOut"></h2>
+    <p id="purposeOut"></p>
+    <ol id="outlineOut"></ol>
+
+    <button class="btn secondary" id="regenOutlineBtn">Regenerate outline</button>
   </div>
 
-  <!-- Upgrade panel (hidden until needed) -->
-  <div class="upgrade-box" id="upgradeBox">
-    <h3>Limit reached</h3>
-    <p class="muted" id="upgradeMsg" style="margin:6px 0 0;">
-      You’ve reached the free plan limit for this feature.
-    </p>
-
-    <div class="upgrade-grid">
-      <div class="plan">
-        <h4>Project plan ($49)</h4>
-        <div class="muted">One project, one user</div>
-        <ul>
-          <li>Expand chapters</li>
-          <li>Regenerate drafts</li>
-          <li>DOCX export</li>
-          <li>Voice + tone controls</li>
-        </ul>
-        <div class="actions">
-          <a class="btn" href="pricing.html" id="upgradeProjectBtn">Upgrade</a>
-          <a class="btn secondary" href="start.html">Keep writing</a>
-        </div>
-      </div>
-
-      <div class="plan">
-        <h4>Lifetime ($149)</h4>
-        <div class="muted">All features, one user</div>
-        <ul>
-          <li>Unlimited projects</li>
-          <li>More expansions</li>
-          <li>Priority features as Authored grows</li>
-        </ul>
-        <div class="actions">
-          <a class="btn" href="pricing.html" id="upgradeLifetimeBtn">Upgrade</a>
-          <a class="btn secondary" href="start.html">Keep writing</a>
-        </div>
-      </div>
-    </div>
-
-    <p class="muted" style="margin-top:10px;">
-      For now, these buttons go to a placeholder page. We’ll wire payment later.
-    </p>
+  <div class="card">
+    <h3>Introduction</h3>
+    <button class="btn secondary" id="genIntroBtn">Generate introduction</button>
+    <pre id="introOut"></pre>
   </div>
 
-  <label>What do you want to write about?</label>
-  <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
-
-  <label>Who is this for?</label>
-  <input id="audience" type="text" placeholder="Who do you want to reach?" />
-
-  <label>What’s been stopping you from writing?</label>
-  <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
-
-  <hr />
-
-  <h3 style="margin: 0 0 8px;">Your voice</h3>
-  <p class="muted" style="margin: 0 0 10px;">
-    If you want Authored to sound like you, paste a short sample of your writing below.
-    A page is enough. The better the sample, the better the voice match.
-  </p>
-
-  <label>Your writing sample (optional but recommended)</label>
-  <textarea id="voiceSample" placeholder="Paste something you wrote: a sermon excerpt, a blog post, a letter, a chapter draft, anything that sounds like you."></textarea>
-
-  <label>Voice notes (optional)</label>
-  <input id="voiceNotes" type="text" placeholder="Example: warm, pastoral, simple, no fluff, avoid robotic tone, use my natural phrases." />
-
-  <hr />
-
-  <div class="row">
-    <div style="min-width:260px; flex: 1;">
-      <label style="margin-top:0;">How many chapters?</label>
-      <select id="chapters">
-        <option value="5">5</option>
-        <option value="8">8</option>
-        <option value="10">10</option>
-        <option value="12" selected>12</option>
-        <option value="15">15</option>
-      </select>
-      <div class="muted">Start small. You can expand later.</div>
-    </div>
-
-    <div id="limitNote" style="margin:8px 0;color:#555;font-size:14px;"></div>
-    <div id="limitError" style="margin:6px 0;color:#b00020;font-size:14px;"></div>
-
-    <div style="display:flex; gap:10px; align-items:flex-end;">
-      <button class="btn" id="beginBtn" type="button">Generate starting point</button>
-      <a href="index.html" style="align-self:center;">Back to home</a>
-    </div>
+  <div class="card">
+    <h3>Expand chapter</h3>
+    <select id="chapterPick"></select>
+    <button class="btn" id="expandBtn">Expand</button>
+    <pre id="expandedOut"></pre>
   </div>
+</div>
+
+<script>
+/* ---------------- LIMIT TRACKING (SAFE, LOCAL) ---------------- */
+
+const LIMITS = {
+  intro: 1,
+  expand: 2
+};
+
+function getUsage(key) {
+  return Number(localStorage.getItem(key) || 0);
+}
+function incUsage(key) {
+  localStorage.setItem(key, getUsage(key) + 1);
+}
+function blocked(key) {
+  return getUsage(key) >= LIMITS[key];
+}
+
+function upgradePrompt() {
+  alert(
+    "You’ve reached the free limit.\n\n" +
+    "Upgrade to continue writing:\n" +
+    "$49 per book or $149 lifetime."
+  );
+}
+
+/* ---------------- OUTLINE ---------------- */
+
+document.getElementById("beginBtn").onclick = async () => {
+  const topic = topicEl.value.trim();
+  if (!topic) return alert("Enter a topic");
+
+  const res = await fetch("/api/outline", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      topic,
+      audience:audienceEl.value,
+      voiceSample:voiceSample.value
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) return alert(data.error || "Failed");
+
+  window.__outline = data.outline;
+  titleOut.textContent = data.title;
+  purposeOut.textContent = data.purpose;
+
+  outlineOut.innerHTML = "";
+  chapterPick.innerHTML = "";
+
+  data.outline.forEach((c,i)=>{
+    const li=document.createElement("li");
+    li.textContent=c.title;
+    outlineOut.appendChild(li);
+
+    const opt=document.createElement("option");
+    opt.value=i;
+    opt.textContent=`Chapter ${i+1}: ${c.title}`;
+    chapterPick.appendChild(opt);
+  });
+
+  result.style.display="block";
+};
+
+/* ---------------- INTRODUCTION ---------------- */
+
+genIntroBtn.onclick = async () => {
+  if (blocked("intro")) return upgradePrompt();
+
+  introOut.textContent="Generating...";
+  const res = await fetch("/api/intro",{ method:"POST" });
+  const data = await res.json();
+
+  if (!res.ok) {
+    if (data.error==="limit_reached") return upgradePrompt();
+    return alert("Intro failed");
+  }
+
+  incUsage("intro");
+  introOut.textContent=data.introduction;
+};
+
+/* ---------------- EXPAND ---------------- */
+
+expandBtn.onclick = async () => {
+  if (blocked("expand")) return upgradePrompt();
+
+  const idx = Number(chapterPick.value);
+  const chapter = window.__outline[idx];
+
+  expandedOut.textContent="Expanding...";
+  const res = await fetch("/api/expand",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ chapterTitle:chapter.title })
+  });
+
+  const data = await res.json();
 
-  <div id="result">
-    <hr />
-    <p><strong>Done.</strong> You have a starting point you can refine.</p>
-
-    <div class="card">
-      <div>
-        <span class="pill">Working title</span>
-        <span class="pill">Starter outline</span>
-        <span class="pill">Writing with you</span>
-      </div>
-
-      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
-
-      <div class="actions" style="margin-top:6px;">
-        <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
-        <span class="muted" id="titlesHint">10 options you can pick from.</span>
-      </div>
-      <ul id="titleIdeasOut" class="muted" style="margin-top:8px;"></ul>
-
-      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
-      <p id="purposeOut">Please wait...</p>
-
-      <h3 style="margin:14px 0 6px;">Outline</h3>
-      <ol id="outlineOut"><li>Creating your outline...</li></ol>
-
-      <div class="actions">
-        <button class="btn secondary" id="copyBtn" type="button">Copy to clipboard</button>
-        <button class="btn secondary" id="downloadBtn" type="button">Download (.txt)</button>
-        <button class="btn secondary" id="regenOutlineBtn" type="button">Regenerate outline</button>
-      </div>
-
-      <hr />
-      <h3 style="margin: 0 0 8px;">Introduction</h3>
-      <div class="actions">
-        <button class="btn secondary" id="genIntroBtn" type="button">Generate introduction</button>
-        <span class="muted" id="introHint">Optional: 400–700 words that sets the tone.</span>
-      </div>
-      <pre id="introOut">Click “Generate introduction” to create an optional intro.</pre>
-      <div class="actions">
-        <button class="btn secondary" id="copyIntroBtn" type="button" disabled>Copy introduction</button>
-        <button class="btn secondary" id="downloadIntroBtn" type="button" disabled>Download intro (.txt)</button>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:14px;">
-      <h3 style="margin: 0 0 10px;">Expand a chapter</h3>
-
-      <div class="row" style="margin-top:0;">
-        <div style="min-width:260px; flex: 1;">
-          <label style="margin-top:0;">Draft length</label>
-          <select id="draftLength">
-            <option value="standard" selected>Standard (900–1300 words)</option>
-            <option value="long">Long (1500–2200 words)</option>
-            <option value="very_long">Very long (2500–3500 words)</option>
-          </select>
-          <div class="muted" id="draftLengthHint">Longer drafts cost more.</div>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div>
-          <label style="margin-top:0;">Choose chapter</label>
-          <select id="chapterPick"></select>
-          <div class="muted" id="expandHint"></div>
-
-          <div class="actions" style="margin-top:10px;">
-            <button class="btn" id="expandBtn" type="button">Expand selected chapter</button>
-            <button class="btn secondary" id="copyExpandedBtn" type="button" disabled>Copy expanded text</button>
-            <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.txt)</button>
-            <button class="btn secondary" id="regenExpandedBtn" type="button" disabled>Regenerate expanded chapter</button>
-          </div>
-
-          <div class="notice" style="margin-top:12px;">
-            <strong>Heads up:</strong> Expanding chapters costs more than generating an outline.
-            In the free version, expansion is limited. Regenerate counts toward the same limit.
-          </div>
-        </div>
-
-        <div>
-          <label style="margin-top:0;">Expanded draft</label>
-          <pre id="expandedOut">Choose a chapter and click Expand.</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    function clean(v) { return (v ?? "").toString().trim(); }
-
-    function showLimitNotice(msg) {
-      const el = document.getElementById("limitNote");
-      if (el) el.textContent = msg;
-    }
-
-    function showUpgrade(reason) {
-      const box = document.getElementById("upgradeBox");
-      const msg = document.getElementById("upgradeMsg");
-      if (!box || !msg) return;
-
-      msg.textContent = reason || "You’ve reached the free plan limit for this feature.";
-      box.style.display = "block";
-      box.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // Disable only paid features to prevent repeated failing calls
-      const disableIds = ["expandBtn", "regenExpandedBtn", "genIntroBtn", "genTitlesBtn"];
-      disableIds.forEach(id => {
-        const b = document.getElementById(id);
-        if (b) b.disabled = true;
-      });
-    }
-
-    function isLimitReachedError(data) {
-      return data && (data.error === "limit_reached");
-    }
-
-    const FREE_EXPANDS_PER_DAY = 2;
-
-    function todayKey() {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    }
-
-    function getFreeExpandCount() {
-      const key = `authored_expand_${todayKey()}`;
-      const v = parseInt(localStorage.getItem(key) || "0", 10);
-      return isNaN(v) ? 0 : v;
-    }
-
-    function refreshFreeNotice() {
-      const used = getFreeExpandCount();
-      const remaining = Math.max(0, FREE_EXPANDS_PER_DAY - used);
-      const el = document.getElementById("freeLimitText");
-      if (el) el.textContent = ` You get ${FREE_EXPANDS_PER_DAY} free chapter expansions per day. Remaining today: ${remaining}.`;
-      const hint = document.getElementById("expandHint");
-      if (hint) hint.textContent = `Free expands remaining today: ${remaining} (resets daily).`;
-    }
-
-    function getDraftWordRange() {
-      const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
-      if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
-      if (v === "very_long") return { draftLength: "very_long", minWords: 2500, maxWords: 3500 };
-      return { draftLength: "standard", minWords: 900, maxWords: 1300 };
-    }
-
-    refreshFreeNotice();
-
-    async function safeJson(resp) {
-      try { return await resp.json(); } catch { return {}; }
-    }
-
-    document.getElementById("beginBtn").addEventListener("click", async () => {
-      const topic = clean(document.getElementById("topic").value);
-      const audience = clean(document.getElementById("audience").value);
-      const blocker = clean(document.getElementById("blocker").value);
-      const chapters = parseInt(document.getElementById("chapters").value, 10) || 12;
-
-      const voiceSample = clean(document.getElementById("voiceSample").value);
-      const voiceNotes = clean(document.getElementById("voiceNotes").value);
-
-      window.__lastOutlinePayload = { topic, audience, blocker, chapters, voiceSample, voiceNotes };
-
-      document.getElementById("result").style.display = "block";
-      document.getElementById("titleOut").textContent = "Generating...";
-      document.getElementById("purposeOut").textContent = "Please wait...";
-      document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
-      document.getElementById("expandedOut").textContent = "Choose a chapter and click Expand.";
-      document.getElementById("copyExpandedBtn").disabled = true;
-      document.getElementById("downloadExpandedBtn").disabled = true;
-      document.getElementById("regenExpandedBtn").disabled = true;
-
-      document.getElementById("titleIdeasOut").innerHTML = "";
-      document.getElementById("introOut").textContent = "Click “Generate introduction” to create an optional intro.";
-      document.getElementById("copyIntroBtn").disabled = true;
-      document.getElementById("downloadIntroBtn").disabled = true;
-      window.__introText = "";
-
-      const upgradeBox = document.getElementById("upgradeBox");
-      if (upgradeBox) upgradeBox.style.display = "none";
-      ["expandBtn","regenExpandedBtn","genIntroBtn","genTitlesBtn"].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) b.disabled = false;
-      });
-
-      try {
-        const resp = await fetch("/api/outline", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, audience, blocker, chapters, voiceSample, voiceNotes })
-        });
-
-        const data = await safeJson(resp);
-        if (!resp.ok) throw new Error(data?.error || "Request failed");
-
-        window.__projectId = data.projectId || data.project_id || null;
-
-        const title = data.title || "Untitled";
-        const purpose = data.purpose || "";
-        const outline = Array.isArray(data.outline) ? data.outline : [];
-
-        window.__outlineItems = outline;
-        window.__title = title;
-        window.__purpose = purpose;
-        window.__voiceSample = voiceSample;
-        window.__voiceNotes = voiceNotes;
-
-        document.getElementById("titleOut").textContent = title;
-        document.getElementById("purposeOut").textContent = purpose;
-
-        const list = document.getElementById("outlineOut");
-        list.innerHTML = "";
-        outline.forEach((item) => {
-          const li = document.createElement("li");
-          li.textContent = item.title;
-          list.appendChild(li);
-        });
-
-        const picker = document.getElementById("chapterPick");
-        picker.innerHTML = "";
-        outline.forEach((item, idx) => {
-          const opt = document.createElement("option");
-          opt.value = String(idx);
-          opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
-          picker.appendChild(opt);
-        });
-
-        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
-      } catch (err) {
-        document.getElementById("titleOut").textContent = "Could not generate outline";
-        document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
-        document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
-      }
-    });
-
-    function makeTextBundle() {
-      const title = clean(document.getElementById("titleOut").textContent);
-      const purpose = clean(document.getElementById("purposeOut").textContent);
-      const outlineItems = window.__outlineItems || [];
-      const outlineText = outlineItems.map((x,i)=> `${i+1}. ${(x && x.title) ? x.title : `Chapter ${i+1}`}`).join("\n");
-      return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
-    }
-
-    async function copyText(text) {
-      await navigator.clipboard.writeText(text);
-      alert("Copied.");
-    }
-
-    function downloadText(filename, text) {
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    document.getElementById("copyBtn").addEventListener("click", async () => {
-      try { await copyText(makeTextBundle()); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadBtn").addEventListener("click", () => {
-      const title = clean(document.getElementById("titleOut").textContent) || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_outline.txt`, makeTextBundle());
-    });
-
-    document.getElementById("regenOutlineBtn").addEventListener("click", () => {
-      const last = window.__lastOutlinePayload;
-      if (!last) { alert("Generate an outline first."); return; }
-      document.getElementById("topic").value = last.topic || "";
-      document.getElementById("audience").value = last.audience || "";
-      document.getElementById("blocker").value = last.blocker || "";
-      document.getElementById("chapters").value = String(last.chapters || 12);
-      document.getElementById("voiceSample").value = last.voiceSample || "";
-      document.getElementById("voiceNotes").value = last.voiceNotes || "";
-      document.getElementById("beginBtn").click();
-    });
-
-    document.getElementById("genTitlesBtn").addEventListener("click", async () => {
-      const out = document.getElementById("titleIdeasOut");
-      out.innerHTML = "<li>Generating title ideas...</li>";
-
-      try {
-        const resp = await fetch("/api/titles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            topic: clean(document.getElementById("topic").value),
-            audience: clean(document.getElementById("audience").value),
-            blocker: clean(document.getElementById("blocker").value),
-            currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-            voiceSample: clean(document.getElementById("voiceSample").value),
-            voiceNotes: clean(document.getElementById("voiceNotes").value),
-          })
-        });
-
-        const data = await safeJson(resp);
-
-        if (isLimitReachedError(data)) {
-          out.innerHTML = "";
-          showUpgrade("You’ve reached the free plan limit for title suggestions.");
-          return;
-        }
-
-        if (!resp.ok) throw new Error(data?.error || "Titles API not set yet");
-
-        const titles = Array.isArray(data.titles) ? data.titles : [];
-        if (!titles.length) throw new Error("No titles returned");
-
-        out.innerHTML = "";
-        titles.slice(0, 10).forEach((t) => {
-          const li = document.createElement("li");
-          li.style.marginBottom = "6px";
-
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "btn secondary";
-          btn.textContent = "Use";
-          btn.style.marginRight = "10px";
-          btn.addEventListener("click", () => {
-            window.__title = String(t);
-            document.getElementById("titleOut").textContent = String(t);
-            alert("Title updated.");
-          });
-
-          const span = document.createElement("span");
-          span.textContent = String(t);
-
-          li.appendChild(btn);
-          li.appendChild(span);
-          out.appendChild(li);
-        });
-      } catch (e) {
-        out.innerHTML = "";
-        alert("Title suggestions will work after we add /api/titles. Start.html is ready.");
-      }
-    });
-
-    document.getElementById("genIntroBtn").addEventListener("click", async () => {
-      const introOut = document.getElementById("introOut");
-      introOut.textContent = "Generating introduction...";
-
-      try {
-        const resp = await fetch("/api/intro", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            topic: clean(document.getElementById("topic").value),
-            audience: clean(document.getElementById("audience").value),
-            blocker: clean(document.getElementById("blocker").value),
-            bookTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-            purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent),
-            outline: window.__outlineItems || [],
-            voiceSample: clean(document.getElementById("voiceSample").value),
-            voiceNotes: clean(document.getElementById("voiceNotes").value)
-          })
-        });
-
-        const data = await safeJson(resp);
-
-        if (isLimitReachedError(data)) {
-          introOut.textContent = "Free plan limit reached.";
-          showUpgrade("You’ve reached the free plan limit for introductions.");
-          return;
-        }
-
-        if (!resp.ok) throw new Error(data?.error || "Intro API not set yet");
-
-        const intro = (data.introduction || "").toString().trim();
-        if (!intro) throw new Error("No introduction returned");
-
-        window.__introText = intro;
-        introOut.textContent = intro;
-        document.getElementById("copyIntroBtn").disabled = false;
-        document.getElementById("downloadIntroBtn").disabled = false;
-      } catch (e) {
-        introOut.textContent = "Click “Generate introduction” to create an optional intro.";
-        alert("Introduction will work after we add /api/intro. Start.html is ready.");
-      }
-    });
-
-    document.getElementById("copyIntroBtn").addEventListener("click", async () => {
-      try { await copyText(window.__introText || ""); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadIntroBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_introduction.txt`, window.__introText || "");
-    });
-
-    async function runExpandRequest(mode) {
-      const outline = window.__outlineItems || [];
-      if (!outline.length) { alert("Generate your starting point first."); return; }
-
-      const picker = document.getElementById("chapterPick");
-      const chapterIdx = Number(picker.value);
-      const chapterObj = outline[chapterIdx];
-      if (!chapterObj) { alert("Pick a chapter first."); return; }
-
-      const { draftLength, minWords, maxWords } = getDraftWordRange();
-
-      document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
-
-      const resp = await fetch("/api/expand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId: window.__projectId,
-          bookTitle: window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled",
-          purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent) || "",
-          chapterNumber: chapterIdx + 1,
-          chapterTitle: chapterObj.title,
-          audience: clean(document.getElementById("audience").value),
-          topic: clean(document.getElementById("topic").value),
-          voiceSample: clean(document.getElementById("voiceSample").value),
-          voiceNotes: clean(document.getElementById("voiceNotes").value),
-          regenerate: mode === "regen",
-          draftLength,
-          minWords,
-          maxWords
-        })
-      });
-
-      const data = await safeJson(resp);
-
-      if (isLimitReachedError(data)) {
-        document.getElementById("expandedOut").textContent = "Free plan limit reached.";
-        showUpgrade("You’ve reached the free plan limit for chapter expansion. Upgrade to expand more chapters. Regenerate counts too.");
-        return;
-      }
-
-      if (!resp.ok) {
-        document.getElementById("expandedOut").textContent = "Could not expand this chapter. Please try again.";
-        return;
-      }
-
-      const expanded = (data.expanded || "").toString().trim();
-      if (!expanded) {
-        document.getElementById("expandedOut").textContent = "No expanded text returned. Please try again.";
-        return;
-      }
-
-      window.__expandedText = expanded;
-      document.getElementById("expandedOut").textContent = expanded;
-      document.getElementById("copyExpandedBtn").disabled = false;
-      document.getElementById("downloadExpandedBtn").disabled = false;
-      document.getElementById("regenExpandedBtn").disabled = false;
-    }
-
-    document.getElementById("expandBtn").addEventListener("click", async () => {
-      await runExpandRequest("expand");
-    });
-
-    document.getElementById("regenExpandedBtn").addEventListener("click", async () => {
-      await runExpandRequest("regen");
-    });
-
-    document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
-      try { await copyText(window.__expandedText || ""); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_expanded_chapter.txt`, window.__expandedText || "");
-    });
-
-    const limitNote = document.getElementById("limitNote");
-    if (limitNote) {
-      limitNote.textContent =
-        "Free plan: Outline generation is free. Chapter expansion is limited. Regenerate counts toward the same limit.";
-    }
-  </script>
+  if (!res.ok) {
+    if (data.error==="limit_reached") return upgradePrompt();
+    return alert("Expansion failed");
+  }
+
+  incUsage("expand");
+  expandedOut.textContent=data.expanded;
+};
+</script>
 </body>
 </html>
