@@ -24,6 +24,7 @@
     .btn {
       padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
       border-radius:8px; cursor:pointer; font-weight:700;
+      text-decoration:none; display:inline-block;
     }
     .btn.secondary { background:#fff; color:#111; }
     .btn:disabled { opacity:0.5; cursor:not-allowed; }
@@ -70,6 +71,27 @@
       font-size:13px;
       line-height:1.45;
     }
+
+    .upgrade-box {
+      display:none;
+      border:1px solid #e6e6e6;
+      border-radius:12px;
+      padding:14px;
+      background:#fff;
+      margin-top:12px;
+    }
+    .upgrade-box h3 { margin:0 0 6px; }
+    .upgrade-grid { display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; }
+    .plan {
+      flex:1 1 260px;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:12px;
+      background:#fafafa;
+    }
+    .plan h4 { margin:0 0 6px; }
+    .plan ul { margin:8px 0 0 18px; }
+    .plan li { margin:6px 0; }
   </style>
 </head>
 
@@ -82,6 +104,49 @@
     <span id="freeLimitText"></span>
     <br />
     <span class="muted">Full chapter drafts (Expand) are limited in the free version.</span>
+  </div>
+
+  <!-- Upgrade panel (hidden until needed) -->
+  <div class="upgrade-box" id="upgradeBox">
+    <h3>Limit reached</h3>
+    <p class="muted" id="upgradeMsg" style="margin:6px 0 0;">
+      You’ve reached the free plan limit for this feature.
+    </p>
+
+    <div class="upgrade-grid">
+      <div class="plan">
+        <h4>Project plan ($49)</h4>
+        <div class="muted">One project, one user</div>
+        <ul>
+          <li>Expand chapters</li>
+          <li>Regenerate drafts</li>
+          <li>DOCX export</li>
+          <li>Voice + tone controls</li>
+        </ul>
+        <div class="actions">
+          <a class="btn" href="pricing.html" id="upgradeProjectBtn">Upgrade</a>
+          <a class="btn secondary" href="start.html">Keep writing</a>
+        </div>
+      </div>
+
+      <div class="plan">
+        <h4>Lifetime ($149)</h4>
+        <div class="muted">All features, one user</div>
+        <ul>
+          <li>Unlimited projects</li>
+          <li>More expansions</li>
+          <li>Priority features as Authored grows</li>
+        </ul>
+        <div class="actions">
+          <a class="btn" href="pricing.html" id="upgradeLifetimeBtn">Upgrade</a>
+          <a class="btn secondary" href="start.html">Keep writing</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:10px;">
+      For now, these buttons go to a placeholder page. We’ll wire payment later.
+    </p>
   </div>
 
   <label>What do you want to write about?</label>
@@ -218,80 +283,34 @@
   </div>
 
   <script>
-    const sb =
-      window.supabaseClient ||
-      window.supabase ||
-      window._supabase ||
-      (typeof supabase !== "undefined" ? supabase : null);
-
-    async function consumeFree(kind) {
-      if (!sb) return { ok: false };
-
-      const variants = [
-        { kind },
-        { p_kind: kind },
-        { action: kind },
-        { p_action: kind }
-      ];
-
-      for (const v of variants) {
-        const res = await sb.rpc("consume_free_limit", v);
-        if (!res.error) {
-          if (typeof res.data === "boolean") return { ok: res.data };
-          if (res.data?.allowed !== undefined) return { ok: res.data.allowed };
-          return { ok: true };
-        }
-      }
-      return { ok: false };
-    }
+    function clean(v) { return (v ?? "").toString().trim(); }
 
     function showLimitNotice(msg) {
       const el = document.getElementById("limitNote");
       if (el) el.textContent = msg;
-      else alert(msg);
     }
 
-    function clean(v) { return (v ?? "").toString().trim(); }
+    function showUpgrade(reason) {
+      const box = document.getElementById("upgradeBox");
+      const msg = document.getElementById("upgradeMsg");
+      if (!box || !msg) return;
 
-    async function getCurrentUserId() {
-      try {
-        if (window.AuthoredAccount?.getUser) {
-          const { data } = await window.AuthoredAccount.getUser();
-          return data?.user?.id || "";
-        }
-      } catch {}
-      return "";
+      msg.textContent = reason || "You’ve reached the free plan limit for this feature.";
+      box.style.display = "block";
+      box.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // Disable only paid features to prevent repeated failing calls
+      const disableIds = ["expandBtn", "regenExpandedBtn", "genIntroBtn", "genTitlesBtn"];
+      disableIds.forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = true;
+      });
     }
 
-    function makeTextBundle() {
-      const title = clean(document.getElementById("titleOut").textContent);
-      const purpose = clean(document.getElementById("purposeOut").textContent);
-      const outlineItems = window.__outlineItems || [];
-      const outlineText = outlineItems.map((x,i)=> {
-        const t = (x && typeof x === "object") ? (x.title || `Chapter ${i+1}`) : String(x);
-        return `${i+1}. ${t}`;
-      }).join("\n");
-      return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
+    function isLimitReachedError(data) {
+      return data && (data.error === "limit_reached");
     }
 
-    async function copyText(text) {
-      await navigator.clipboard.writeText(text);
-      alert("Copied.");
-    }
-
-    function downloadText(filename, text) {
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    // FREE LIMIT (local only for now)
     const FREE_EXPANDS_PER_DAY = 2;
 
     function todayKey() {
@@ -308,20 +327,13 @@
       return isNaN(v) ? 0 : v;
     }
 
-    function incFreeExpandCount() {
-      const key = `authored_expand_${todayKey()}`;
-      const now = getFreeExpandCount() + 1;
-      localStorage.setItem(key, String(now));
-      return now;
-    }
-
     function refreshFreeNotice() {
       const used = getFreeExpandCount();
       const remaining = Math.max(0, FREE_EXPANDS_PER_DAY - used);
-      document.getElementById("freeLimitText").textContent =
-        ` You get ${FREE_EXPANDS_PER_DAY} free chapter expansions per day. Remaining today: ${remaining}.`;
-      document.getElementById("expandHint").textContent =
-        `Free expands remaining today: ${remaining} (resets daily).`;
+      const el = document.getElementById("freeLimitText");
+      if (el) el.textContent = ` You get ${FREE_EXPANDS_PER_DAY} free chapter expansions per day. Remaining today: ${remaining}.`;
+      const hint = document.getElementById("expandHint");
+      if (hint) hint.textContent = `Free expands remaining today: ${remaining} (resets daily).`;
     }
 
     function getDraftWordRange() {
@@ -333,9 +345,11 @@
 
     refreshFreeNotice();
 
-    // Generate starting point (outline)
-    const beginBtn = document.getElementById("beginBtn");
-    beginBtn.addEventListener("click", async () => {
+    async function safeJson(resp) {
+      try { return await resp.json(); } catch { return {}; }
+    }
+
+    document.getElementById("beginBtn").addEventListener("click", async () => {
       const topic = clean(document.getElementById("topic").value);
       const audience = clean(document.getElementById("audience").value);
       const blocker = clean(document.getElementById("blocker").value);
@@ -343,8 +357,6 @@
 
       const voiceSample = clean(document.getElementById("voiceSample").value);
       const voiceNotes = clean(document.getElementById("voiceNotes").value);
-
-      const userId = await getCurrentUserId();
 
       window.__lastOutlinePayload = { topic, audience, blocker, chapters, voiceSample, voiceNotes };
 
@@ -357,32 +369,34 @@
       document.getElementById("downloadExpandedBtn").disabled = true;
       document.getElementById("regenExpandedBtn").disabled = true;
 
-      // reset titles + intro displays
       document.getElementById("titleIdeasOut").innerHTML = "";
       document.getElementById("introOut").textContent = "Click “Generate introduction” to create an optional intro.";
       document.getElementById("copyIntroBtn").disabled = true;
       document.getElementById("downloadIntroBtn").disabled = true;
       window.__introText = "";
 
-      // IMPORTANT: reset projectId when generating a new outline
-      window.__projectId = null;
+      const upgradeBox = document.getElementById("upgradeBox");
+      if (upgradeBox) upgradeBox.style.display = "none";
+      ["expandBtn","regenExpandedBtn","genIntroBtn","genTitlesBtn"].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = false;
+      });
 
       try {
         const resp = await fetch("/api/outline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, audience, blocker, chapters, voiceSample, voiceNotes, userId })
+          body: JSON.stringify({ topic, audience, blocker, chapters, voiceSample, voiceNotes })
         });
 
-        const data = await resp.json();
+        const data = await safeJson(resp);
         if (!resp.ok) throw new Error(data?.error || "Request failed");
+
+        window.__projectId = data.projectId || data.project_id || null;
 
         const title = data.title || "Untitled";
         const purpose = data.purpose || "";
         const outline = Array.isArray(data.outline) ? data.outline : [];
-
-        // ✅ NEW: store projectId for expansion
-        window.__projectId = data.projectId || data.project_id || null;
 
         window.__outlineItems = outline;
         window.__title = title;
@@ -403,7 +417,7 @@
 
         const picker = document.getElementById("chapterPick");
         picker.innerHTML = "";
-        window.__outlineItems.forEach((item, idx) => {
+        outline.forEach((item, idx) => {
           const opt = document.createElement("option");
           opt.value = String(idx);
           opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
@@ -411,10 +425,6 @@
         });
 
         document.getElementById("result").scrollIntoView({ behavior: "smooth" });
-
-        if (!window.__projectId) {
-          showLimitNotice("Note: projectId was not returned by /api/outline yet. Expanding chapters will fail until outline.js returns projectId.");
-        }
       } catch (err) {
         document.getElementById("titleOut").textContent = "Could not generate outline";
         document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
@@ -422,10 +432,33 @@
       }
     });
 
-    // Copy + Download outline bundle
+    function makeTextBundle() {
+      const title = clean(document.getElementById("titleOut").textContent);
+      const purpose = clean(document.getElementById("purposeOut").textContent);
+      const outlineItems = window.__outlineItems || [];
+      const outlineText = outlineItems.map((x,i)=> `${i+1}. ${(x && x.title) ? x.title : `Chapter ${i+1}`}`).join("\n");
+      return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
+    }
+
+    async function copyText(text) {
+      await navigator.clipboard.writeText(text);
+      alert("Copied.");
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
     document.getElementById("copyBtn").addEventListener("click", async () => {
-      try { await copyText(makeTextBundle()); }
-      catch { alert("Copy failed. Try again."); }
+      try { await copyText(makeTextBundle()); } catch { alert("Copy failed. Try again."); }
     });
 
     document.getElementById("downloadBtn").addEventListener("click", () => {
@@ -434,31 +467,19 @@
       downloadText(`${safe}_outline.txt`, makeTextBundle());
     });
 
-    // Regenerate outline
     document.getElementById("regenOutlineBtn").addEventListener("click", () => {
       const last = window.__lastOutlinePayload;
       if (!last) { alert("Generate an outline first."); return; }
-
       document.getElementById("topic").value = last.topic || "";
       document.getElementById("audience").value = last.audience || "";
       document.getElementById("blocker").value = last.blocker || "";
       document.getElementById("chapters").value = String(last.chapters || 12);
       document.getElementById("voiceSample").value = last.voiceSample || "";
       document.getElementById("voiceNotes").value = last.voiceNotes || "";
-
       document.getElementById("beginBtn").click();
     });
 
-    // Titles (safe if API not installed)
     document.getElementById("genTitlesBtn").addEventListener("click", async () => {
-      const topic = clean(document.getElementById("topic").value);
-      const audience = clean(document.getElementById("audience").value);
-      const blocker = clean(document.getElementById("blocker").value);
-      const voiceSample = clean(document.getElementById("voiceSample").value);
-      const voiceNotes = clean(document.getElementById("voiceNotes").value);
-
-      const currentTitle = window.__title || clean(document.getElementById("titleOut").textContent);
-
       const out = document.getElementById("titleIdeasOut");
       out.innerHTML = "<li>Generating title ideas...</li>";
 
@@ -466,10 +487,24 @@
         const resp = await fetch("/api/titles", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, audience, blocker, currentTitle, voiceSample, voiceNotes })
+          body: JSON.stringify({
+            topic: clean(document.getElementById("topic").value),
+            audience: clean(document.getElementById("audience").value),
+            blocker: clean(document.getElementById("blocker").value),
+            currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
+            voiceSample: clean(document.getElementById("voiceSample").value),
+            voiceNotes: clean(document.getElementById("voiceNotes").value),
+          })
         });
 
-        const data = await resp.json().catch(() => ({}));
+        const data = await safeJson(resp);
+
+        if (isLimitReachedError(data)) {
+          out.innerHTML = "";
+          showUpgrade("You’ve reached the free plan limit for title suggestions.");
+          return;
+        }
+
         if (!resp.ok) throw new Error(data?.error || "Titles API not set yet");
 
         const titles = Array.isArray(data.titles) ? data.titles : [];
@@ -504,30 +539,34 @@
       }
     });
 
-    // Intro (safe if API not installed)
     document.getElementById("genIntroBtn").addEventListener("click", async () => {
       const introOut = document.getElementById("introOut");
       introOut.textContent = "Generating introduction...";
-
-      const payload = {
-        topic: clean(document.getElementById("topic").value),
-        audience: clean(document.getElementById("audience").value),
-        blocker: clean(document.getElementById("blocker").value),
-        bookTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-        purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent),
-        outline: window.__outlineItems || [],
-        voiceSample: clean(document.getElementById("voiceSample").value),
-        voiceNotes: clean(document.getElementById("voiceNotes").value)
-      };
 
       try {
         const resp = await fetch("/api/intro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            topic: clean(document.getElementById("topic").value),
+            audience: clean(document.getElementById("audience").value),
+            blocker: clean(document.getElementById("blocker").value),
+            bookTitle: window.__title || clean(document.getElementById("titleOut").textContent),
+            purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent),
+            outline: window.__outlineItems || [],
+            voiceSample: clean(document.getElementById("voiceSample").value),
+            voiceNotes: clean(document.getElementById("voiceNotes").value)
+          })
         });
 
-        const data = await resp.json().catch(() => ({}));
+        const data = await safeJson(resp);
+
+        if (isLimitReachedError(data)) {
+          introOut.textContent = "Free plan limit reached.";
+          showUpgrade("You’ve reached the free plan limit for introductions.");
+          return;
+        }
+
         if (!resp.ok) throw new Error(data?.error || "Intro API not set yet");
 
         const intro = (data.introduction || "").toString().trim();
@@ -544,94 +583,73 @@
     });
 
     document.getElementById("copyIntroBtn").addEventListener("click", async () => {
-      try { await copyText(window.__introText || ""); }
-      catch { alert("Copy failed. Try again."); }
+      try { await copyText(window.__introText || ""); } catch { alert("Copy failed. Try again."); }
     });
 
     document.getElementById("downloadIntroBtn").addEventListener("click", () => {
       const title = window.__title || "authored";
       const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      const text = window.__introText || "";
-      downloadText(`${safe}_introduction.txt`, text);
+      downloadText(`${safe}_introduction.txt`, window.__introText || "");
     });
 
-    // Expand / Regenerate expanded
     async function runExpandRequest(mode) {
-      refreshFreeNotice();
-      const used = getFreeExpandCount();
-      if (used >= FREE_EXPANDS_PER_DAY) {
-        showLimitNotice(`Free plan: You have used all ${FREE_EXPANDS_PER_DAY} expansions for today.`);
-        return;
-      }
-
       const outline = window.__outlineItems || [];
       if (!outline.length) { alert("Generate your starting point first."); return; }
-
-      // ✅ NEW: require projectId
-      if (!window.__projectId) {
-        alert("Missing projectId. Please regenerate your outline (or update /api/outline to return projectId).");
-        return;
-      }
+      if (!window.__projectId) { alert("Missing projectId. Regenerate the outline first."); return; }
 
       const picker = document.getElementById("chapterPick");
       const chapterIdx = Number(picker.value);
       const chapterObj = outline[chapterIdx];
       if (!chapterObj) { alert("Pick a chapter first."); return; }
 
-      const chapterTitle = chapterObj.title;
-      const chapterNumber = chapterIdx + 1;
-
-      const title = window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled";
-      const purpose = window.__purpose || clean(document.getElementById("purposeOut").textContent) || "";
-
-      const voiceSample = window.__voiceSample || clean(document.getElementById("voiceSample").value);
-      const voiceNotes = window.__voiceNotes || clean(document.getElementById("voiceNotes").value);
-
       const { draftLength, minWords, maxWords } = getDraftWordRange();
 
       document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
 
-      try {
-        const resp = await fetch("/api/expand", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            // ✅ NEW: send projectId
-            projectId: window.__projectId,
+      const resp = await fetch("/api/expand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: window.__projectId,
+          bookTitle: window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled",
+          purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent) || "",
+          chapterNumber: chapterIdx + 1,
+          chapterTitle: chapterObj.title,
+          audience: clean(document.getElementById("audience").value),
+          topic: clean(document.getElementById("topic").value),
+          voiceSample: clean(document.getElementById("voiceSample").value),
+          voiceNotes: clean(document.getElementById("voiceNotes").value),
+          regenerate: mode === "regen",
+          draftLength,
+          minWords,
+          maxWords
+        })
+      });
 
-            bookTitle: title,
-            purpose,
-            chapterNumber,
-            chapterTitle,
-            audience: clean(document.getElementById("audience").value),
-            topic: clean(document.getElementById("topic").value),
-            voiceSample,
-            voiceNotes,
-            regenerate: mode === "regen",
-            draftLength,
-            minWords,
-            maxWords
-          })
-        });
+      const data = await safeJson(resp);
 
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data?.error || "Expand failed");
-
-        const expanded = (data.expanded || "").toString().trim();
-        if (!expanded) throw new Error("No expanded text returned");
-
-        incFreeExpandCount();
-        refreshFreeNotice();
-
-        window.__expandedText = expanded;
-        document.getElementById("expandedOut").textContent = expanded;
-        document.getElementById("copyExpandedBtn").disabled = false;
-        document.getElementById("downloadExpandedBtn").disabled = false;
-        document.getElementById("regenExpandedBtn").disabled = false;
-      } catch (err) {
-        document.getElementById("expandedOut").textContent =
-          "Could not expand this chapter. Please try again.";
+      if (isLimitReachedError(data)) {
+        document.getElementById("expandedOut").textContent = "Free plan limit reached.";
+        showUpgrade("You’ve reached the free plan limit for chapter expansion. Upgrade to expand more chapters. Regenerate counts too.");
+        return;
       }
+
+      if (!resp.ok) {
+        document.getElementById("expandedOut").textContent = "Could not expand this chapter. Please try again.";
+        return;
+      }
+
+      const expanded = (data.expanded || "").toString().trim();
+      if (!expanded) {
+        document.getElementById("expandedOut").textContent = "No expanded text returned. Please try again.";
+        return;
+      }
+
+      window.__expandedText = expanded;
+      document.getElementById("expandedOut").textContent = expanded;
+      document.getElementById("copyExpandedBtn").disabled = false;
+      document.getElementById("downloadExpandedBtn").disabled = false;
+      document.getElementById("regenExpandedBtn").disabled = false;
     }
 
     document.getElementById("expandBtn").addEventListener("click", async () => {
@@ -643,18 +661,15 @@
     });
 
     document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
-      try { await copyText(window.__expandedText || ""); }
-      catch { alert("Copy failed. Try again."); }
+      try { await copyText(window.__expandedText || ""); } catch { alert("Copy failed. Try again."); }
     });
 
     document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
       const title = window.__title || "authored";
       const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      const text = window.__expandedText || "";
-      downloadText(`${safe}_expanded_chapter.txt`, text);
+      downloadText(`${safe}_expanded_chapter.txt`, window.__expandedText || "");
     });
 
-    // Free plan notice (display only)
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
