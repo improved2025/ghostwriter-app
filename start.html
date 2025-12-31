@@ -595,7 +595,6 @@
     async function runExpandRequest(mode) {
       const outline = window.__outlineItems || [];
       if (!outline.length) { alert("Generate your starting point first."); return; }
-      if (!window.__projectId) { alert("Missing projectId. Regenerate the outline first."); return; }
 
       const picker = document.getElementById("chapterPick");
       const chapterIdx = Number(picker.value);
