@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authored — Pricing</title>
+  <link rel="icon" href="data:,">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
+    h1 { margin: 0 0 10px; }
+    p { color:#333; line-height:1.5; }
+    .muted { color:#666; font-size: 13px; }
+    .row { display:flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+    .card {
+      flex: 1 1 320px;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+    }
+    .btn {
+      padding: 10px 14px;
+      border: 1px solid #111;
+      background: #111;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .btn.secondary { background:#fff; color:#111; }
+    ul { padding-left: 18px; margin: 10px 0 0; }
+    li { margin: 6px 0; }
+    hr { margin: 18px 0; border: none; border-top: 1px solid #eee; }
+    .note {
+      background:#fff7d6;
+      border:1px solid #f2d27a;
+      padding:12px 14px;
+      border-radius:10px;
+      margin:14px 0 0;
+      color:#5a4600;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pricing</h1>
+  <p class="muted">
+    This page is a placeholder. Next step is wiring payments (Stripe) and unlocking features automatically after purchase.
+  </p>
+
+  <div class="row">
+    <div class="card">
+      <h2 style="margin:0 0 6px;">Project plan</h2>
+      <p style="margin:0;"><strong>$49</strong> • One project • One user</p>
+      <ul>
+        <li>Expand chapters</li>
+        <li>Regenerate drafts</li>
+        <li>DOCX export</li>
+        <li>Voice + tone controls</li>
+      </ul>
+      <a class="btn" href="start.html">Back to writing</a>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 6px;">Lifetime</h2>
+      <p style="margin:0;"><strong>$149</strong> • All features • One user</p>
+      <ul>
+        <li>Unlimited projects</li>
+        <li>More expansions</li>
+        <li>Priority features as Authored grows</li>
+      </ul>
+      <a class="btn secondary" href="start.html">Back to writing</a>
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="note">
+    <strong>Next:</strong> We’ll connect Stripe and automatically unlock paid features after checkout.
+  </div>
+</body>
+</html>
