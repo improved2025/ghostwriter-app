@@ -1,10 +1,5 @@
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabaseAdmin } from "./_supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
@@ -13,30 +8,29 @@ export default async function handler(req, res) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY in Vercel env vars" });
 
+    const openai = new OpenAI({ apiKey });
+    const supabase = supabaseAdmin();
+
     const body = req.body || {};
     const clean = (v) => (v ?? "").toString().trim();
 
     const topic = clean(body.topic);
-    const audience = clean(body.audience);
-    const blocker = clean(body.blocker);
+    const audience = clean(body.audience) || "general readers";
+    const blocker = clean(body.blocker) || "none";
     const chapters = Number.isFinite(parseInt(body.chapters, 10)) ? parseInt(body.chapters, 10) : 12;
 
     const voiceSample = clean(body.voiceSample);
     const voiceNotes = clean(body.voiceNotes);
 
-    // Must have topic
+    // Optional: pass userId from client when logged in
+    const userId = clean(body.userId) || null;
+
     if (!topic) return res.status(400).json({ error: "Missing topic" });
 
-    // Get user from Supabase auth (token sent automatically by supabase-js on frontend)
-    // We accept userId from client for now to keep it simple.
-    const userId = clean(body.userId);
-
-    const openai = new OpenAI({ apiKey });
-
     const system = `
-You are a professional ghostwriter.
+You are a professional book coach and ghostwriter.
 Return ONLY valid JSON (no markdown, no commentary).
-JSON schema:
+Schema:
 {
   "title": "string",
   "purpose": "string",
@@ -45,24 +39,30 @@ JSON schema:
   ]
 }
 Rules:
-- outline length must equal requested chapters
-- chapter numbers start at 1 and are sequential
-- bullets: 3 to 5 items each
+- outline length MUST equal chapters requested
+- chapters start at 1, sequential
+- bullets: 3 to 5 per chapter
+- keep the outline practical and specific
 `.trim();
+
+    const voiceBlock = voiceSample
+      ? `VOICE SAMPLE (copy the tone, cadence, phrasing, and level of formality; do NOT sound generic):
+${voiceSample}
+
+VOICE NOTES:
+${voiceNotes || "none"}`
+      : `VOICE NOTES:
+${voiceNotes || "none"} (If no sample provided, keep the voice natural, human, non-robotic.)`;
 
     const user = `
 Topic: ${topic}
-Audience: ${audience || "general readers"}
-Main blocker: ${blocker || "none"}
+Audience: ${audience}
+Main blocker: ${blocker}
 Chapters requested: ${chapters}
 
-Voice sample:
-${voiceSample || "none"}
+${voiceBlock}
 
-Voice notes:
-${voiceNotes || "none"}
-
-Create a clear, practical book outline.
+Create a clear, practical book outline that helps the user write (not just a finished product).
 `.trim();
 
     const resp = await openai.chat.completions.create({
@@ -70,70 +70,76 @@ Create a clear, practical book outline.
       temperature: 0.6,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: user }
+        { role: "user", content: user },
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const content = resp?.choices?.[0]?.message?.content || "";
     let data;
-
     try {
       data = JSON.parse(content);
     } catch {
       return res.status(500).json({
         error: "OpenAI returned non-JSON.",
-        raw: content.slice(0, 1200)
+        raw: content.slice(0, 2000),
       });
     }
 
-    // Normalize + validate
-    if (!data || typeof data !== "object" || !Array.isArray(data.outline)) {
-      return res.status(500).json({ error: "Bad outline format returned" });
-    }
+    if (!data || typeof data !== "object") throw new Error("Bad JSON object");
+    if (!Array.isArray(data.outline)) throw new Error("Missing outline array");
 
+    // Force correct count
     if (data.outline.length !== chapters) {
       data.outline = data.outline.slice(0, chapters);
       while (data.outline.length < chapters) {
         const n = data.outline.length + 1;
-        data.outline.push({ chapter: n, title: `Chapter ${n}`, bullets: ["Key idea", "Example", "Action step"] });
+        data.outline.push({
+          chapter: n,
+          title: `Chapter ${n}`,
+          bullets: ["Key idea", "Example", "Action step"],
+        });
       }
     }
 
+    // Normalize
     data.title = clean(data.title) || topic;
     data.purpose = clean(data.purpose) || `A practical guide on ${topic}.`;
-
     data.outline = data.outline.map((c, i) => ({
       chapter: Number.isFinite(c.chapter) ? c.chapter : i + 1,
       title: clean(c.title) || `Chapter ${i + 1}`,
-      bullets: Array.isArray(c.bullets) ? c.bullets.map(clean).filter(Boolean).slice(0, 5) : ["Key idea", "Example", "Action step"]
+      bullets: Array.isArray(c.bullets) && c.bullets.length
+        ? c.bullets.map(clean).filter(Boolean).slice(0, 5)
+        : ["Key idea", "Example", "Action step"],
     }));
 
-    // ✅ Create a project row and return the ID
-    const insert = await supabase
+    // Create project row
+    const insertPayload = {
+      user_id: userId || null,
+      chapters,
+      is_paid: false,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: proj, error: projErr } = await supabase
       .from("projects")
-      .insert([{
-        user_id: userId || null,
-        title: data.title,
-        topic,
-        audience,
-        blocker,
-        outline: data.outline,
-        purpose: data.purpose,
-        plan: "free"
-      }])
+      .insert(insertPayload)
       .select("id")
       .single();
 
-    if (insert.error || !insert.data?.id) {
-      return res.status(500).json({ error: "Could not create project row in Supabase" });
+    if (projErr) {
+      return res.status(500).json({
+        error: "could not create project row in supabase",
+        details: projErr,
+      });
     }
 
     return res.status(200).json({
-      ...data,
-      projectId: insert.data.id
+      projectId: proj.id,
+      title: data.title,
+      purpose: data.purpose,
+      outline: data.outline,
     });
-
   } catch (err) {
     return res.status(500).json({ error: err?.message || "Server error" });
   }
