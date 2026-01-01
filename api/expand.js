@@ -1,113 +1,92 @@
-// /api/expand.js
 import OpenAI from "openai";
-import { supabaseAdmin } from "./_supabase.js";
+import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
-const FREE_EXPANDS = 2;
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { auth: { persistSession: false } }
+);
+
+function hashGuest(req) {
+  return crypto
+    .createHash("sha256")
+    .update((req.headers["x-forwarded-for"] || "") + (req.headers["user-agent"] || ""))
+    .digest("hex");
+}
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
+  if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+
+  const body = req.body || {};
+  const {
+    topic,
+    chapterTitle,
+    chapterNumber,
+    bookTitle,
+    purpose,
+    audience,
+    minWords = 900,
+    maxWords = 1300
+  } = body;
+
+  if (!topic || !chapterTitle) {
+    return res.status(400).json({ error: "missing_fields" });
   }
 
-  try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const supabase = supabaseAdmin();
+  const guestKey = hashGuest(req);
 
-    const {
-      projectId,
-      userId,
-      topic,
-      audience,
-      bookTitle,
-      purpose,
-      chapterTitle,
-      chapterNumber,
-      voiceSample,
-      voiceNotes,
-      minWords = 900,
-      maxWords = 1300,
-      regenerate = false
-    } = req.body;
+  const { data: row } = await supabase
+    .from("usable_limits")
+    .select("*")
+    .eq("guest_key", guestKey)
+    .maybeSingle();
 
-    if (!chapterTitle || !topic) {
-      return res.status(400).json({ error: "Missing chapterTitle or topic" });
-    }
+  if (row?.expands_used >= 2 && row?.plan === "free") {
+    return res.status(200).json({ error: "limit_reached" });
+  }
 
-    let pid = projectId;
-
-    if (!pid) {
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({ user_id: userId || null, topic, audience })
-        .select("id")
-        .single();
-
-      if (error) return res.status(500).json({ error: "project_create_failed" });
-      pid = data.id;
-    }
-
-    // 🔒 HARD LIMIT ENFORCEMENT
-    const { data: usage } = await supabase
-      .from("usable_limits")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const used = Number(usage?.expands_used || 0);
-    const plan = (usage?.plan || "free").toLowerCase();
-
-    if (plan === "free" && used >= FREE_EXPANDS) {
-      return res.status(200).json({ error: "limit_reached" });
-    }
-
-    if (usage) {
-      await supabase
-        .from("usable_limits")
-        .update({ expands_used: used + 1 })
-        .eq("id", usage.id);
-    } else {
-      await supabase
-        .from("usable_limits")
-        .insert({ user_id: userId, expands_used: 1, plan: "free" });
-    }
-
-    const resp = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "Write WITH the author. JSON only." },
-        {
-          role: "user",
-          content: `
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    messages: [
+      { role: "system", content: "You are a serious writing coach." },
+      {
+        role: "user",
+        content: `
 Book: ${bookTitle}
 Purpose: ${purpose}
-Chapter ${chapterNumber}: ${chapterTitle}
 Audience: ${audience}
-Topic: ${topic}
 
-Voice:
-${voiceSample || ""}
-${voiceNotes || ""}
+Chapter ${chapterNumber}: ${chapterTitle}
+Context: ${topic}
 
-${minWords}-${maxWords} words.
+Write ${minWords}–${maxWords} words.
 End with 5 reflection questions.
-
-Return JSON:
-{ "expanded": "..." }
 `
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
+      }
+    ]
+  });
 
-    const parsed = JSON.parse(resp.choices[0].message.content || "{}");
-    if (!parsed.expanded) {
-      return res.status(500).json({ error: "no_expansion" });
-    }
+  const expanded = completion.choices[0].message.content?.trim();
 
-    return res.status(200).json({ projectId: pid, expanded: parsed.expanded });
-
-  } catch (err) {
-    return res.status(500).json({ error: "expand_failed", details: err.message });
+  if (!expanded) {
+    return res.status(500).json({ error: "no_expansion" });
   }
+
+  if (row) {
+    await supabase.from("usable_limits").update({
+      expands_used: (row.expands_used || 0) + 1
+    }).eq("id", row.id);
+  } else {
+    await supabase.from("usable_limits").insert({
+      guest_key: guestKey,
+      plan: "free",
+      expands_used: 1
+    });
+  }
+
+  return res.status(200).json({ expanded });
 }
