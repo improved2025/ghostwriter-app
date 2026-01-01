@@ -1,3 +1,7 @@
+// /api/intro.js
+// Server-controlled limits for introductions using public.usage_limits
+// Returns: { introduction: "..." } OR { error: "limit_reached" }
+
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
@@ -7,7 +11,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-const FREE_LIMITS = { introductions_total: 1 };
+const FREE_LIMITS = {
+  introductions_total: 1
+};
 
 function json(res, status, payload) {
   res.statusCode = status;
@@ -15,7 +21,9 @@ function json(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-function clean(v) { return (v ?? "").toString().trim(); }
+function clean(v) {
+  return (v ?? "").toString().trim();
+}
 
 function sha256(s) {
   return crypto.createHash("sha256").update(String(s)).digest("hex");
@@ -31,56 +39,71 @@ function extractAccessToken(req) {
   const auth = req.headers.authorization || "";
   const m = auth.match(/Bearer\s+(.+)/i);
   if (m?.[1]) return m[1].trim();
+
+  const cookie = req.headers.cookie || "";
+
+  const sbAccess = cookie.match(/(?:^|;\s*)sb-access-token=([^;]+)/);
+  if (sbAccess?.[1]) return decodeURIComponent(sbAccess[1]);
+
+  const supa = cookie.match(/(?:^|;\s*)supabase-auth-token=([^;]+)/);
+  if (supa?.[1]) {
+    try {
+      const raw = decodeURIComponent(supa[1]);
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr[0]) return arr[0];
+    } catch {}
+  }
+
   return null;
 }
 
+async function getUserIdFromRequest(req) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+
+  const token = extractAccessToken(req);
+  if (!token) return null;
+
+  const authed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+
+  const u = await authed.auth.getUser();
+  return u?.data?.user?.id || null;
+}
+
 async function consumeIntroLimit({ supabaseAdmin, userId, guestKey }) {
-  // RPC first
-  const rpcVariants = [
-    { fn: "consume_usable_limit", args: { kind: "intro" } },
-    { fn: "consume_usable_limit", args: { p_kind: "intro" } },
-    { fn: "consume_limit", args: { kind: "intro" } },
-  ];
-
-  for (const v of rpcVariants) {
-    const r = await supabaseAdmin.rpc(v.fn, v.args);
-    if (!r.error) {
-      if (typeof r.data === "boolean") return { allowed: r.data };
-      if (r.data?.allowed !== undefined) return { allowed: !!r.data.allowed };
-      if (r.data?.ok !== undefined) return { allowed: !!r.data.ok };
-      return { allowed: true };
-    }
-  }
-
-  // Fallback table
-  let q = supabaseAdmin.from("usable_limits").select("*").limit(1);
+  let q = supabaseAdmin.from("usage_limits").select("*").limit(1);
   q = userId ? q.eq("user_id", userId) : q.eq("guest_key", guestKey);
 
   const existing = await q.maybeSingle();
   if (existing.error) return { allowed: false, hardError: existing.error.message };
 
   const row = existing.data;
-  const plan = (row?.plan || "free").toLowerCase();
+  const plan = (row?.plan || "free").toString().toLowerCase();
   if (plan !== "free") return { allowed: true };
 
   const used = Number(row?.introductions_used || 0);
   if (used >= FREE_LIMITS.introductions_total) return { allowed: false, limitReached: true };
 
   if (row) {
-    const upd = await supabaseAdmin
-      .from("usable_limits")
-      .update({ introductions_used: used + 1, updated_at: new Date().toISOString() })
-      .eq("id", row.id);
-    if (upd.error) return { allowed: false, hardError: upd.error.message };
+    const up = await supabaseAdmin.from("usage_limits").upsert(
+      userId
+        ? { user_id: userId, plan: row.plan || "free", introductions_used: used + 1, updated_at: new Date().toISOString() }
+        : { guest_key: guestKey, plan: row.plan || "free", introductions_used: used + 1, updated_at: new Date().toISOString() },
+      { onConflict: userId ? "user_id" : "guest_key" }
+    );
+    if (up.error) return { allowed: false, hardError: up.error.message };
     return { allowed: true };
   }
 
-  const ins = await supabaseAdmin.from("usable_limits").insert(
+  const ins = await supabaseAdmin.from("usage_limits").insert(
     userId
       ? { user_id: userId, plan: "free", introductions_used: 1 }
       : { guest_key: guestKey, plan: "free", introductions_used: 1 }
   );
   if (ins.error) return { allowed: false, hardError: ins.error.message };
+
   return { allowed: true };
 }
 
@@ -93,6 +116,7 @@ export default async function handler(req, res) {
     if (!SUPABASE_SERVICE_ROLE_KEY) return json(res, 500, { error: "Missing SUPABASE_SERVICE_ROLE_KEY" });
 
     const body = req.body || {};
+
     const bookTitle = clean(body.bookTitle);
     const purpose = clean(body.purpose);
     const outline = Array.isArray(body.outline) ? body.outline : [];
@@ -103,18 +127,7 @@ export default async function handler(req, res) {
       auth: { persistSession: false }
     });
 
-    // Identify user via Bearer token
-    let userId = null;
-    const token = extractAccessToken(req);
-    if (token && SUPABASE_ANON_KEY) {
-      const authed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: false },
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      });
-      const u = await authed.auth.getUser();
-      userId = u?.data?.user?.id || null;
-    }
-
+    const userId = await getUserIdFromRequest(req);
     const guestKey = sha256(`${getIp(req)}|${req.headers["user-agent"] || ""}`);
 
     const lim = await consumeIntroLimit({ supabaseAdmin, userId, guestKey });
@@ -127,10 +140,9 @@ export default async function handler(req, res) {
 
     const system = `
 You are a writing coach.
-You write WITH the author, not for them.
-Match their tone and cadence.
+Write WITH the author, not for them.
+Match tone and cadence.
 No AI references. No hype.
-Clear, human, grounded.
 Return JSON only.
 `.trim();
 
@@ -159,8 +171,12 @@ Return JSON only.
     let parsed = {};
     try { parsed = JSON.parse(raw); } catch {}
 
-    const introduction = clean(parsed.introduction);
-    if (!introduction) return json(res, 500, { error: "no_intro" });
+    // Prevent [object Object] issues: force string
+    let introduction = parsed.introduction;
+    if (typeof introduction !== "string") introduction = "";
+    introduction = clean(introduction);
+
+    if (!introduction) return json(res, 500, { error: "no_introduction_returned" });
 
     return json(res, 200, { introduction });
   } catch (err) {
