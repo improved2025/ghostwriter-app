@@ -4,81 +4,214 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Authored — Pricing</title>
+
   <link rel="icon" href="data:,">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./account.js" defer></script>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
     h1 { margin: 0 0 10px; }
     p { color:#333; line-height:1.5; }
-    .muted { color:#666; font-size: 13px; }
-    .row { display:flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
-    .card {
-      flex: 1 1 320px;
-      border: 1px solid #e6e6e6;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fff;
-    }
+    .muted { color:#666; font-size:13px; }
+    .grid { display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; }
+    .card { flex:1 1 320px; border:1px solid #e6e6e6; border-radius:12px; padding:16px; background:#fff; }
+    .price { font-size:28px; font-weight:800; margin:8px 0; }
+    ul { padding-left:18px; }
+    li { margin:8px 0; }
     .btn {
-      padding: 10px 14px;
-      border: 1px solid #111;
-      background: #111;
-      color: #fff;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 700;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 10px;
+      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
+      border-radius:8px; cursor:pointer; font-weight:700;
+      text-decoration:none; display:inline-block;
     }
     .btn.secondary { background:#fff; color:#111; }
-    ul { padding-left: 18px; margin: 10px 0 0; }
-    li { margin: 6px 0; }
-    hr { margin: 18px 0; border: none; border-top: 1px solid #eee; }
-    .note {
-      background:#fff7d6;
-      border:1px solid #f2d27a;
-      padding:12px 14px;
-      border-radius:10px;
-      margin:14px 0 0;
-      color:#5a4600;
-    }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    .divider { margin:12px 0; border:none; border-top:1px solid #eee; }
+    .paypalBox { margin-top:10px; }
+    .warn { background:#fff7d6; border:1px solid #f2d27a; padding:10px 12px; border-radius:10px; color:#5a4600; margin-top:12px; display:none; }
   </style>
 </head>
-<body>
-  <h1>Pricing</h1>
-  <p class="muted">
-    This page is a placeholder. Next step is wiring payments (Stripe) and unlocking features automatically after purchase.
-  </p>
 
-  <div class="row">
+<body>
+  <h1>Upgrade Authored</h1>
+  <p class="muted">Pick a plan. Pay by card (Stripe) or PayPal. Your account unlocks instantly after payment.</p>
+
+  <div class="warn" id="warn"></div>
+
+  <div class="grid">
     <div class="card">
-      <h2 style="margin:0 0 6px;">Project plan</h2>
-      <p style="margin:0;"><strong>$49</strong> • One project • One user</p>
+      <h2 style="margin:0;">Project plan</h2>
+      <div class="muted">One project, one user</div>
+      <div class="price">$49</div>
       <ul>
         <li>Expand chapters</li>
         <li>Regenerate drafts</li>
         <li>DOCX export</li>
         <li>Voice + tone controls</li>
       </ul>
-      <a class="btn" href="start.html">Back to writing</a>
+
+      <hr class="divider" />
+
+      <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
+      <div class="row">
+        <!-- IMPORTANT: keep your existing Stripe URL here if you already have one -->
+        <button class="btn" id="stripeProjectBtn" type="button">Checkout (Card)</button>
+      </div>
+
+      <div class="muted" style="margin-top:10px;"><strong>Pay with PayPal</strong></div>
+      <div class="paypalBox" id="paypalProject"></div>
     </div>
 
     <div class="card">
-      <h2 style="margin:0 0 6px;">Lifetime</h2>
-      <p style="margin:0;"><strong>$149</strong> • All features • One user</p>
+      <h2 style="margin:0;">Lifetime</h2>
+      <div class="muted">All features, one user</div>
+      <div class="price">$149</div>
       <ul>
         <li>Unlimited projects</li>
         <li>More expansions</li>
         <li>Priority features as Authored grows</li>
       </ul>
-      <a class="btn secondary" href="start.html">Back to writing</a>
+
+      <hr class="divider" />
+
+      <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
+      <div class="row">
+        <!-- IMPORTANT: keep your existing Stripe URL here if you already have one -->
+        <button class="btn" id="stripeLifetimeBtn" type="button">Checkout (Card)</button>
+      </div>
+
+      <div class="muted" style="margin-top:10px;"><strong>Pay with PayPal</strong></div>
+      <div class="paypalBox" id="paypalLifetime"></div>
     </div>
   </div>
 
-  <hr />
-
-  <div class="note">
-    <strong>Next:</strong> We’ll connect Stripe and automatically unlock paid features after checkout.
+  <div class="row" style="margin-top:18px;">
+    <a class="btn secondary" href="start.html">Back to writing</a>
   </div>
+
+  <script>
+    const warn = (msg) => {
+      const el = document.getElementById("warn");
+      el.style.display = "block";
+      el.textContent = msg;
+    };
+
+    async function requireSessionOrRedirect() {
+      if (!window.AuthoredAccount?.getSession) {
+        warn("Auth system not loaded. Make sure account.js is included.");
+        return null;
+      }
+      const { data } = await window.AuthoredAccount.getSession();
+      const session = data?.session;
+      if (!session) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return session;
+    }
+
+    async function getAccessToken() {
+      const session = await requireSessionOrRedirect();
+      return session?.access_token || null;
+    }
+
+    // -----------------------------
+    // Stripe buttons (keep your existing endpoint URL)
+    // -----------------------------
+    async function goStripe(plan) {
+      // Change these endpoints to whatever you already use for Stripe
+      // Example: /api/stripe-create-checkout?plan=project
+      const url = plan === "project"
+        ? "/api/stripe-create-checkout?plan=project"
+        : "/api/stripe-create-checkout?plan=lifetime";
+
+      window.location.href = url;
+    }
+
+    document.getElementById("stripeProjectBtn").addEventListener("click", () => goStripe("project"));
+    document.getElementById("stripeLifetimeBtn").addEventListener("click", () => goStripe("lifetime"));
+
+    // -----------------------------
+    // PayPal Buttons
+    // -----------------------------
+    async function loadPayPalSdk() {
+      const clientId = "REPLACE_ON_DEPLOY"; // We’ll load it from env by hardcoding, or you can paste your live client ID.
+      // If you want: paste your live PayPal Client ID here.
+      // PayPal SDK cannot read Vercel env vars in static HTML.
+      // So you must paste your PAYPAL_CLIENT_ID value here (safe to expose).
+      if (clientId === "REPLACE_ON_DEPLOY") {
+        warn("Paste your PayPal Client ID into pricing.html (clientId). This is required for the PayPal buttons to appear.");
+        return false;
+      }
+
+      return new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`;
+        s.onload = () => resolve(true);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+      });
+    }
+
+    async function renderPayPalButtons(containerId, plan) {
+      const ok = await loadPayPalSdk();
+      if (!ok) return;
+
+      const token = await getAccessToken();
+      if (!token) return;
+
+      if (!window.paypal?.Buttons) {
+        warn("PayPal SDK did not load.");
+        return;
+      }
+
+      window.paypal.Buttons({
+        createOrder: async () => {
+          const resp = await fetch("/api/paypal-create-order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ plan })
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok || !data.orderID) {
+            throw new Error(data?.error || "Could not create PayPal order");
+          }
+          return data.orderID;
+        },
+
+        onApprove: async (data) => {
+          const resp = await fetch("/api/paypal-capture-order", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ orderID: data.orderID })
+          });
+          const out = await resp.json().catch(() => ({}));
+          if (!resp.ok || !out.ok) {
+            warn("Payment captured but unlock failed. Refresh and try again.");
+            return;
+          }
+          // You’re paid now. Send them back.
+          window.location.href = "start.html";
+        },
+
+        onError: (err) => {
+          warn("PayPal error: " + (err?.message || String(err)));
+        }
+      }).render(`#${containerId}`);
+    }
+
+    (async function init() {
+      await requireSessionOrRedirect();
+      await renderPayPalButtons("paypalProject", "project");
+      await renderPayPalButtons("paypalLifetime", "lifetime");
+    })();
+  </script>
 </body>
 </html>
