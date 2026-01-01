@@ -1,8 +1,5 @@
 // /api/outline.js
-// Server-controlled limits for "Generate starting point" (outline).
-// Uses: public.usage_limits
-// Increments: outlines_used
-// Creates a projects row and returns projectId so expand can attach to it.
+// Server-controlled limits for outlines (logged-in users only, unless your schema supports guest_key + nullable user_id)
 // Returns: { projectId, title, purpose, outline } OR { error: "limit_reached" }
 
 import OpenAI from "openai";
@@ -13,9 +10,8 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Free tier policy (server truth)
 const FREE_LIMITS = {
-  outlines_total: 2, // change to whatever you want
+  outlines_total: 2, // set your free outline limit here
 };
 
 function clean(v) {
@@ -68,7 +64,7 @@ async function getUserId({ supabaseAdmin, req, body }) {
 async function ensureUsageRowByUser({ supabaseAdmin, userId }) {
   const existing = await supabaseAdmin
     .from("usage_limits")
-    .select("user_id, titles_used, outlines_used, expands_used")
+    .select("user_id, outlines_used")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -77,71 +73,28 @@ async function ensureUsageRowByUser({ supabaseAdmin, userId }) {
 
   const ins = await supabaseAdmin
     .from("usage_limits")
-    .insert({ user_id: userId, titles_used: 0, outlines_used: 0, expands_used: 0 })
-    .select("user_id, titles_used, outlines_used, expands_used")
+    .insert({ user_id: userId, outlines_used: 0 })
+    .select("user_id, outlines_used")
     .single();
 
   if (ins.error) return { ok: false, err: ins.error.message };
   return { ok: true, row: ins.data };
 }
 
-// Optional: if you added guest_key to usage_limits, this enforces guests too.
-// If you did NOT add guest_key, guests are allowed (but logged-in users are still enforced).
-async function ensureUsageRowByGuest({ supabaseAdmin, guestKey }) {
-  const existing = await supabaseAdmin
-    .from("usage_limits")
-    .select("guest_key, titles_used, outlines_used, expands_used")
-    .eq("guest_key", guestKey)
-    .maybeSingle();
+async function consumeOutlineLimit({ supabaseAdmin, userId }) {
+  // IMPORTANT: with your schema (user_id NOT NULL), we do NOT write usage_limits for guests.
+  if (!userId) return { allowed: true, guestUnenforced: true };
 
-  if (existing.error) {
-    // Most common: column "guest_key" does not exist
-    return { ok: false, err: existing.error.message, guestColumnMissing: true };
-  }
-  if (existing.data) return { ok: true, row: existing.data };
+  const ensured = await ensureUsageRowByUser({ supabaseAdmin, userId });
+  if (!ensured.ok) return { allowed: false, hardError: ensured.err };
 
-  const ins = await supabaseAdmin
-    .from("usage_limits")
-    .insert({ guest_key: guestKey, titles_used: 0, outlines_used: 0, expands_used: 0 })
-    .select("guest_key, titles_used, outlines_used, expands_used")
-    .single();
-
-  if (ins.error) return { ok: false, err: ins.error.message };
-  return { ok: true, row: ins.data };
-}
-
-async function consumeOutlineLimit({ supabaseAdmin, userId, guestKey }) {
-  // Logged-in: enforce with user_id
-  if (userId) {
-    const ensured = await ensureUsageRowByUser({ supabaseAdmin, userId });
-    if (!ensured.ok) return { allowed: false, hardError: ensured.err };
-
-    const used = Number(ensured.row?.outlines_used || 0);
-    if (used >= FREE_LIMITS.outlines_total) return { allowed: false, limitReached: true };
-
-    const upd = await supabaseAdmin
-      .from("usage_limits")
-      .update({ outlines_used: used + 1, updated_at: new Date().toISOString() })
-      .eq("user_id", userId);
-
-    if (upd.error) return { allowed: false, hardError: upd.error.message };
-    return { allowed: true };
-  }
-
-  // Guest: enforce only if guest_key column exists
-  const ensuredGuest = await ensureUsageRowByGuest({ supabaseAdmin, guestKey });
-  if (!ensuredGuest.ok) {
-    if (ensuredGuest.guestColumnMissing) return { allowed: true, guestUnenforced: true };
-    return { allowed: false, hardError: ensuredGuest.err };
-  }
-
-  const used = Number(ensuredGuest.row?.outlines_used || 0);
+  const used = Number(ensured.row?.outlines_used || 0);
   if (used >= FREE_LIMITS.outlines_total) return { allowed: false, limitReached: true };
 
   const upd = await supabaseAdmin
     .from("usage_limits")
     .update({ outlines_used: used + 1, updated_at: new Date().toISOString() })
-    .eq("guest_key", guestKey);
+    .eq("user_id", userId);
 
   if (upd.error) return { allowed: false, hardError: upd.error.message };
   return { allowed: true };
@@ -158,7 +111,6 @@ export default async function handler(req, res) {
     if (!SUPABASE_SERVICE_ROLE_KEY) return res.status(500).json({ error: "Missing SUPABASE_SERVICE_ROLE_KEY" });
 
     const body = req.body || {};
-
     const topic = clean(body.topic);
     const audience = clean(body.audience) || "general readers";
     const blocker = clean(body.blocker) || "none";
@@ -175,16 +127,18 @@ export default async function handler(req, res) {
 
     const userId = await getUserId({ supabaseAdmin, req, body });
 
+    // (Optional) keep a stable guest fingerprint for later if you add guest_key support
     const guestKey = sha256(`${getIp(req)}|${req.headers["user-agent"] || ""}`);
+    void guestKey; // avoid lint complaining
 
-    // Consume limit BEFORE spending tokens
-    const lim = await consumeOutlineLimit({ supabaseAdmin, userId, guestKey });
+    // Enforce limit BEFORE spending tokens
+    const lim = await consumeOutlineLimit({ supabaseAdmin, userId });
     if (!lim.allowed) {
       if (lim.limitReached) return res.status(200).json({ error: "limit_reached" });
       return res.status(500).json({ error: "limit_check_failed", details: lim.hardError || "unknown" });
     }
 
-    // Create project row NOW so expand can attach and you can track usage
+    // Create project row so expand can attach
     const { data: proj, error: projErr } = await supabaseAdmin
       .from("projects")
       .insert({
@@ -257,39 +211,28 @@ Create a clear starter outline that helps the user write.
     });
 
     const content = resp.choices?.[0]?.message?.content || "{}";
-    let data;
+    let parsed;
     try {
-      data = JSON.parse(content);
+      parsed = JSON.parse(content);
     } catch {
-      data = {};
+      parsed = {};
     }
 
-    const title = clean(data.title);
-    const purpose = clean(data.purpose);
-    const outline = Array.isArray(data.outline) ? data.outline : [];
+    const title = clean(parsed.title);
+    const purpose = clean(parsed.purpose);
+    const outline = Array.isArray(parsed.outline) ? parsed.outline : [];
 
     if (!title || !purpose || !outline.length) {
       return res.status(500).json({ error: "bad_model_response" });
     }
 
-    // Optional: store generated outline back on the project row (safe if columns exist)
-    // If your projects table doesn't have these columns, this update will fail silently.
+    // Optional: persist onto projects if columns exist (won't break if they don't)
     await supabaseAdmin
       .from("projects")
-      .update({
-        title,
-        purpose,
-        outline,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ title, purpose, outline, updated_at: new Date().toISOString() })
       .eq("id", projectId);
 
-    return res.status(200).json({
-      projectId,
-      title,
-      purpose,
-      outline,
-    });
+    return res.status(200).json({ projectId, title, purpose, outline });
   } catch (err) {
     return res.status(500).json({
       error: "Outline generation failed",
