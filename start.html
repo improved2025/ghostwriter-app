@@ -92,11 +92,6 @@
     .plan h4 { margin:0 0 6px; }
     .plan ul { margin:8px 0 0 18px; }
     .plan li { margin:6px 0; }
-    .cta {
-      margin-top:8px;
-      font-weight:700;
-      color:#111;
-    }
   </style>
 </head>
 
@@ -108,7 +103,7 @@
     <strong>Free version:</strong> Outline generation is free.
     <span id="freeLimitText"></span>
     <br />
-    <span class="muted">Titles, introduction, and full chapter drafts are limited in the free version.</span>
+    <span class="muted">Full chapter drafts (Expand) are limited in the free version.</span>
   </div>
 
   <!-- Upgrade panel (hidden until needed) -->
@@ -117,7 +112,6 @@
     <p class="muted" id="upgradeMsg" style="margin:6px 0 0;">
       You’ve reached the free plan limit for this feature.
     </p>
-    <p class="cta" id="upgradeCta">Unlock the full writing flow and keep going.</p>
 
     <div class="upgrade-grid">
       <div class="plan">
@@ -130,8 +124,8 @@
           <li>Voice + tone controls</li>
         </ul>
         <div class="actions">
-          <a class="btn" href="pricing.html" id="upgradeProjectBtn">Unlock this project</a>
-          <a class="btn secondary" href="start.html">Not now</a>
+          <a class="btn" href="pricing.html" id="upgradeProjectBtn">Upgrade</a>
+          <a class="btn secondary" href="start.html">Keep writing</a>
         </div>
       </div>
 
@@ -144,8 +138,8 @@
           <li>Priority features as Authored grows</li>
         </ul>
         <div class="actions">
-          <a class="btn" href="pricing.html" id="upgradeLifetimeBtn">Go lifetime</a>
-          <a class="btn secondary" href="start.html">Not now</a>
+          <a class="btn" href="pricing.html" id="upgradeLifetimeBtn">Upgrade</a>
+          <a class="btn secondary" href="start.html">Keep writing</a>
         </div>
       </div>
     </div>
@@ -291,30 +285,6 @@
   <script>
     function clean(v) { return (v ?? "").toString().trim(); }
 
-    async function safeJson(resp) {
-      try { return await resp.json(); } catch { return {}; }
-    }
-
-    function isLimitReachedError(data) {
-      return !!(data && (data.error === "limit_reached" || data.error === "limit_reached_today"));
-    }
-
-    function lockPaidFeatures() {
-      const ids = ["expandBtn","regenExpandedBtn","genIntroBtn","genTitlesBtn"];
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = true;
-      });
-    }
-
-    function unlockPaidFeatures() {
-      const ids = ["expandBtn","regenExpandedBtn","genIntroBtn","genTitlesBtn"];
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = false;
-      });
-    }
-
     function showUpgrade(reason) {
       const box = document.getElementById("upgradeBox");
       const msg = document.getElementById("upgradeMsg");
@@ -323,17 +293,34 @@
       msg.textContent = reason || "You’ve reached the free plan limit for this feature.";
       box.style.display = "block";
       box.scrollIntoView({ behavior: "smooth", block: "start" });
-      lockPaidFeatures();
+
+      // Disable paid features to prevent repeated failing calls
+      const disableIds = ["expandBtn", "regenExpandedBtn", "genIntroBtn", "genTitlesBtn"];
+      disableIds.forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = true;
+      });
     }
 
-    const freeLimitTextEl = document.getElementById("freeLimitText");
-    if (freeLimitTextEl) freeLimitTextEl.textContent = " Limits apply to titles, intro, and chapter expansion.";
+    function isLimitReachedError(data) {
+      return data && (data.error === "limit_reached" || data.error === "limit_reached_today");
+    }
 
-    function getDraftWordRange() {
-      const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
-      if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
-      if (v === "very_long") return { draftLength: "very_long", minWords: 2500, maxWords: 3500 };
-      return { draftLength: "standard", minWords: 900, maxWords: 1300 };
+    async function safeJson(resp) {
+      try { return await resp.json(); } catch { return {}; }
+    }
+
+    // ✅ CRITICAL FIX: attach Supabase access token to API calls (logged-in users)
+    async function authHeaders() {
+      try {
+        const client = window.AuthoredAccount?.client;
+        if (!client?.auth?.getSession) return {};
+        const { data } = await client.auth.getSession();
+        const token = data?.session?.access_token;
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      } catch {
+        return {};
+      }
     }
 
     document.getElementById("beginBtn").addEventListener("click", async () => {
@@ -364,12 +351,15 @@
 
       const upgradeBox = document.getElementById("upgradeBox");
       if (upgradeBox) upgradeBox.style.display = "none";
-      unlockPaidFeatures();
+      ["expandBtn","regenExpandedBtn","genIntroBtn","genTitlesBtn"].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = false;
+      });
 
       try {
         const resp = await fetch("/api/outline", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" }, // outline stays free
           body: JSON.stringify({ topic, audience, blocker, chapters, voiceSample, voiceNotes })
         });
 
@@ -468,9 +458,8 @@
       try {
         const resp = await fetch("/api/titles", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await authHeaders()) },
           body: JSON.stringify({
-            projectId: window.__projectId,
             topic: clean(document.getElementById("topic").value),
             audience: clean(document.getElementById("audience").value),
             blocker: clean(document.getElementById("blocker").value),
@@ -484,14 +473,14 @@
 
         if (isLimitReachedError(data)) {
           out.innerHTML = "";
-          showUpgrade("Free plan limit reached for title suggestions. Upgrade to generate more.");
+          showUpgrade("You’ve reached the free plan limit for title suggestions.");
           return;
         }
 
-        if (!resp.ok) throw new Error(data?.error || "Titles request failed");
+        if (!resp.ok) throw new Error(data?.error || "Titles failed");
 
         const titles = Array.isArray(data.titles) ? data.titles : [];
-        if (!titles.length) throw new Error("No titles returned");
+        if (!titles.length) throw new Error("no_titles");
 
         out.innerHTML = "";
         titles.slice(0, 10).forEach((t) => {
@@ -518,7 +507,7 @@
         });
       } catch (e) {
         out.innerHTML = "";
-        alert("Could not generate title suggestions. Please try again.");
+        alert("Could not generate titles. Try again.");
       }
     });
 
@@ -529,9 +518,8 @@
       try {
         const resp = await fetch("/api/intro", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(await authHeaders()) },
           body: JSON.stringify({
-            projectId: window.__projectId,
             topic: clean(document.getElementById("topic").value),
             audience: clean(document.getElementById("audience").value),
             blocker: clean(document.getElementById("blocker").value),
@@ -547,14 +535,14 @@
 
         if (isLimitReachedError(data)) {
           introOut.textContent = "Free plan limit reached.";
-          showUpgrade("Free plan limit reached for introductions. Upgrade to generate more.");
+          showUpgrade("You’ve reached the free plan limit for introductions.");
           return;
         }
 
-        if (!resp.ok) throw new Error(data?.error || "Intro request failed");
+        if (!resp.ok) throw new Error(data?.error || "Intro failed");
 
         const intro = (data.introduction || "").toString().trim();
-        if (!intro) throw new Error("No introduction returned");
+        if (!intro) throw new Error("no_intro");
 
         window.__introText = intro;
         introOut.textContent = intro;
@@ -562,7 +550,7 @@
         document.getElementById("downloadIntroBtn").disabled = false;
       } catch (e) {
         introOut.textContent = "Click “Generate introduction” to create an optional intro.";
-        alert("Could not generate introduction. Please try again.");
+        alert("Could not generate introduction. Try again.");
       }
     });
 
@@ -575,6 +563,13 @@
       const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
       downloadText(`${safe}_introduction.txt`, window.__introText || "");
     });
+
+    function getDraftWordRange() {
+      const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
+      if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
+      if (v === "very_long") return { draftLength: "very_long", minWords: 2500, maxWords: 3500 };
+      return { draftLength: "standard", minWords: 900, maxWords: 1300 };
+    }
 
     async function runExpandRequest(mode) {
       const outline = window.__outlineItems || [];
@@ -591,7 +586,7 @@
 
       const resp = await fetch("/api/expand", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({
           projectId: window.__projectId,
           bookTitle: window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled",
@@ -613,7 +608,7 @@
 
       if (isLimitReachedError(data)) {
         document.getElementById("expandedOut").textContent = "Free plan limit reached.";
-        showUpgrade("Free plan limit reached for chapter expansion. Upgrade to expand more chapters. Regenerate counts too.");
+        showUpgrade("You’ve reached the free plan limit for chapter expansion. Upgrade to expand more chapters. Regenerate counts too.");
         return;
       }
 
@@ -656,7 +651,7 @@
     const limitNote = document.getElementById("limitNote");
     if (limitNote) {
       limitNote.textContent =
-        "Free plan: Outline generation is free. Titles, intro, and chapter expansion are limited. When you hit a limit, you’ll be prompted to upgrade.";
+        "Free plan: Outline generation is free. Titles/intro/expansions are limited. Regenerate counts toward the same limit.";
     }
   </script>
 </body>
