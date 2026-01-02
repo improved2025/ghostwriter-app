@@ -32,6 +32,12 @@ const SUPABASE_ANON_KEY =
       return `authored_active_project_id_${userId}`;
     }
 
+    // Helper: get current user (null if none)
+    async function currentUser() {
+      const { data } = await client.auth.getUser();
+      return data?.user || null;
+    }
+
     // Expose ONE object that every page can use.
     window.AuthoredAccount = {
       client,
@@ -41,6 +47,7 @@ const SUPABASE_ANON_KEY =
       },
 
       async signUp(email, password) {
+        // Note: if email confirmations are ON in Supabase, this may require confirmation.
         return await client.auth.signUp({ email, password });
       },
 
@@ -54,6 +61,39 @@ const SUPABASE_ANON_KEY =
 
       async getUser() {
         return await client.auth.getUser();
+      },
+
+      // --------------------------------------------
+      // Anonymous auth (guest) + auto-convert support
+      // --------------------------------------------
+      async signInGuest() {
+        // If there is already a session, keep it.
+        const { data: s } = await client.auth.getSession();
+        if (s?.session?.user) return { data: s, error: null };
+
+        // Create an anonymous session
+        // Requires Supabase: Auth -> Providers -> Anonymous enabled
+        const { data, error } = await client.auth.signInAnonymously();
+        return { data, error };
+      },
+
+      async convertGuestToEmailPassword(email, password) {
+        // Converts the CURRENT user (must be anonymous) into an email/password user
+        // Keeps the same user_id and preserves guest usage rows keyed by user_id
+        const u = await currentUser();
+        if (!u) return { data: null, error: new Error("No session to convert") };
+        if (!u.is_anonymous) {
+          return { data: { user: u }, error: null }; // already real user
+        }
+
+        // Update the anon user with email/password
+        // Depending on your Supabase settings, this may send a confirmation email.
+        const { data, error } = await client.auth.updateUser({
+          email,
+          password
+        });
+
+        return { data, error };
       },
 
       // For protected pages: redirect to login if not authenticated
@@ -150,7 +190,6 @@ const SUPABASE_ANON_KEY =
           if (existingId) {
             const existing = await this.getProject(existingId);
             if (existing) {
-              // keep it as the active book, but refresh definition fields
               return await this.updateProject(existing.id, {
                 topic: payload.topic,
                 audience: payload.audience || null,
@@ -162,7 +201,6 @@ const SUPABASE_ANON_KEY =
             }
           }
 
-          // create new active project
           return await this.createProject(payload);
         }
       }
