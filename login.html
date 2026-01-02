@@ -52,15 +52,59 @@
     async function waitForAuthoredAccount(timeoutMs = 15000) {
       const start = Date.now();
       while (!window.AuthoredAccount) {
-        if (window.AuthoredAccountInitError) {
-          throw new Error(window.AuthoredAccountInitError);
-        }
-        if (Date.now() - start > timeoutMs) {
-          throw new Error("Auth system not ready. account.js did not load.");
-        }
+        if (window.AuthoredAccountInitError) throw new Error(window.AuthoredAccountInitError);
+        if (Date.now() - start > timeoutMs) throw new Error("Auth system not ready. account.js did not load.");
         await new Promise(r => setTimeout(r, 50));
       }
     }
+
+    async function ensureGuestSessionIfNeeded() {
+      // If no session at all, create an anonymous one.
+      const { data } = await window.AuthoredAccount.getSession();
+      const session = data?.session;
+
+      if (session?.user) {
+        // Already have a user session (could be anon or real)
+        return session.user;
+      }
+
+      const { data: anonData, error: anonErr } = await window.AuthoredAccount.signInGuest();
+      if (anonErr) {
+        // Don’t block login page if anon fails; just continue.
+        console.warn("Anonymous sign-in failed:", anonErr.message || anonErr);
+        return null;
+      }
+      return anonData?.user || null;
+    }
+
+    async function redirectIfAlreadyAuthedRealUser() {
+      const { data } = await window.AuthoredAccount.getSession();
+      const session = data?.session;
+      const user = session?.user;
+
+      if (user && user.is_anonymous === false) {
+        window.location.href = "./start.html";
+        return true;
+      }
+      return false;
+    }
+
+    (async function boot() {
+      try {
+        await waitForAuthoredAccount();
+
+        // If already logged in as a real user, leave this page.
+        const redirected = await redirectIfAlreadyAuthedRealUser();
+        if (redirected) return;
+
+        // Otherwise, ensure an anonymous session exists in the background.
+        // This stabilizes server-side limits because you’ll always have a user_id.
+        await ensureGuestSessionIfNeeded();
+      } catch (e) {
+        console.error(e);
+        setStatus(e.message || "Login page failed to initialize.", "error");
+      }
+    })();
 
     loginBtn.addEventListener("click", async () => {
       try {
@@ -77,17 +121,23 @@
           return;
         }
 
-        const { data, error } = await window.AuthoredAccount.signIn(email, password);
+        // If user is currently anonymous, sign out first to avoid weird edge cases.
+        // Then sign in to the real account cleanly.
+        const { data: s } = await window.AuthoredAccount.getSession();
+        const currentUser = s?.session?.user;
+
+        if (currentUser?.is_anonymous) {
+          await window.AuthoredAccount.signOut();
+        }
+
+        const { error } = await window.AuthoredAccount.signIn(email, password);
 
         if (error) {
           setStatus(error.message || "Login failed.", "error");
           return;
         }
 
-        // Success
         setStatus("Logged in. Redirecting...", "ok");
-
-        // Send them to the app
         window.location.href = "./start.html";
       } catch (e) {
         console.error(e);
