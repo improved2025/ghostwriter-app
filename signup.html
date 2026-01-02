@@ -108,18 +108,11 @@
     </div>
   </div>
 
-  <!-- Supabase JS v2 (global "supabase") -->
+  <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./account.js" defer></script>
+  <script src="./account.js" defer></script>
 
   <script>
-    // 1) Paste your values here
-    const SUPABASE_URL = "https://siiivusryuotqmbcerqp.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpaWl2dXNyeXVvdHFtYmNlcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0ODc4NjIsImV4cCI6MjA4MjA2Mzg2Mn0.Sgx9Qy0t-8w6M2BeFyWRR3lCHcZkj_cLioJAq5XlNKc";
-
-    // 2) Create client using a DIFFERENT variable name (avoid "supabase" double-declare)
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
     const emailEl = document.getElementById("email");
     const passEl = document.getElementById("password");
     const btn = document.getElementById("btn");
@@ -128,6 +121,16 @@
     function setMsg(text, type) {
       msg.textContent = text || "";
       msg.className = "msg" + (type ? " " + type : "");
+    }
+
+    async function waitForAccount() {
+      // account.js is loaded with defer, but this page script is not deferred.
+      // So we wait until window.AuthoredAccount exists.
+      for (let i = 0; i < 200; i++) {
+        if (window.AuthoredAccount) return;
+        await new Promise(r => setTimeout(r, 10));
+      }
+      throw new Error("account.js not loaded");
     }
 
     btn.addEventListener("click", async () => {
@@ -144,26 +147,57 @@
       btn.textContent = "Creating account...";
 
       try {
-        const { data, error } = await supabaseClient.auth.signUp({
-          email,
-          password
-        });
+        await waitForAccount();
 
+        // Ensure we have a session. If they came from guest flow, they'll already be anon.
+        // If not, we create anon so "convert" is always available.
+        if (window.AuthoredAccount.signInGuest) {
+          await window.AuthoredAccount.signInGuest();
+        }
+
+        // Check current user
+        let user = null;
+        if (window.AuthoredAccount.getUser) {
+          const u = await window.AuthoredAccount.getUser();
+          user = u?.data?.user || null;
+        }
+
+        // Convert anon -> email/password (keeps SAME user_id)
+        if (user?.is_anonymous && window.AuthoredAccount.convertGuestToEmailPassword) {
+          const r = await window.AuthoredAccount.convertGuestToEmailPassword(email, password);
+          if (r?.error) {
+            setMsg(r.error.message || "Could not convert guest account.", "err");
+            return;
+          }
+
+          setMsg("Account created. Taking you back to your draft...", "ok");
+          setTimeout(() => {
+            window.location.href = "start.html";
+          }, 700);
+          return;
+        }
+
+        // If already a real user (not anonymous), do normal sign up
+        // (This can happen if they are logged in already, or anon is disabled.)
+        const { data, error } = await window.AuthoredAccount.signUp(email, password);
         if (error) {
           setMsg(error.message || "Something went wrong. Please try again.", "err");
           return;
         }
 
-        setMsg("Account created. You can log in now.", "ok");
+        // Depending on your Supabase settings, they may or may not be logged in immediately.
+        // If they are logged in, send to start.html. If not, send to login.html.
+        const u2 = await window.AuthoredAccount.getUser();
+        const isLoggedIn = !!u2?.data?.user;
 
-        // Optional: auto-redirect to login
+        setMsg("Account created.", "ok");
         setTimeout(() => {
-          window.location.href = "login.html";
-        }, 900);
+          window.location.href = isLoggedIn ? "start.html" : "login.html";
+        }, 700);
 
       } catch (e) {
-        setMsg("Something went wrong. Please try again.", "err");
         console.error(e);
+        setMsg(e?.message || "Something went wrong. Please try again.", "err");
       } finally {
         btn.disabled = false;
         btn.textContent = "Sign up";
