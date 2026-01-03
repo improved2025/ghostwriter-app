@@ -1,35 +1,18 @@
-(async function () {
-  const page = location.pathname.split("/").pop();
+const { data: { session } } = await client.auth.getSession();
 
-  // Never guard login/signup pages
-  if (page === "login.html" || page === "signup.html" || page === "") return;
+if (!session) {
+  window.location.replace("login.html");
+  return;
+}
 
-  // Wait briefly for account.js (defer) to load
-  const start = Date.now();
-  while (!window.AuthoredAccount?.client) {
-    if (window.AuthoredAccountInitError) break;
-    if (Date.now() - start > 8000) break;
-    await new Promise(r => setTimeout(r, 50));
-  }
+// Treat anonymous as NOT authenticated
+const provider = session.user?.app_metadata?.provider;
+const isAnon =
+  session.user?.is_anonymous === true ||
+  provider === "anonymous" ||
+  !session.user?.email;
 
-  const client = window.AuthoredAccount?.client;
-  if (!client) {
-    // Fail closed: if auth system isn't ready, force login
-    window.location.replace("login.html");
-    return;
-  }
-
-  const { data: { session } } = await client.auth.getSession();
-
-  if (!session) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  // Optional: treat anonymous as not-logged-in (useful if you enabled anon auth)
-  const userEmail = session.user?.email || "";
-  if (!userEmail) {
-    window.location.replace("login.html");
-    return;
-  }
-})();
+if (isAnon) {
+  window.location.replace("login.html");
+  return;
+}
