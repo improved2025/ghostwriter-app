@@ -20,6 +20,9 @@ const SUPABASE_ANON_KEY =
 
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // IMPORTANT: expose client for auth-guard.js (it looks for window.supabaseClient)
+    window.supabaseClient = client;
+
     async function requireUserId() {
       const { data, error } = await client.auth.getUser();
       if (error) throw error;
@@ -61,6 +64,15 @@ const SUPABASE_ANON_KEY =
 
       async getUser() {
         return await client.auth.getUser();
+      },
+
+      // Return headers to include in fetch() calls so server can identify the user
+      // Usage:
+      // const headers = { "Content-Type":"application/json", ...(await AuthoredAccount.getAuthHeader()) }
+      async getAuthHeader() {
+        const { data } = await client.auth.getSession();
+        const token = data?.session?.access_token;
+        return token ? { Authorization: `Bearer ${token}` } : {};
       },
 
       // --------------------------------------------
