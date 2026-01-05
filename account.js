@@ -18,10 +18,51 @@ const SUPABASE_ANON_KEY =
       throw new Error("Supabase JS not loaded. Include supabase-js@2 script before account.js");
     }
 
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    });
 
-    // IMPORTANT: expose client for auth-guard.js (it looks for window.supabaseClient)
+    // IMPORTANT:
+    // Expose a stable global for auth-guard.js (and any other script).
     window.supabaseClient = client;
+
+    function setCookie(name, value, maxAgeSeconds) {
+      const secure = location.protocol === "https:" ? "; Secure" : "";
+      const maxAge = typeof maxAgeSeconds === "number" ? `; Max-Age=${maxAgeSeconds}` : "";
+      document.cookie = `${name}=${encodeURIComponent(value || "")}; Path=/; SameSite=Lax${maxAge}${secure}`;
+    }
+
+    function clearCookie(name) {
+      const secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `${name}=; Path=/; SameSite=Lax; Max-Age=0${secure}`;
+    }
+
+    function writeAuthCookies(session) {
+      // Your API routes already try to read:
+      // - sb-access-token
+      // - supabase-auth-token
+      // We will set sb-access-token and sb-refresh-token.
+
+      if (!session?.access_token) {
+        clearCookie("sb-access-token");
+        clearCookie("sb-refresh-token");
+        return;
+      }
+
+      // 7 days is fine for now (change later)
+      const oneWeek = 60 * 60 * 24 * 7;
+
+      setCookie("sb-access-token", session.access_token, oneWeek);
+      setCookie("sb-refresh-token", session.refresh_token || "", oneWeek);
+    }
+
+    async function currentUser() {
+      const { data } = await client.auth.getUser();
+      return data?.user || null;
+    }
 
     async function requireUserId() {
       const { data, error } = await client.auth.getUser();
@@ -35,27 +76,61 @@ const SUPABASE_ANON_KEY =
       return `authored_active_project_id_${userId}`;
     }
 
-    // Helper: get current user (null if none)
-    async function currentUser() {
-      const { data } = await client.auth.getUser();
-      return data?.user || null;
+    // Auto-create a stable identity for every visitor (guest sessions)
+    async function ensureIdentity() {
+      const { data } = await client.auth.getSession();
+      if (data?.session) {
+        writeAuthCookies(data.session);
+        return data.session;
+      }
+
+      // Requires: Supabase Auth -> Providers -> Anonymous enabled
+      const { data: anonData, error } = await client.auth.signInAnonymously();
+      if (error) {
+        console.warn("Anonymous sign-in failed:", error.message || error);
+        return null;
+      }
+
+      writeAuthCookies(anonData?.session || null);
+      return anonData?.session || null;
     }
 
-    // Expose ONE object that every page can use.
+    // Keep cookies synced any time auth changes
+    client.auth.onAuthStateChange((_event, session) => {
+      writeAuthCookies(session || null);
+    });
+
+    // Run once on load
+    client.auth.getSession().then(({ data }) => {
+      writeAuthCookies(data?.session || null);
+      // Ensure guest identity exists (so limits always work)
+      ensureIdentity().catch(() => {});
+      console.log("Supabase session on load:", data?.session || null);
+    });
+
     window.AuthoredAccount = {
       client,
 
+      // Makes sure there is ALWAYS a user_id (guest or logged-in)
+      async ensureIdentity() {
+        return await ensureIdentity();
+      },
+
       async signIn(email, password) {
-        return await client.auth.signInWithPassword({ email, password });
+        const r = await client.auth.signInWithPassword({ email, password });
+        // cookies update via onAuthStateChange
+        return r;
       },
 
       async signUp(email, password) {
-        // Note: if email confirmations are ON in Supabase, this may require confirmation.
         return await client.auth.signUp({ email, password });
       },
 
       async signOut() {
-        return await client.auth.signOut();
+        const r = await client.auth.signOut();
+        clearCookie("sb-access-token");
+        clearCookie("sb-refresh-token");
+        return r;
       },
 
       async getSession() {
@@ -66,45 +141,13 @@ const SUPABASE_ANON_KEY =
         return await client.auth.getUser();
       },
 
-      // Return headers to include in fetch() calls so server can identify the user
-      // Usage:
-      // const headers = { "Content-Type":"application/json", ...(await AuthoredAccount.getAuthHeader()) }
-      async getAuthHeader() {
-        const { data } = await client.auth.getSession();
-        const token = data?.session?.access_token;
-        return token ? { Authorization: `Bearer ${token}` } : {};
-      },
-
-      // --------------------------------------------
-      // Anonymous auth (guest) + auto-convert support
-      // --------------------------------------------
-      async signInGuest() {
-        // If there is already a session, keep it.
-        const { data: s } = await client.auth.getSession();
-        if (s?.session?.user) return { data: s, error: null };
-
-        // Create an anonymous session
-        // Requires Supabase: Auth -> Providers -> Anonymous enabled
-        const { data, error } = await client.auth.signInAnonymously();
-        return { data, error };
-      },
-
       async convertGuestToEmailPassword(email, password) {
-        // Converts the CURRENT user (must be anonymous) into an email/password user
-        // Keeps the same user_id and preserves guest usage rows keyed by user_id
         const u = await currentUser();
         if (!u) return { data: null, error: new Error("No session to convert") };
-        if (!u.is_anonymous) {
-          return { data: { user: u }, error: null }; // already real user
-        }
+        if (!u.is_anonymous) return { data: { user: u }, error: null };
 
-        // Update the anon user with email/password
-        // Depending on your Supabase settings, this may send a confirmation email.
-        const { data, error } = await client.auth.updateUser({
-          email,
-          password
-        });
-
+        // Converts anon user into email/password user (same user_id)
+        const { data, error } = await client.auth.updateUser({ email, password });
         return { data, error };
       },
 
@@ -121,9 +164,6 @@ const SUPABASE_ANON_KEY =
         return session.user;
       },
 
-      // -----------------------------
-      // Projects helper (per-book)
-      // -----------------------------
       projects: {
         async getActiveProjectId() {
           const userId = await requireUserId();
@@ -193,8 +233,6 @@ const SUPABASE_ANON_KEY =
           return data;
         },
 
-        // Create an active project if none exists.
-        // If one exists, reuse it and update the "project definition" fields.
         async getOrCreateActiveProject(payload) {
           const userId = await requireUserId();
           const existingId = localStorage.getItem(activeProjectKey(userId)) || "";
@@ -217,11 +255,6 @@ const SUPABASE_ANON_KEY =
         }
       }
     };
-
-    // Helpful debug (optional)
-    client.auth.getSession().then(({ data }) => {
-      console.log("Supabase session on load:", data?.session || null);
-    });
   } catch (err) {
     console.error("Auth init failed:", err);
     window.AuthoredAccountInitError = String(err?.message || err);
