@@ -1,32 +1,19 @@
 // /api/expand.js
 // Server-controlled expand limits using public.usage_limits
 // Free: 2 expands per day (shared bucket for expand + regen)
-// Works for logged-in users AND guests.
+// Works for logged-in users AND guests (because account.js now ensures anonymous auth + cookie token)
 
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 import { supabaseAdmin } from "./_supabase.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-const FREE_LIMITS = {
-  expands_per_day: 2
-};
+const FREE_LIMITS = { expands_per_day: 2 };
 
 function clean(v) {
   return (v ?? "").toString().trim();
-}
-
-function sha256(s) {
-  return crypto.createHash("sha256").update(String(s)).digest("hex");
-}
-
-function getIp(req) {
-  const xf = req.headers["x-forwarded-for"];
-  if (typeof xf === "string" && xf.length) return xf.split(",")[0].trim();
-  return req.socket?.remoteAddress || "0.0.0.0";
 }
 
 function extractAccessToken(req) {
@@ -38,15 +25,6 @@ function extractAccessToken(req) {
 
   const sbAccess = cookie.match(/(?:^|;\s*)sb-access-token=([^;]+)/);
   if (sbAccess?.[1]) return decodeURIComponent(sbAccess[1]);
-
-  const supa = cookie.match(/(?:^|;\s*)supabase-auth-token=([^;]+)/);
-  if (supa?.[1]) {
-    try {
-      const raw = decodeURIComponent(supa[1]);
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr) && arr[0]) return arr[0];
-    } catch {}
-  }
 
   return null;
 }
@@ -66,21 +44,24 @@ async function getUserIdFromRequest(req) {
   return u?.data?.user?.id || null;
 }
 
-function todayISODate() {
+function todayISODateUTC() {
   const d = new Date();
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`; // date only
+  return `${y}-${m}-${day}`; // YYYY-MM-DD
 }
 
-async function consumeExpand({ supabase, userId, guestKey }) {
-  const today = todayISODate();
+async function consumeExpand({ supabase, userId }) {
+  const today = todayISODateUTC();
 
-  let q = supabase.from("usage_limits").select("*").limit(1);
-  q = userId ? q.eq("user_id", userId) : q.eq("guest_key", guestKey);
+  // Fetch row
+  const existing = await supabase
+    .from("usage_limits")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
 
-  const existing = await q.maybeSingle();
   if (existing.error) return { allowed: false, hardError: existing.error.message };
 
   const row = existing.data;
@@ -89,36 +70,29 @@ async function consumeExpand({ supabase, userId, guestKey }) {
 
   const rowDay = row?.expands_day ? String(row.expands_day).slice(0, 10) : null;
   const usedToday = Number(row?.expands_used_today || 0);
-
   const effectiveUsed = rowDay === today ? usedToday : 0;
 
   if (effectiveUsed >= FREE_LIMITS.expands_per_day) {
     return { allowed: false, limitReached: true };
   }
 
-  const nextUsed = effectiveUsed + 1;
+  const nextUsedToday = effectiveUsed + 1;
+  const nextTotal = Number(row?.expands_used || 0) + 1;
 
-  // Upsert keeps it simple and avoids strict where-clause issues
-  const up = await supabase.from("usage_limits").upsert(
-    userId
-      ? {
-          user_id: userId,
-          plan: row?.plan || "free",
-          expands_day: today,
-          expands_used_today: nextUsed,
-          expands_used: Number(row?.expands_used || 0) + 1,
-          updated_at: new Date().toISOString()
-        }
-      : {
-          guest_key: guestKey,
-          plan: row?.plan || "free",
-          expands_day: today,
-          expands_used_today: nextUsed,
-          expands_used: Number(row?.expands_used || 0) + 1,
-          updated_at: new Date().toISOString()
-        },
-    { onConflict: userId ? "user_id" : "guest_key" }
-  );
+  // Upsert row keyed by user_id
+  const up = await supabase
+    .from("usage_limits")
+    .upsert(
+      {
+        user_id: userId,
+        plan: row?.plan || "free",
+        expands_day: today,
+        expands_used_today: nextUsedToday,
+        expands_used: nextTotal,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "user_id" }
+    );
 
   if (up.error) return { allowed: false, hardError: up.error.message };
   return { allowed: true };
@@ -135,11 +109,11 @@ export default async function handler(req, res) {
 
     const body = req.body || {};
 
-    const projectId = clean(body.projectId) || null;
-
-    // DO NOT TRUST userId from the browser anymore
     const authedUserId = await getUserIdFromRequest(req);
-    const guestKey = sha256(`${getIp(req)}|${req.headers["user-agent"] || ""}`);
+    if (!authedUserId) {
+      // This is the whole point of account.js cookie auth sync.
+      return res.status(401).json({ error: "not_authenticated" });
+    }
 
     const {
       topic,
@@ -151,54 +125,25 @@ export default async function handler(req, res) {
       voiceSample,
       voiceNotes,
       minWords = 900,
-      maxWords = 1300,
-      regenerate = false
+      maxWords = 1300
     } = body;
 
-    if (!chapterTitle || !clean(topic)) {
+    if (!clean(chapterTitle) || !clean(topic)) {
       return res.status(400).json({ error: "Missing chapterTitle or topic" });
     }
 
     const supabase = supabaseAdmin();
 
-    // Create project ONLY if missing (keep your behavior, but avoid not-null topic issues)
-    let pid = projectId;
-
-    if (!pid) {
-      const { data: proj, error } = await supabase
-        .from("projects")
-        .insert({
-          user_id: authedUserId || null,
-          topic: clean(topic),
-          audience: clean(audience),
-          chapters: null,
-          is_paid: false
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        return res.status(500).json({ error: "Failed to create project", details: error.message || error });
-      }
-
-      pid = proj.id;
-    }
-
-    // Enforce expand limits for BOTH logged in and guests
-    const lim = await consumeExpand({ supabase, userId: authedUserId, guestKey });
+    // Enforce expand limits (logged-in + guest both have user_id now)
+    const lim = await consumeExpand({ supabase, userId: authedUserId });
     if (!lim.allowed) {
       if (lim.limitReached) return res.status(200).json({ error: "limit_reached_today" });
       return res.status(500).json({ error: "limit_check_failed", details: lim.hardError || "unknown" });
     }
 
     const voiceBlock = clean(voiceSample)
-      ? `VOICE SAMPLE (match style strictly):
-${voiceSample}
-
-VOICE NOTES:
-${voiceNotes || "none"}`
-      : `VOICE NOTES:
-${voiceNotes || "none"} (Keep voice human.)`;
+      ? `VOICE SAMPLE (match style strictly):\n${voiceSample}\n\nVOICE NOTES:\n${voiceNotes || "none"}`
+      : `VOICE NOTES:\n${voiceNotes || "none"} (Keep voice human.)`;
 
     const prompt = `
 Write a chapter draft.
@@ -239,10 +184,7 @@ Return JSON only:
     const expanded = typeof parsed.expanded === "string" ? clean(parsed.expanded) : "";
     if (!expanded) return res.status(500).json({ error: "no_expanded_text_returned" });
 
-    return res.status(200).json({
-      projectId: pid,
-      expanded
-    });
+    return res.status(200).json({ expanded });
   } catch (err) {
     return res.status(500).json({ error: "Expand failed", details: String(err?.message || err) });
   }
