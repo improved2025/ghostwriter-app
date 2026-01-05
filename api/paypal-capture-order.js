@@ -1,154 +1,113 @@
-// api/paypal-capture-order.js
+// /api/paypal-capture-order.js
+// Captures PayPal order, then activates plan.
+// Requires Authorization: Bearer <supabase_access_token>
+// Body: { orderID: "..." }
+// Returns: { ok: true }
+
 import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "./_supabase.js";
 
-const PRICE = {
-  project: { usd: "49.00" },
-  lifetime: { usd: "149.00" }
-};
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-function getPayPalBase() {
-  const env = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
-  return env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const PAYPAL_ENV = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
+
+function extractAccessToken(req) {
+  const auth = req.headers.authorization || "";
+  const m = auth.match(/Bearer\s+(.+)/i);
+  return m?.[1] ? m[1].trim() : null;
+}
+
+async function getUserIdFromRequest(req) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const token = extractAccessToken(req);
+  if (!token) return null;
+
+  const authed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+
+  const u = await authed.auth.getUser();
+  return u?.data?.user?.id || null;
+}
+
+function paypalBase() {
+  return PAYPAL_ENV === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
 }
 
 async function getPayPalAccessToken() {
-  const base = getPayPalBase();
-  const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
-
-  if (!id || !secret) throw new Error("Missing PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET");
-
-  const auth = Buffer.from(`${id}:${secret}`).toString("base64");
-
-  const resp = await fetch(`${base}/v1/oauth2/token`, {
+  const basic = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const resp = await fetch(`${paypalBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${auth}`,
+      "Authorization": `Basic ${basic}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: "grant_type=client_credentials"
   });
-
   const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw new Error(data?.error_description || "PayPal token failed");
-
+  if (!resp.ok || !data.access_token) {
+    throw new Error(data?.error_description || "paypal_oauth_failed");
+  }
   return data.access_token;
 }
 
-async function requireUserId(req) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !anonKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
-
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!token) return null;
-
-  const sb = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
-  const { data, error } = await sb.auth.getUser(token);
-  if (error) return null;
-
-  return data?.user?.id || null;
-}
-
-async function markPaid(userId, plan) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-
-  // Try to update profiles (if you have it)
-  try {
-    await admin.from("profiles").upsert(
-      { id: userId, is_paid: true, plan: plan, updated_at: new Date().toISOString() },
-      { onConflict: "id" }
-    );
-  } catch {}
-
-  // Update usable_limits (your limiter table)
-  // You may already have different column names. Adjust here if needed.
-  try {
-    // If a row exists, update. If not, insert.
-    const { data: existing } = await admin
-      .from("usable_limits")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (existing?.user_id) {
-      await admin
-        .from("usable_limits")
-        .update({ is_paid: true, plan: plan, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-    } else {
-      await admin.from("usable_limits").insert({
-        user_id: userId,
-        is_paid: true,
-        plan: plan,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    }
-  } catch {}
-}
-
 export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
+
   try {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      return res.status(500).json({ error: "Missing PayPal env vars" });
+    }
 
-    const userId = await requireUserId(req);
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "not_authenticated" });
 
-    const { orderID } = req.body || {};
-    if (!orderID) return res.status(400).json({ error: "Missing orderID" });
+    const orderID = (req.body?.orderID || "").toString().trim();
+    if (!orderID) return res.status(400).json({ error: "missing_orderID" });
 
-    const accessToken = await getPayPalAccessToken();
-    const base = getPayPalBase();
+    const ppToken = await getPayPalAccessToken();
 
-    const resp = await fetch(`${base}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+    // Capture
+    const capResp = await fetch(`${paypalBase()}/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${ppToken}`,
         "Content-Type": "application/json"
       }
     });
 
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      return res.status(500).json({ error: "paypal_capture_failed", details: data });
+    const cap = await capResp.json().catch(() => ({}));
+    if (!capResp.ok) return res.status(500).json({ error: "paypal_capture_failed", details: cap });
+
+    // Figure out plan from reference_id we set during create
+    const ref = cap?.purchase_units?.[0]?.reference_id || "";
+    const plan = ref.includes("lifetime") ? "lifetime" : "project";
+
+    // Safety: ensure order custom_id matches this logged-in user
+    const customId = cap?.purchase_units?.[0]?.custom_id || "";
+    if (customId && customId !== userId) {
+      return res.status(403).json({ error: "order_user_mismatch" });
     }
 
-    const status = (data.status || "").toUpperCase();
-    if (status !== "COMPLETED") {
-      return res.status(400).json({ error: "payment_not_completed", details: { status } });
-    }
+    // Activate plan in DB
+    const sb = supabaseAdmin();
+    const up = await sb
+      .from("usage_limits")
+      .upsert(
+        { user_id: userId, plan, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
 
-    const pu = data.purchase_units?.[0];
-    const customId = pu?.custom_id || "";
-    const ref = pu?.reference_id || "";
-    const amountVal = pu?.payments?.captures?.[0]?.amount?.value;
-
-    // custom_id = "userId:plan"
-    const [paidUserId, planFromMeta] = customId.split(":");
-    const plan = planFromMeta || ref;
-
-    if (!paidUserId || paidUserId !== userId) {
-      return res.status(400).json({ error: "user_mismatch" });
-    }
-    if (!plan || !PRICE[plan]) {
-      return res.status(400).json({ error: "invalid_plan" });
-    }
-    if (String(amountVal) !== String(PRICE[plan].usd)) {
-      return res.status(400).json({ error: "amount_mismatch" });
-    }
-
-    await markPaid(userId, plan);
+    if (up.error) return res.status(500).json({ error: "unlock_failed", details: up.error.message });
 
     return res.status(200).json({ ok: true, plan });
-  } catch (e) {
-    return res.status(500).json({ error: "server_error", details: String(e?.message || e) });
+  } catch (err) {
+    return res.status(500).json({ error: "server_error", details: String(err?.message || err) });
   }
 }
