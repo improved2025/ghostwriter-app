@@ -1,105 +1,113 @@
-// api/paypal-create-order.js
+// /api/paypal-create-order.js
+// Creates a PayPal order for a plan.
+// Requires Authorization: Bearer <supabase_access_token>
+// Body: { plan: "project" | "lifetime" }
+// Returns: { orderID: "..." }
+
 import { createClient } from "@supabase/supabase-js";
 
-const PRICE = {
-  project: { usd: "49.00", label: "Project plan" },
-  lifetime: { usd: "149.00", label: "Lifetime" }
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+// Use "live" in production, "sandbox" for testing
+const PAYPAL_ENV = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
+
+const PRICES = {
+  project: "49.00",
+  lifetime: "149.00"
 };
 
-function getPayPalBase() {
-  const env = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
-  return env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+function clean(v) {
+  return (v ?? "").toString().trim();
+}
+
+function extractAccessToken(req) {
+  const auth = req.headers.authorization || "";
+  const m = auth.match(/Bearer\s+(.+)/i);
+  return m?.[1] ? m[1].trim() : null;
+}
+
+async function getUserIdFromRequest(req) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const token = extractAccessToken(req);
+  if (!token) return null;
+
+  const authed = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+
+  const u = await authed.auth.getUser();
+  return u?.data?.user?.id || null;
+}
+
+function paypalBase() {
+  return PAYPAL_ENV === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
 }
 
 async function getPayPalAccessToken() {
-  const base = getPayPalBase();
-  const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
-
-  if (!id || !secret) throw new Error("Missing PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET");
-
-  const auth = Buffer.from(`${id}:${secret}`).toString("base64");
-
-  const resp = await fetch(`${base}/v1/oauth2/token`, {
+  const basic = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const resp = await fetch(`${paypalBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${auth}`,
+      "Authorization": `Basic ${basic}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: "grant_type=client_credentials"
   });
-
   const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    throw new Error(data?.error_description || "PayPal token failed");
+  if (!resp.ok || !data.access_token) {
+    throw new Error(data?.error_description || "paypal_oauth_failed");
   }
-
   return data.access_token;
 }
 
-async function requireUserId(req) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !anonKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
-
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-
-  if (!token) return null;
-
-  const sb = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
-  const { data, error } = await sb.auth.getUser(token);
-  if (error) return null;
-
-  return data?.user?.id || null;
-}
-
 export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
+
   try {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
+      return res.status(500).json({ error: "Missing PayPal env vars" });
+    }
 
-    const userId = await requireUserId(req);
-    if (!userId) return res.status(401).json({ error: "Not authenticated" });
+    const userId = await getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "not_authenticated" });
 
-    const { plan } = req.body || {};
-    if (!plan || !PRICE[plan]) return res.status(400).json({ error: "Invalid plan" });
+    const plan = clean(req.body?.plan).toLowerCase();
+    if (!["project", "lifetime"].includes(plan)) return res.status(400).json({ error: "invalid_plan" });
 
-    const accessToken = await getPayPalAccessToken();
-    const base = getPayPalBase();
+    const price = PRICES[plan];
+    const ppToken = await getPayPalAccessToken();
 
-    const invoiceId = `authored_${userId}_${plan}_${Date.now()}`;
-
-    const resp = await fetch(`${base}/v2/checkout/orders`, {
+    const orderResp = await fetch(`${paypalBase()}/v2/checkout/orders`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${ppToken}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         intent: "CAPTURE",
         purchase_units: [
           {
-            reference_id: plan,
-            description: PRICE[plan].label,
-            custom_id: `${userId}:${plan}`, // we verify this on capture
-            invoice_id: invoiceId,
-            amount: {
-              currency_code: "USD",
-              value: PRICE[plan].usd
-            }
+            reference_id: `authored_${plan}`,
+            custom_id: userId, // ties order to user on capture
+            amount: { currency_code: "USD", value: price }
           }
         ]
       })
     });
 
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      return res.status(500).json({ error: "paypal_create_order_failed", details: data });
+    const orderData = await orderResp.json().catch(() => ({}));
+    if (!orderResp.ok || !orderData.id) {
+      return res.status(500).json({ error: "paypal_create_failed", details: orderData });
     }
 
-    return res.status(200).json({ orderID: data.id });
-  } catch (e) {
-    return res.status(500).json({ error: "server_error", details: String(e?.message || e) });
+    return res.status(200).json({ orderID: orderData.id });
+  } catch (err) {
+    return res.status(500).json({ error: "server_error", details: String(err?.message || err) });
   }
 }
