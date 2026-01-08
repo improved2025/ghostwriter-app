@@ -1,2 +1,2 @@
 # ghostwriter-app
-AI ghostwriting platform
+ghostwriting platform
