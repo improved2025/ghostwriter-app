@@ -1,6 +1,9 @@
 // /api/stripe-create-checkout.js
-// Creates Stripe Checkout and returns { url }.
-// Requires Authorization: Bearer <supabase_access_token>
+// Creates Stripe Checkout and redirects to Stripe-hosted checkout page.
+// Works with BOTH:
+// - GET  /api/stripe-create-checkout?plan=project
+// - POST /api/stripe-create-checkout  { plan: "project" }
+// Requires logged-in user (Bearer token OR sb-access-token cookie)
 
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
@@ -43,8 +46,15 @@ function originFromReq(req) {
   return `${proto}://${host}`;
 }
 
+function clean(v) {
+  return (v ?? "").toString().trim().toLowerCase();
+}
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
+  // Allow GET + POST (because pricing.html / browser often hits GET)
+  if (req.method !== "GET" && req.method !== "POST") {
+    return res.status(405).json({ error: "Use GET or POST" });
+  }
 
   try {
     if (!STRIPE_SECRET_KEY) return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY" });
@@ -54,7 +64,9 @@ export default async function handler(req, res) {
     const userId = await getUserIdFromRequest(req);
     if (!userId) return res.status(401).json({ error: "not_authenticated" });
 
-    const plan = (req.body?.plan || "").toString().toLowerCase();
+    // plan can come from query (?plan=project) or from POST body
+    const plan = clean(req.query?.plan || req.body?.plan);
+
     const priceId =
       plan === "project" ? STRIPE_PRICE_PROJECT :
       plan === "lifetime" ? STRIPE_PRICE_LIFETIME :
@@ -62,19 +74,23 @@ export default async function handler(req, res) {
 
     if (!priceId) return res.status(400).json({ error: "invalid_plan" });
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+    const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2023-10-16" });
     const origin = originFromReq(req);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/api/stripe-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing.html`,
+      cancel_url: `${origin}/pricing.html?canceled=1`,
       metadata: { user_id: userId, plan }
     });
 
-    return res.status(200).json({ url: session.url });
+    // If browser hit this endpoint directly, redirect to Stripe Checkout
+    return res.redirect(303, session.url);
   } catch (err) {
-    return res.status(500).json({ error: "stripe_checkout_failed", details: String(err?.message || err) });
+    return res.status(500).json({
+      error: "stripe_checkout_failed",
+      details: String(err?.message || err)
+    });
   }
 }
