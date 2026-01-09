@@ -1,11 +1,12 @@
 // /api/stripe-success.js
-// Verifies a paid Stripe Checkout Session and upgrades the user in Supabase,
-// then redirects to /start.html
+// Verifies Checkout Session is paid, then sets plan in usage_limits (and usable_limits if you use it).
+// Redirects user back to /start.html
 
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -17,7 +18,7 @@ function redirect(res, url) {
 
 export default async function handler(req, res) {
   try {
-    const sessionId = (req.query?.session_id || "").toString();
+    const sessionId = (req.query?.session_id || "").toString().trim();
     if (!sessionId) return redirect(res, "/pricing.html");
 
     if (!STRIPE_SECRET_KEY) return redirect(res, "/pricing.html");
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
     const userId = session.metadata?.user_id || null;
     const plan = (session.metadata?.plan || "").toString().toLowerCase();
 
-    if (!userId || (plan !== "project" && plan !== "lifetime")) {
+    if (!userId || !["project", "lifetime"].includes(plan)) {
       return redirect(res, "/pricing.html");
     }
 
@@ -41,24 +42,17 @@ export default async function handler(req, res) {
       auth: { persistSession: false }
     });
 
-    // Update BOTH tables since your app uses both:
-    // - usable_limits (titles/intro/outline usage)
-    // - usage_limits (expand limits)
-    // If one of these tables doesn't exist in your DB, remove that block.
-
-    await supabaseAdmin
-      .from("usable_limits")
-      .upsert(
-        { user_id: userId, plan, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" }
-      );
-
+    // Your expand uses "usage_limits"
     await supabaseAdmin
       .from("usage_limits")
-      .upsert(
-        { user_id: userId, plan, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" }
-      );
+      .upsert({ user_id: userId, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+
+    // If you also use "usable_limits" for titles/intro, keep this too:
+    const { error: usableErr } = await supabaseAdmin
+      .from("usable_limits")
+      .upsert({ user_id: userId, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+
+    // If usable_limits doesn't exist in your DB, you can delete the block above.
 
     return redirect(res, "/start.html");
   } catch {
