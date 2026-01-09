@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
-    "openai": "^4.30.0"
+    "openai": "^4.30.0",
+    "stripe": "^16.12.0"
   }
 }
