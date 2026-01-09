@@ -6,10 +6,6 @@ import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 const FREE_LIMITS = {
   outlines_total: 2, // set your free outline limit here
 };
@@ -101,6 +97,11 @@ async function consumeOutlineLimit({ supabaseAdmin, userId }) {
 }
 
 export default async function handler(req, res) {
+  // ✅ Read env vars at request-time (fixes "Missing OPENAI_API_KEY" sticking around)
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Use POST" });
   }
@@ -129,7 +130,7 @@ export default async function handler(req, res) {
 
     // (Optional) keep a stable guest fingerprint for later if you add guest_key support
     const guestKey = sha256(`${getIp(req)}|${req.headers["user-agent"] || ""}`);
-    void guestKey; // avoid lint complaining
+    void guestKey;
 
     // Enforce limit BEFORE spending tokens
     const lim = await consumeOutlineLimit({ supabaseAdmin, userId });
