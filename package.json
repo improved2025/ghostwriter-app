@@ -3,11 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vercel dev",
-    "build": "echo \"No build step\"",
-    "start": "node index.js"
-  },
   "dependencies": {
     "openai": "^4.30.0",
     "@supabase/supabase-js": "^2.49.0"
