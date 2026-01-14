@@ -55,7 +55,6 @@
 
       <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
       <div class="row">
-        <!-- IMPORTANT: keep your existing Stripe URL here if you already have one -->
         <button class="btn" id="stripeProjectBtn" type="button">Checkout (Card)</button>
       </div>
 
@@ -77,7 +76,6 @@
 
       <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
       <div class="row">
-        <!-- IMPORTANT: keep your existing Stripe URL here if you already have one -->
         <button class="btn" id="stripeLifetimeBtn" type="button">Checkout (Card)</button>
       </div>
 
@@ -117,15 +115,12 @@
     }
 
     // -----------------------------
-    // Stripe buttons (keep your existing endpoint URL)
+    // Stripe buttons
     // -----------------------------
     async function goStripe(plan) {
-      // Change these endpoints to whatever you already use for Stripe
-      // Example: /api/stripe-create-checkout?plan=project
       const url = plan === "project"
         ? "/api/stripe-create-checkout?plan=project"
         : "/api/stripe-create-checkout?plan=lifetime";
-
       window.location.href = url;
     }
 
@@ -135,34 +130,45 @@
     // -----------------------------
     // PayPal Buttons
     // -----------------------------
-    async function loadPayPalSdk() {
-      const clientId = "AWI-gB05qmeCZh6bnwXNML5VGO7isFjXedWD_fHxH7qaiET4ZdZtgTezTut5rlruBKDUe7l2Hm9anT-a"; // We’ll load it from env by hardcoding, or you can paste your live client ID.
-      // If you want: paste your live PayPal Client ID here.
-      // PayPal SDK cannot read Vercel env vars in static HTML.
-      // So you must paste your PAYPAL_CLIENT_ID value here (safe to expose).
-      if (clientId === "AWI-gB05qmeCZh6bnwXNML5VGO7isFjXedWD_fHxH7qaiET4ZdZtgTezTut5rlruBKDUe7l2Hm9anT-a") {
-        warn("Paste your PayPal Client ID into pricing.html (clientId). This is required for the PayPal buttons to appear.");
-        return false;
+    const PAYPAL_CLIENT_ID = "AWI-gB05qmeCZh6bnwXNML5VGO7isFjXedWD_fHxH7qaiET4ZdZtgTezTut5rlruBKDUe7l2Hm9anT-a";
+
+    let paypalSdkPromise = null;
+
+    function loadPayPalSdkOnce() {
+      if (paypalSdkPromise) return paypalSdkPromise;
+
+      if (!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID === "REPLACE_ON_DEPLOY") {
+        warn("Paste your PayPal Client ID into pricing.html (PAYPAL_CLIENT_ID).");
+        paypalSdkPromise = Promise.resolve(false);
+        return paypalSdkPromise;
       }
 
-      return new Promise((resolve) => {
+      paypalSdkPromise = new Promise((resolve) => {
+        // If already loaded, reuse it
+        if (window.paypal?.Buttons) return resolve(true);
+
         const s = document.createElement("script");
-        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`;
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(PAYPAL_CLIENT_ID)}&currency=USD&intent=capture`;
         s.onload = () => resolve(true);
         s.onerror = () => resolve(false);
         document.head.appendChild(s);
       });
+
+      return paypalSdkPromise;
     }
 
     async function renderPayPalButtons(containerId, plan) {
-      const ok = await loadPayPalSdk();
-      if (!ok) return;
+      const ok = await loadPayPalSdkOnce();
+      if (!ok) {
+        warn("PayPal SDK did not load. Check your Client ID and redeploy.");
+        return;
+      }
 
       const token = await getAccessToken();
       if (!token) return;
 
       if (!window.paypal?.Buttons) {
-        warn("PayPal SDK did not load.");
+        warn("PayPal SDK loaded but Buttons is missing.");
         return;
       }
 
@@ -197,7 +203,6 @@
             warn("Payment captured but unlock failed. Refresh and try again.");
             return;
           }
-          // You’re paid now. Send them back.
           window.location.href = "start.html";
         },
 
