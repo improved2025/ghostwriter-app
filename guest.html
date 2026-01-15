@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,6 +42,28 @@
       white-space: pre-wrap; background:#fafafa; border:1px solid #eee;
       padding:12px; border-radius:10px; font-size:13px; line-height:1.45;
     }
+
+    /* --- NEW: Quick-start genre buttons (safe, optional) --- */
+    .quickstart { margin: 8px 0 10px; }
+    .quickstart-note { font-size: 13px; color: #444; margin-bottom: 8px; }
+    .quickstart-sub { font-size: 12px; color: #666; margin-top: 8px; }
+
+    .genre-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .genre-btn{
+      appearance:none;
+      border: 1px solid #cfcfcf;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .genre-btn:hover{ background:#f6f6f6; }
+    .genre-btn.active{
+      border-color:#111;
+      background:#111;
+      color:#fff;
+    }
   </style>
 </head>
 
@@ -57,6 +78,22 @@
   </div>
 
   <label>What do you want to write about?</label>
+
+  <!-- NEW: Optional quick-start buttons (does not change existing flow) -->
+  <div class="quickstart">
+    <div class="quickstart-note">Optional: choose a genre to get started faster.</div>
+
+    <div class="genre-row" role="group" aria-label="Quick start genres">
+      <button type="button" class="genre-btn" data-genre="memoir">Memoir</button>
+      <button type="button" class="genre-btn" data-genre="devotional">Devotional</button>
+      <button type="button" class="genre-btn" data-genre="nonfiction">Non-fiction</button>
+      <button type="button" class="genre-btn" data-genre="fiction">Fiction</button>
+    </div>
+
+    <div class="quickstart-sub">You can ignore these and just type your idea.</div>
+  </div>
+
+  <!-- Existing textarea (unchanged, already has id="topic") -->
   <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
 
   <label>Who is this for?</label>
@@ -131,6 +168,51 @@
   </div>
 
   <script>
+    // --- NEW: Genre button behavior (safe, optional, never blocks typing) ---
+    (function initGenreButtons() {
+      const topicEl = document.getElementById("topic");
+      if (!topicEl) return;
+
+      const presets = {
+        memoir: "I want to write a memoir about ",
+        devotional: "I want to write a devotional focused on ",
+        nonfiction: "I want to write a practical non-fiction book that helps people ",
+        fiction: "I want to write a fiction story about "
+      };
+
+      const buttons = document.querySelectorAll(".genre-btn");
+      if (!buttons.length) return;
+
+      function setActive(btn) {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-genre");
+          const text = presets[key] || "";
+
+          setActive(btn);
+
+          const current = (topicEl.value || "").trim();
+
+          // If empty, prefill. If not empty, lightly append a genre hint.
+          if (!current) {
+            topicEl.value = text;
+          } else {
+            const tag = `Genre: ${btn.textContent}.`;
+            if (!current.toLowerCase().includes("genre:")) {
+              topicEl.value = current + "\n\n" + tag;
+            }
+          }
+
+          topicEl.focus();
+          topicEl.setSelectionRange(topicEl.value.length, topicEl.value.length);
+        });
+      });
+    })();
+
     function clean(v) { return (v ?? "").toString().trim(); }
 
     function getPayloadFromForm() {
