@@ -49,9 +49,7 @@
       outline: none;
       box-sizing: border-box;
     }
-    input:focus {
-      border-color: #aaa;
-    }
+    input:focus { border-color: #aaa; }
     button {
       width: 100%;
       margin-top: 16px;
@@ -64,10 +62,7 @@
       color: #fff;
       cursor: pointer;
     }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
     .msg {
       margin-top: 12px;
       font-size: 13px;
@@ -89,7 +84,7 @@
 <body>
   <div class="wrap">
     <h1>Create your account</h1>
-    <p class="sub">Email + password. No confirmation email required.</p>
+    <p class="sub">Email + password. Your draft will carry over.</p>
 
     <div class="card">
       <label for="email">Email</label>
@@ -103,37 +98,72 @@
 
       <div class="row">
         <div>Already have an account?</div>
-        <a href="login.html">Log in</a>
+        <a id="loginLink" href="login.html">Log in</a>
       </div>
     </div>
   </div>
 
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./account.js" defer></script>
+
+  <!-- Cache-bust to avoid stale account.js -->
+  <script src="./account.js?v=3" defer></script>
 
   <script>
     const emailEl = document.getElementById("email");
-    const passEl = document.getElementById("password");
-    const btn = document.getElementById("btn");
-    const msg = document.getElementById("msg");
+    const passEl  = document.getElementById("password");
+    const btn     = document.getElementById("btn");
+    const msg     = document.getElementById("msg");
+
+    // Carry forward guest momentum if present
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = params.get("returnTo") || "start.html";
+    const nextStep = params.get("nextStep") || ""; // safe even if unused
+    const loginLink = document.getElementById("loginLink");
+    loginLink.href = `login.html?returnTo=${encodeURIComponent(returnTo)}${nextStep ? `&nextStep=${encodeURIComponent(nextStep)}` : ""}`;
 
     function setMsg(text, type) {
       msg.textContent = text || "";
       msg.className = "msg" + (type ? " " + type : "");
     }
 
-    async function waitForAccount() {
-      // account.js is loaded with defer, but this page script is not deferred.
-      // So we wait until window.AuthoredAccount exists.
-      for (let i = 0; i < 200; i++) {
-        if (window.AuthoredAccount) return;
-        await new Promise(r => setTimeout(r, 10));
+    async function waitForAccount(timeoutMs = 15000) {
+      const start = Date.now();
+      while (!window.AuthoredAccount) {
+        if (window.AuthoredAccountInitError) throw new Error(window.AuthoredAccountInitError);
+        if (Date.now() - start > timeoutMs) throw new Error("account.js not loaded");
+        await new Promise(r => setTimeout(r, 25));
       }
-      throw new Error("account.js not loaded");
     }
 
-    btn.addEventListener("click", async () => {
+    function goToStart() {
+      // Preserve nextStep for later use (safe if ignored by start.html for now)
+      const url = nextStep ? `${returnTo}?nextStep=${encodeURIComponent(nextStep)}` : returnTo;
+      window.location.replace(url);
+    }
+
+    (async function boot() {
+      try {
+        await waitForAccount();
+
+        // If already logged in as a real user, skip signup page
+        const { data } = await window.AuthoredAccount.getSession();
+        const user = data?.session?.user;
+        if (user && user.is_anonymous === false) {
+          goToStart();
+        }
+
+        // Ensure an identity exists (anon or real). This matches your account.js API.
+        if (window.AuthoredAccount.ensureIdentity) {
+          await window.AuthoredAccount.ensureIdentity();
+        }
+      } catch (e) {
+        console.error(e);
+        setMsg(e.message || "Signup page failed to initialize.", "err");
+      }
+    })();
+
+    async function handleSignup() {
       setMsg("", "");
       const email = (emailEl.value || "").trim();
       const password = passEl.value || "";
@@ -149,20 +179,16 @@
       try {
         await waitForAccount();
 
-        // Ensure we have a session. If they came from guest flow, they'll already be anon.
-        // If not, we create anon so "convert" is always available.
-        if (window.AuthoredAccount.signInGuest) {
-          await window.AuthoredAccount.signInGuest();
+        // Ensure we have a session (anon if needed)
+        if (window.AuthoredAccount.ensureIdentity) {
+          await window.AuthoredAccount.ensureIdentity();
         }
 
         // Check current user
-        let user = null;
-        if (window.AuthoredAccount.getUser) {
-          const u = await window.AuthoredAccount.getUser();
-          user = u?.data?.user || null;
-        }
+        const u = await window.AuthoredAccount.getUser();
+        const user = u?.data?.user || null;
 
-        // Convert anon -> email/password (keeps SAME user_id)
+        // Convert anon -> email/password (keeps same user_id)
         if (user?.is_anonymous && window.AuthoredAccount.convertGuestToEmailPassword) {
           const r = await window.AuthoredAccount.convertGuestToEmailPassword(email, password);
           if (r?.error) {
@@ -171,29 +197,33 @@
           }
 
           setMsg("Account created. Taking you back to your draft...", "ok");
-          setTimeout(() => {
-            window.location.href = "start.html";
-          }, 700);
+          setTimeout(goToStart, 500);
           return;
         }
 
-        // If already a real user (not anonymous), do normal sign up
-        // (This can happen if they are logged in already, or anon is disabled.)
-        const { data, error } = await window.AuthoredAccount.signUp(email, password);
+        // Otherwise, normal signup
+        const { error } = await window.AuthoredAccount.signUp(email, password);
         if (error) {
           setMsg(error.message || "Something went wrong. Please try again.", "err");
           return;
         }
 
-        // Depending on your Supabase settings, they may or may not be logged in immediately.
-        // If they are logged in, send to start.html. If not, send to login.html.
+        // If logged in immediately, go to start. If not, go to login.
         const u2 = await window.AuthoredAccount.getUser();
         const isLoggedIn = !!u2?.data?.user;
 
         setMsg("Account created.", "ok");
         setTimeout(() => {
-          window.location.href = isLoggedIn ? "start.html" : "login.html";
-        }, 700);
+          if (isLoggedIn) {
+            goToStart();
+          } else {
+            // preserve returnTo + nextStep for continuity
+            const loginUrl =
+              `login.html?returnTo=${encodeURIComponent(returnTo)}` +
+              (nextStep ? `&nextStep=${encodeURIComponent(nextStep)}` : "");
+            window.location.replace(loginUrl);
+          }
+        }, 500);
 
       } catch (e) {
         console.error(e);
@@ -202,6 +232,13 @@
         btn.disabled = false;
         btn.textContent = "Sign up";
       }
+    }
+
+    btn.addEventListener("click", handleSignup);
+
+    // Enter key submits
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSignup();
     });
   </script>
 </body>
