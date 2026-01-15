@@ -16,9 +16,10 @@
     .row { display:flex; justify-content:space-between; margin-top: 14px; font-size: 14px; }
   </style>
 
+  <!-- IMPORTANT: account.js must load BEFORE we use AuthoredAccount -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Cache-bust to prevent stale account.js in normal tabs -->
+  <!-- Cache-bust account.js to avoid stale browser versions -->
   <script src="./account.js?v=3" defer></script>
 </head>
 <body>
@@ -45,7 +46,7 @@
     const statusEl = document.getElementById("status");
     const loginBtn = document.getElementById("loginBtn");
 
-    // Optional: supports login.html?next=start.html
+    // Optional: supports login.html?next=start.html (or any other page)
     const params = new URLSearchParams(window.location.search);
     const NEXT_URL = params.get("next") || "./start.html";
 
@@ -63,11 +64,15 @@
       }
     }
 
+    function isFn(fn) {
+      return typeof fn === "function";
+    }
+
     async function redirectIfAlreadyAuthedRealUser() {
       const { data } = await window.AuthoredAccount.getSession();
       const user = data?.session?.user;
 
-      // If already logged in as a real user, skip the login screen.
+      // If already logged in as a real user, skip the login screen entirely.
       if (user && user.is_anonymous === false) {
         window.location.replace(NEXT_URL);
         return true;
@@ -75,13 +80,42 @@
       return false;
     }
 
+    async function ensureGuestSessionIfNeeded() {
+      // This is optional stabilization. It must NEVER break the login page.
+      const { data } = await window.AuthoredAccount.getSession();
+      const user = data?.session?.user;
+
+      if (user) return user;
+
+      // Guard: if signInGuest doesn't exist (old cached account.js), just skip quietly.
+      if (!isFn(window.AuthoredAccount.signInGuest)) {
+        console.warn("signInGuest not available. Skipping anonymous session creation.");
+        return null;
+      }
+
+      try {
+        const { data: anonData, error: anonErr } = await window.AuthoredAccount.signInGuest();
+        if (anonErr) {
+          console.warn("Anonymous sign-in failed:", anonErr.message || anonErr);
+          return null;
+        }
+        return anonData?.user || null;
+      } catch (e) {
+        console.warn("Anonymous sign-in threw an error. Skipping.", e);
+        return null;
+      }
+    }
+
     (async function boot() {
       try {
         await waitForAuthoredAccount();
 
-        // account.js already ensures an identity (guest) on load.
-        // The only thing we do here is skip the page for already-authenticated users.
-        await redirectIfAlreadyAuthedRealUser();
+        // 1) If already logged in as a real user, redirect instantly.
+        const redirected = await redirectIfAlreadyAuthedRealUser();
+        if (redirected) return;
+
+        // 2) Optional: create anon session in background (never blocks login).
+        await ensureGuestSessionIfNeeded();
       } catch (e) {
         console.error(e);
         setStatus(e.message || "Login page failed to initialize.", "error");
@@ -103,11 +137,11 @@
           return;
         }
 
-        // If the current session is anonymous, sign out before signing in.
+        // If user is currently anonymous, sign out first to avoid edge cases.
         const { data: s } = await window.AuthoredAccount.getSession();
         const currentUser = s?.session?.user;
 
-        if (currentUser?.is_anonymous) {
+        if (currentUser?.is_anonymous && isFn(window.AuthoredAccount.signOut)) {
           await window.AuthoredAccount.signOut();
         }
 
@@ -130,7 +164,7 @@
 
     loginBtn.addEventListener("click", handleLogin);
 
-    // Enter key submits
+    // Nice UX: press Enter to login
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") handleLogin();
     });
