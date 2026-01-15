@@ -64,7 +64,7 @@
     }
     .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.18);}
 
-    /* NEW: visually secondary CTA */
+    /* Secondary CTA */
     .btnGhost{
       background: rgba(255,255,255,.03);
       color: rgba(245,247,251,.75);
@@ -214,9 +214,14 @@
 </head>
 
 <body>
-  <!-- Try it free is guest.html -->
   <script>
+    // Fixed mapping:
+    // Try it free -> guest.html
+    // Log in -> login.html
+    // Start free + Primary CTA -> signup.html
     const TRY_FREE_LINK = "guest.html";
+    const LOGIN_LINK = "login.html";
+    const SIGNUP_LINK = "signup.html";
   </script>
 
   <div class="top">
@@ -226,8 +231,8 @@
         <div class="nav">
           <a class="btn" href="#how">How it works</a>
           <a class="btn" href="#for">Who it’s for</a>
-          <a class="btn" href="login.html">Log in</a>
-          <a class="btn btnPrimary" href="signup.html">Start free</a>
+          <a class="btn" id="navLogin" href="login.html">Log in</a>
+          <a class="btn btnPrimary" id="navSignup" href="signup.html">Start free</a>
         </div>
       </div>
     </div>
@@ -249,12 +254,11 @@
           </p>
 
           <div class="ctaRow">
-            <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+            <a class="btn btnPrimary" id="heroCta" href="signup.html">Start writing without losing your voice</a>
             <a class="btn btnGhost" id="tryBtn" href="guest.html">Try it free</a>
-            <a class="btn" href="login.html">Log in</a>
+            <a class="btn" id="heroLogin" href="login.html">Log in</a>
           </div>
 
-          <!-- UPDATED: credibility anchor (single line) -->
           <p class="micro">
             You own your words. Built for writers who care about voice, clarity, and finishing what they start.
           </p>
@@ -378,8 +382,9 @@
         <h2 class="title" style="margin:0 0 8px;">Stop carrying the book. Start writing it.</h2>
         <p class="sub" style="margin:0 auto 16px;">Authored helps you move from idea to manuscript in your own voice.</p>
         <div class="ctaRow" style="justify-content:center;">
-          <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+          <a class="btn btnPrimary" id="finalCta" href="signup.html">Start writing without losing your voice</a>
           <a class="btn btnGhost" id="tryBtn2" href="guest.html">Try it free</a>
+          <a class="btn" id="finalLogin" href="login.html">Log in</a>
         </div>
         <p class="micro" style="margin-top:12px;">
           If you like what you start, create an account to save and expand it.
@@ -404,9 +409,17 @@
   <script>
     document.getElementById("y").textContent = new Date().getFullYear();
 
-    // Apply TRY_FREE_LINK everywhere safely:
+    // Apply the mapping safely everywhere:
     document.getElementById("tryBtn").href = TRY_FREE_LINK;
     document.getElementById("tryBtn2").href = TRY_FREE_LINK;
+
+    document.getElementById("navLogin").href = LOGIN_LINK;
+    document.getElementById("heroLogin").href = LOGIN_LINK;
+    document.getElementById("finalLogin").href = LOGIN_LINK;
+
+    document.getElementById("navSignup").href = SIGNUP_LINK;
+    document.getElementById("heroCta").href = SIGNUP_LINK;
+    document.getElementById("finalCta").href = SIGNUP_LINK;
   </script>
 </body>
 </html>
