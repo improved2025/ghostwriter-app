@@ -18,7 +18,9 @@
 
   <!-- IMPORTANT: account.js must load BEFORE we use AuthoredAccount -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./account.js" defer></script>
+
+  <!-- Cache-bust account.js to avoid stale browser versions -->
+  <script src="./account.js?v=3" defer></script>
 </head>
 <body>
   <div class="wrap">
@@ -44,6 +46,10 @@
     const statusEl = document.getElementById("status");
     const loginBtn = document.getElementById("loginBtn");
 
+    // Optional: supports login.html?next=start.html (or any other page)
+    const params = new URLSearchParams(window.location.search);
+    const NEXT_URL = params.get("next") || "./start.html";
+
     function setStatus(text, kind) {
       statusEl.textContent = text || "";
       statusEl.className = "msg " + (kind || "");
@@ -58,47 +64,57 @@
       }
     }
 
-    async function ensureGuestSessionIfNeeded() {
-      // If no session at all, create an anonymous one.
-      const { data } = await window.AuthoredAccount.getSession();
-      const session = data?.session;
-
-      if (session?.user) {
-        // Already have a user session (could be anon or real)
-        return session.user;
-      }
-
-      const { data: anonData, error: anonErr } = await window.AuthoredAccount.signInGuest();
-      if (anonErr) {
-        // Don’t block login page if anon fails; just continue.
-        console.warn("Anonymous sign-in failed:", anonErr.message || anonErr);
-        return null;
-      }
-      return anonData?.user || null;
+    function isFn(fn) {
+      return typeof fn === "function";
     }
 
     async function redirectIfAlreadyAuthedRealUser() {
       const { data } = await window.AuthoredAccount.getSession();
-      const session = data?.session;
-      const user = session?.user;
+      const user = data?.session?.user;
 
+      // If already logged in as a real user, skip the login screen entirely.
       if (user && user.is_anonymous === false) {
-        window.location.href = "./start.html";
+        window.location.replace(NEXT_URL);
         return true;
       }
       return false;
+    }
+
+    async function ensureGuestSessionIfNeeded() {
+      // This is optional stabilization. It must NEVER break the login page.
+      const { data } = await window.AuthoredAccount.getSession();
+      const user = data?.session?.user;
+
+      if (user) return user;
+
+      // Guard: if signInGuest doesn't exist (old cached account.js), just skip quietly.
+      if (!isFn(window.AuthoredAccount.signInGuest)) {
+        console.warn("signInGuest not available. Skipping anonymous session creation.");
+        return null;
+      }
+
+      try {
+        const { data: anonData, error: anonErr } = await window.AuthoredAccount.signInGuest();
+        if (anonErr) {
+          console.warn("Anonymous sign-in failed:", anonErr.message || anonErr);
+          return null;
+        }
+        return anonData?.user || null;
+      } catch (e) {
+        console.warn("Anonymous sign-in threw an error. Skipping.", e);
+        return null;
+      }
     }
 
     (async function boot() {
       try {
         await waitForAuthoredAccount();
 
-        // If already logged in as a real user, leave this page.
+        // 1) If already logged in as a real user, redirect instantly.
         const redirected = await redirectIfAlreadyAuthedRealUser();
         if (redirected) return;
 
-        // Otherwise, ensure an anonymous session exists in the background.
-        // This stabilizes server-side limits because you’ll always have a user_id.
+        // 2) Optional: create anon session in background (never blocks login).
         await ensureGuestSessionIfNeeded();
       } catch (e) {
         console.error(e);
@@ -106,7 +122,7 @@
       }
     })();
 
-    loginBtn.addEventListener("click", async () => {
+    async function handleLogin() {
       try {
         setStatus("Logging in...", "");
         loginBtn.disabled = true;
@@ -121,12 +137,11 @@
           return;
         }
 
-        // If user is currently anonymous, sign out first to avoid weird edge cases.
-        // Then sign in to the real account cleanly.
+        // If user is currently anonymous, sign out first to avoid edge cases.
         const { data: s } = await window.AuthoredAccount.getSession();
         const currentUser = s?.session?.user;
 
-        if (currentUser?.is_anonymous) {
+        if (currentUser?.is_anonymous && isFn(window.AuthoredAccount.signOut)) {
           await window.AuthoredAccount.signOut();
         }
 
@@ -138,13 +153,20 @@
         }
 
         setStatus("Logged in. Redirecting...", "ok");
-        window.location.href = "./start.html";
+        window.location.replace(NEXT_URL);
       } catch (e) {
         console.error(e);
         setStatus(e.message || "Login failed.", "error");
       } finally {
         loginBtn.disabled = false;
       }
+    }
+
+    loginBtn.addEventListener("click", handleLogin);
+
+    // Nice UX: press Enter to login
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
     });
   </script>
 </body>
