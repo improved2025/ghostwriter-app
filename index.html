@@ -3,423 +3,307 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authored — Write the book you’ve been avoiding</title>
-  <meta name="description" content="Authored helps stuck writers go from idea to manuscript in their own voice. It doesn’t write for you. It writes with you." />
+  <title>Authored — Free Outline</title>
+  <link rel="icon" href="data:,">
 
   <style>
-    :root{
-      --bg:#0b0d12;
-      --panel:#0f131c;
-      --text:#f5f7fb;
-      --muted:rgba(245,247,251,.72);
-      --line:rgba(255,255,255,.10);
-      --accent:#7c5cff;
-      --accent2:#22c55e;
-      --shadow: 0 20px 60px rgba(0,0,0,.45);
-      --r:18px;
-      --max:1080px;
+    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
+    h1 { margin: 0 0 8px; }
+    p { color:#333; line-height:1.5; }
+    label { display:block; font-weight:700; margin-top:14px; }
+    input[type="text"], textarea, select {
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      color:var(--text);
-      background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(124,92,255,.25), transparent 55%),
-        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.18), transparent 55%),
-        radial-gradient(900px 800px at 40% 95%, rgba(124,92,255,.14), transparent 60%),
-        var(--bg);
-      line-height:1.45;
+    textarea { min-height:80px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+    .btn {
+      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
+      border-radius:8px; cursor:pointer; font-weight:700;
     }
-    a{color:inherit}
-    .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
-    .top{
-      position:sticky; top:0; z-index:50;
-      backdrop-filter: blur(14px);
-      background: rgba(11,13,18,.55);
-      border-bottom:1px solid var(--line);
+    .btn.secondary { background:#fff; color:#111; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .muted { color:#666; font-size:13px; }
+    hr { margin:18px 0; border:none; border-top:1px solid #eee; }
+    .notice {
+      background:#fff7d6; border:1px solid #f2d27a;
+      padding:12px 14px; border-radius:10px;
+      margin:14px 0 18px; color:#5a4600;
     }
-    .topInner{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 0;
-      gap:12px;
+    #result { display:none; margin-top:18px; }
+    .card { border:1px solid #e6e6e6; border-radius:12px; padding:16px; background:#fff; }
+    .pill {
+      display:inline-block; padding:4px 10px; border-radius:999px;
+      border:1px solid #ddd; font-size:12px; color:#333; margin-right:8px; margin-bottom:6px;
     }
-    .brand{display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:-.02em;}
-    .dot{
-      width:12px; height:12px; border-radius:999px;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      box-shadow: 0 0 0 4px rgba(124,92,255,.15);
-    }
-    .nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:12px 14px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.02);
-      text-decoration:none;
-      font-weight:800;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
-      white-space:nowrap;
-    }
-    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.18);}
-
-    /* Secondary CTA */
-    .btnGhost{
-      background: rgba(255,255,255,.03);
-      color: rgba(245,247,251,.75);
-      border-color: rgba(255,255,255,.14);
-    }
-    .btnGhost:hover{
-      background: rgba(255,255,255,.06);
-      color: rgba(245,247,251,.9);
+    ol { padding-left:18px; }
+    ul { padding-left:18px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    pre {
+      white-space: pre-wrap; background:#fafafa; border:1px solid #eee;
+      padding:12px; border-radius:10px; font-size:13px; line-height:1.45;
     }
 
-    .btnPrimary{
-      border-color: transparent;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      color:#0b0d12;
-      box-shadow: 0 14px 40px rgba(124,92,255,.22);
-    }
-    .btnPrimary:hover{background: linear-gradient(135deg, #6d4fff, #b59cff);}
+    /* Quick-start genre buttons (optional) */
+    .quickstart { margin: 8px 0 10px; }
+    .quickstart-note { font-size: 13px; color: #444; margin-bottom: 8px; }
+    .quickstart-sub { font-size: 12px; color: #666; margin-top: 8px; }
 
-    .hero{padding:56px 0 34px;}
-    .heroGrid{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap:22px;
-      align-items:center;
+    .genre-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .genre-btn{
+      appearance:none;
+      border: 1px solid #cfcfcf;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
     }
-    .badge{
-      display:inline-flex; align-items:center; gap:10px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-      color:var(--muted);
-      font-size:13px;
-      width:fit-content;
-    }
-    .badge strong{color:var(--text)}
-    h1{
-      margin:14px 0 12px;
-      font-size: clamp(34px, 4vw, 54px);
-      letter-spacing:-.03em;
-      line-height:1.05;
-    }
-    .lead{
-      margin:0 0 18px;
-      color:var(--muted);
-      font-size: clamp(15px, 1.35vw, 18px);
-      max-width:56ch;
-    }
-    .ctaRow{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
-    .micro{margin:10px 0 0; color: rgba(245,247,251,.62); font-size:13px;}
-
-    .panel{
-      border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .panelTop{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:12px 14px;
-      background: rgba(0,0,0,.22);
-      border-bottom:1px solid var(--line);
-    }
-    .dots{display:flex; gap:7px; align-items:center;}
-    .dots span{width:10px; height:10px; border-radius:999px; background: rgba(255,255,255,.16);}
-    .panelBody{padding:18px;}
-    .previewTitle{font-weight:900; margin:0 0 10px; letter-spacing:-.02em;}
-    .line{height:10px; border-radius:999px; background: rgba(255,255,255,.10); margin:10px 0;}
-    .w1{width:92%} .w2{width:78%} .w3{width:85%}
-    .miniGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
-    .mini{
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
-      background: rgba(255,255,255,.02);
-    }
-    .mini b{display:block; margin-bottom:6px;}
-    .mini span{color:var(--muted); font-size:13px;}
-
-    .section{padding:44px 0;}
-    .title{
-      font-size: clamp(22px, 2.3vw, 32px);
-      letter-spacing:-.02em;
-      margin:0 0 10px;
-    }
-    .sub{margin:0 0 18px; color:var(--muted); max-width:75ch;}
-    .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
-    .card{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.02);
-      border-radius: var(--r);
-      padding:16px;
-    }
-    .card h3{margin:0 0 8px; font-size:16px;}
-    .card p{margin:0; color:var(--muted); font-size:14px; line-height:1.5;}
-
-    .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
-    .step{
-      border:1px solid var(--line);
-      border-radius: var(--r);
-      background: rgba(255,255,255,.02);
-      padding:16px;
-    }
-    .num{
-      width:34px; height:34px; border-radius:999px;
-      display:inline-flex; align-items:center; justify-content:center;
-      font-weight:900;
-      background: rgba(124,92,255,.18);
-      border:1px solid rgba(124,92,255,.35);
-      margin-bottom:10px;
-    }
-
-    .split{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
-    ul{margin:10px 0 0; padding-left:18px;}
-    li{margin:8px 0; color: rgba(245,247,251,.88);}
-
-    .final{padding:46px 0 60px; text-align:center;}
-    .finalBox{
-      border:1px solid var(--line);
-      border-radius: 22px;
-      background:
-        radial-gradient(900px 400px at 20% 20%, rgba(124,92,255,.22), transparent 55%),
-        radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.16), transparent 55%),
-        rgba(255,255,255,.02);
-      padding:26px 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .footer{
-      padding:18px 0 30px;
-      border-top:1px solid var(--line);
-      color: rgba(245,247,251,.6);
-      font-size:13px;
-    }
-    .footerRow{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
-    .footer a{color: rgba(245,247,251,.7); text-decoration:none;}
-    .footer a:hover{text-decoration:underline;}
-
-    @media (max-width: 920px){
-      .heroGrid{grid-template-columns:1fr;}
-      .cards{grid-template-columns:1fr;}
-      .steps{grid-template-columns:1fr;}
-      .split{grid-template-columns:1fr;}
+    .genre-btn:hover{ background:#f6f6f6; }
+    .genre-btn.active{
+      border-color:#111;
+      background:#111;
+      color:#fff;
     }
   </style>
 </head>
 
 <body>
-  <script>
-    // Fixed mapping:
-    // Try it free -> guest.html
-    // Log in -> login.html
-    // Start free + Primary CTA -> signup.html
-    const TRY_FREE_LINK = "guest.html";
-    const LOGIN_LINK = "login.html";
-    const SIGNUP_LINK = "signup.html";
-  </script>
+  <h1>Start your book (free outline)</h1>
+  <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
 
-  <div class="top">
-    <div class="wrap">
-      <div class="topInner">
-        <div class="brand"><span class="dot"></span><span>Authored</span></div>
-        <div class="nav">
-          <a class="btn" href="#how">How it works</a>
-          <a class="btn" href="#for">Who it’s for</a>
-          <a class="btn" id="navLogin" href="login.html">Log in</a>
-          <a class="btn btnPrimary" id="navSignup" href="signup.html">Start free</a>
-        </div>
-      </div>
+  <div class="notice">
+    <strong>Free:</strong> Generate an outline without an account.
+    <br />
+    <span class="muted">Account required for expansions, introductions, and downloads.</span>
+  </div>
+
+  <label>What do you want to write about?</label>
+
+  <!-- Optional quick-start buttons -->
+  <div class="quickstart">
+    <div class="quickstart-note">Optional: choose a genre to get started faster.</div>
+
+    <div class="genre-row" role="group" aria-label="Quick start genres">
+      <button type="button" class="genre-btn" data-genre="memoir">Memoir</button>
+      <button type="button" class="genre-btn" data-genre="devotional">Devotional</button>
+      <button type="button" class="genre-btn" data-genre="nonfiction">Non-fiction</button>
+      <button type="button" class="genre-btn" data-genre="fiction">Fiction</button>
+    </div>
+
+    <div class="quickstart-sub">You can ignore these and just type your idea.</div>
+  </div>
+
+  <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
+
+  <label>Who is this for?</label>
+  <input id="audience" type="text" placeholder="Who do you want to reach?" />
+
+  <label>What’s been stopping you from writing?</label>
+  <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
+
+  <hr />
+
+  <h3 style="margin: 0 0 8px;">Your voice</h3>
+  <p class="muted" style="margin: 0 0 10px;">
+    Optional but recommended. Paste a short sample of your writing so Authored can match your tone.
+  </p>
+
+  <label>Your writing sample</label>
+  <textarea id="voiceSample" placeholder="Paste a sermon excerpt, blog post, letter, or chapter draft."></textarea>
+
+  <label>Voice notes</label>
+  <input id="voiceNotes" type="text" placeholder="Example: warm, pastoral, simple, no fluff, avoid robotic tone." />
+
+  <hr />
+
+  <div class="row">
+    <div style="min-width:260px; flex: 1;">
+      <label style="margin-top:0;">How many chapters?</label>
+      <select id="chapters">
+        <option value="5">5</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+        <option value="12" selected>12</option>
+        <option value="15">15</option>
+      </select>
+      <div class="muted">Start small. You can expand later.</div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <button class="btn" id="beginBtn" type="button">Generate outline</button>
+      <a href="index.html" style="align-self:center;">Back to home</a>
     </div>
   </div>
 
-  <header class="hero">
-    <div class="wrap">
-      <div class="heroGrid">
-        <div>
-          <div class="badge">
-            <strong>Not an AI ghostwriter.</strong>
-            <span>It writes with you.</span>
-          </div>
+  <div id="result">
+    <hr />
+    <p><strong>Done.</strong> Here’s your starting point.</p>
+    <!-- Strong after-outline moment -->
+    <p class="muted" style="margin-top:-8px;">
+      This isn’t a finished book. It’s a clear place to continue from.
+    </p>
+    <p class="muted" style="margin-top:-6px;">
+      Best next step: expand one chapter while the idea is still fresh.
+    </p>
 
-          <h1>Write the book you’ve been avoiding.</h1>
-          <p class="lead">
-            If you’ve had an idea for months (or years) but can’t start, Authored helps you turn
-            scattered thoughts into a real manuscript in your own voice.
-          </p>
-
-          <div class="ctaRow">
-            <a class="btn btnPrimary" id="heroCta" href="signup.html">Start writing without losing your voice</a>
-            <a class="btn btnGhost" id="tryBtn" href="guest.html">Try it free</a>
-            <a class="btn" id="heroLogin" href="login.html">Log in</a>
-          </div>
-
-          <p class="micro">
-            You own your words. Built for writers who care about voice, clarity, and finishing what they start.
-          </p>
-        </div>
-
-        <div class="panel">
-          <div class="panelTop">
-            <div class="dots"><span></span><span></span><span></span></div>
-            <div style="color:rgba(245,247,251,.65); font-size:13px;">Draft Builder</div>
-          </div>
-          <div class="panelBody">
-            <p class="previewTitle">Your book, broken into clear steps</p>
-            <div class="line w1"></div>
-            <div class="line w2"></div>
-            <div class="line w3"></div>
-
-            <div class="miniGrid">
-              <div class="mini"><b>Title + Promise</b><span>Lock the message before chapter one.</span></div>
-              <div class="mini"><b>Outline</b><span>Build a chapter map you can finish.</span></div>
-              <div class="mini"><b>Voice</b><span>Write like you, not like AI.</span></div>
-              <div class="mini"><b>Momentum</b><span>Stop restarting. Start completing.</span></div>
-            </div>
-
-            <div style="margin-top:14px; color:rgba(245,247,251,.62); font-size:13px;">
-              Add your explainer video later. This preview keeps the page premium today.
-            </div>
-          </div>
-        </div>
-
+    <div class="card">
+      <div>
+        <span class="pill">Working title</span>
+        <span class="pill">Starter outline</span>
       </div>
-    </div>
-  </header>
 
-  <section class="section" id="how">
-    <div class="wrap">
-      <h2 class="title">How it works</h2>
-      <p class="sub">A clean starting point, then a guided path forward without losing your voice.</p>
+      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
 
-      <div class="steps">
-        <div class="step">
-          <div class="num">1</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Start in minutes</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
-            Enter your idea. Authored helps you shape a title, purpose, and outline that makes sense.
-          </p>
-        </div>
-        <div class="step">
-          <div class="num">2</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Write with guidance</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
-            Work section by section. You steer the content. Authored keeps it organized and moving.
-          </p>
-        </div>
-        <div class="step">
-          <div class="num">3</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Upgrade when ready</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
-            When you want to save, expand, export, or unlock higher limits, upgrade inside the app.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
+      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
+      <p id="purposeOut">Please wait...</p>
 
-  <section class="section" id="for">
-    <div class="wrap">
-      <h2 class="title">Who this is for</h2>
-      <p class="sub">Stuck writers who want a real manuscript, not generic AI text.</p>
+      <h3 style="margin:14px 0 6px;">Outline</h3>
+      <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
-      <div class="split">
-        <div class="card">
-          <h3>Authored is for you if</h3>
-          <ul>
-            <li>You have ideas but struggle to organize them.</li>
-            <li>You overthink the first page and never begin.</li>
-            <li>You start, stop, and lose momentum.</li>
-            <li>You want structure without feeling judged or overwhelmed.</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Authored is not for you if</h3>
-          <ul>
-            <li>You want AI to write the whole book for you.</li>
-            <li>You want shortcuts without ownership.</li>
-            <li>You don’t care about voice or originality.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="wrap">
-      <h2 class="title">What you get</h2>
-      <p class="sub">Clarity, structure, and momentum you can actually maintain.</p>
-
-      <div class="cards">
-        <div class="card">
-          <h3>A working title</h3>
-          <p>A title that fits your idea and points the book in one clear direction.</p>
-        </div>
-        <div class="card">
-          <h3>A one-sentence purpose</h3>
-          <p>A single line that keeps your writing focused when you feel stuck.</p>
-        </div>
-        <div class="card">
-          <h3>A chapter outline</h3>
-          <p>A chapter map you can expand without freezing or restarting.</p>
+      <div class="notice" style="margin-top:14px;">
+        <strong>Want to keep going?</strong><br/>
+        Create a free account and we’ll save this project so you can expand it chapter by chapter.
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="createAccountBtn" type="button">Create free account</button>
+          <button class="btn secondary" id="loginBtn" type="button">Log in</button>
         </div>
       </div>
 
-      <p class="micro" style="margin-top:14px;">
-        This is a first draft to get you moving. You can refine it later.
-      </p>
+      <pre id="debugOut" style="display:none;"></pre>
     </div>
-  </section>
-
-  <section class="final">
-    <div class="wrap">
-      <div class="finalBox">
-        <h2 class="title" style="margin:0 0 8px;">Stop carrying the book. Start writing it.</h2>
-        <p class="sub" style="margin:0 auto 16px;">Authored helps you move from idea to manuscript in your own voice.</p>
-        <div class="ctaRow" style="justify-content:center;">
-          <a class="btn btnPrimary" id="finalCta" href="signup.html">Start writing without losing your voice</a>
-          <a class="btn btnGhost" id="tryBtn2" href="guest.html">Try it free</a>
-          <a class="btn" id="finalLogin" href="login.html">Log in</a>
-        </div>
-        <p class="micro" style="margin-top:12px;">
-          If you like what you start, create an account to save and expand it.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div class="wrap">
-      <div class="footerRow">
-        <div>© <span id="y"></span> Authored</div>
-        <div style="display:flex; gap:14px; flex-wrap:wrap;">
-          <a href="privacy.html">Privacy</a>
-          <a href="terms.html">Terms</a>
-          <a href="mailto:support@yourdomain.com">Support</a>
-        </div>
-      </div>
-    </div>
-  </footer>
+  </div>
 
   <script>
-    document.getElementById("y").textContent = new Date().getFullYear();
+    // Genre button behavior (safe, optional)
+    (function initGenreButtons() {
+      const topicEl = document.getElementById("topic");
+      if (!topicEl) return;
 
-    // Apply the mapping safely everywhere:
-    document.getElementById("tryBtn").href = TRY_FREE_LINK;
-    document.getElementById("tryBtn2").href = TRY_FREE_LINK;
+      const presets = {
+        memoir: "I want to write a memoir about ",
+        devotional: "I want to write a devotional focused on ",
+        nonfiction: "I want to write a practical non-fiction book that helps people ",
+        fiction: "I want to write a fiction story about "
+      };
 
-    document.getElementById("navLogin").href = LOGIN_LINK;
-    document.getElementById("heroLogin").href = LOGIN_LINK;
-    document.getElementById("finalLogin").href = LOGIN_LINK;
+      const buttons = document.querySelectorAll(".genre-btn");
+      if (!buttons.length) return;
 
-    document.getElementById("navSignup").href = SIGNUP_LINK;
-    document.getElementById("heroCta").href = SIGNUP_LINK;
-    document.getElementById("finalCta").href = SIGNUP_LINK;
+      function setActive(btn) {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-genre");
+          const text = presets[key] || "";
+
+          setActive(btn);
+
+          const current = (topicEl.value || "").trim();
+
+          if (!current) {
+            topicEl.value = text;
+          } else {
+            const tag = `Genre: ${btn.textContent}.`;
+            if (!current.toLowerCase().includes("genre:")) {
+              topicEl.value = current + "\n\n" + tag;
+            }
+          }
+
+          topicEl.focus();
+          topicEl.setSelectionRange(topicEl.value.length, topicEl.value.length);
+        });
+      });
+    })();
+
+    function clean(v) { return (v ?? "").toString().trim(); }
+
+    function getPayloadFromForm() {
+      return {
+        topic: clean(document.getElementById("topic").value),
+        audience: clean(document.getElementById("audience").value),
+        blocker: clean(document.getElementById("blocker").value),
+        chapters: parseInt(document.getElementById("chapters").value, 10) || 12,
+        voiceSample: clean(document.getElementById("voiceSample").value),
+        voiceNotes: clean(document.getElementById("voiceNotes").value)
+      };
+    }
+
+    function savePendingToLocalStorage(extra = {}) {
+      const base = getPayloadFromForm();
+      const pending = {
+        ...base,
+        ...extra,
+        savedAt: new Date().toISOString(),
+        source: "guest"
+      };
+      localStorage.setItem("authored_pending", JSON.stringify(pending));
+    }
+
+    function goToAuth(page) {
+      // After login/signup, land in the app and keep momentum.
+      // start.html can ignore nextStep for now (safe), but it's available later.
+      window.location.href = `${page}?returnTo=${encodeURIComponent("start.html")}&nextStep=${encodeURIComponent("expand_chapter_1")}`;
+    }
+
+    async function generateOutline() {
+      const payload = getPayloadFromForm();
+      if (!payload.topic) { alert("Type what you want to write about."); return; }
+
+      document.getElementById("result").style.display = "block";
+      document.getElementById("titleOut").textContent = "Generating...";
+      document.getElementById("purposeOut").textContent = "Please wait...";
+      document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
+
+      try {
+        const resp = await fetch("/api/outline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "Request failed");
+
+        const title = data.title || "Untitled";
+        const purpose = data.purpose || "";
+        const outline = Array.isArray(data.outline) ? data.outline : [];
+
+        document.getElementById("titleOut").textContent = title;
+        document.getElementById("purposeOut").textContent = purpose;
+
+        const list = document.getElementById("outlineOut");
+        list.innerHTML = "";
+        outline.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = item?.title || `Chapter ${idx+1}`;
+          list.appendChild(li);
+        });
+
+        // Save pending so signup/login can continue smoothly + keep momentum hint
+        savePendingToLocalStorage({ title, purpose, outline, nextStep: "expand_chapter_1" });
+
+        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+      } catch (e) {
+        document.getElementById("titleOut").textContent = "Could not generate outline";
+        document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
+        document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
+      }
+    }
+
+    document.getElementById("beginBtn").addEventListener("click", generateOutline);
+
+    document.getElementById("createAccountBtn").addEventListener("click", () => {
+      // ensure latest form state saved (even if they didn't generate yet)
+      savePendingToLocalStorage({ nextStep: "expand_chapter_1" });
+      goToAuth("signup.html");
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      savePendingToLocalStorage({ nextStep: "expand_chapter_1" });
+      goToAuth("login.html");
+    });
   </script>
 </body>
 </html>
