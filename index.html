@@ -59,10 +59,22 @@
       background: rgba(255,255,255,.02);
       text-decoration:none;
       font-weight:800;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
       white-space:nowrap;
     }
     .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.18);}
+
+    /* NEW: visually secondary CTA */
+    .btnGhost{
+      background: rgba(255,255,255,.03);
+      color: rgba(245,247,251,.75);
+      border-color: rgba(255,255,255,.14);
+    }
+    .btnGhost:hover{
+      background: rgba(255,255,255,.06);
+      color: rgba(245,247,251,.9);
+    }
+
     .btnPrimary{
       border-color: transparent;
       background: linear-gradient(135deg, var(--accent), #a78bfa);
@@ -202,9 +214,9 @@
 </head>
 
 <body>
-  <!-- Set this to your actual guest flow page: guest.html OR start.html -->
+  <!-- Try it free is guest.html -->
   <script>
-    const TRY_FREE_LINK = "guest.html"; // change to "start.html" if that's your real guest entry
+    const TRY_FREE_LINK = "guest.html";
   </script>
 
   <div class="top">
@@ -238,12 +250,13 @@
 
           <div class="ctaRow">
             <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
-            <a class="btn" id="tryBtn" href="guest.html">Try it free</a>
+            <a class="btn btnGhost" id="tryBtn" href="guest.html">Try it free</a>
             <a class="btn" href="login.html">Log in</a>
           </div>
 
+          <!-- UPDATED: credibility anchor (single line) -->
           <p class="micro">
-            You own your words. Authored helps with structure, momentum, and clarity.
+            You own your words. Built for writers who care about voice, clarity, and finishing what they start.
           </p>
         </div>
 
@@ -366,7 +379,7 @@
         <p class="sub" style="margin:0 auto 16px;">Authored helps you move from idea to manuscript in your own voice.</p>
         <div class="ctaRow" style="justify-content:center;">
           <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
-          <a class="btn" id="tryBtn2" href="guest.html">Try it free</a>
+          <a class="btn btnGhost" id="tryBtn2" href="guest.html">Try it free</a>
         </div>
         <p class="micro" style="margin-top:12px;">
           If you like what you start, create an account to save and expand it.
