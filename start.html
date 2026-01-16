@@ -764,5 +764,19 @@
   </a>
 </div>
   
+ <script>
+  (function () {
+    const buttons = document.querySelectorAll(".genre-btn");
+    if (!buttons.length) return;
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        buttons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  })();
+</script>
+ 
 </body>
 </html>
