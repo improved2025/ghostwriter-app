@@ -656,6 +656,11 @@
       });
 
       const data = await safeJson(resp);
+if (resp.status === 401) {
+  document.getElementById("expandedOut").textContent = "Please log in to expand chapters.";
+  showUpgrade("Please log in or upgrade to expand chapters. Outline creation is free.");
+  return;
+}
 
       if (isLimitReachedError(data)) {
         document.getElementById("expandedOut").textContent = "Free plan limit reached.";
