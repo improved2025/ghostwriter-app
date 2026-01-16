@@ -142,7 +142,7 @@
     </div>
 
     <div style="display:flex; gap:10px; align-items:flex-end;">
-      <button class="btn" id="beginBtn" type="button">Generate outline</button>
+      <button class="btn" id="beginBtn" type="button">Create my outline</button>
       <a href="index.html" style="align-self:center;">Back to home</a>
     </div>
   </div>
@@ -301,7 +301,7 @@
         savePendingToLocalStorage({ title, purpose, outline });
         document.getElementById("result").scrollIntoView({ behavior: "smooth" });
       } catch (e) {
-        document.getElementById("titleOut").textContent = "Could not generate outline";
+        document.getElementById("titleOut").textContent = "Could not create outline";
         document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
         document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
       }
