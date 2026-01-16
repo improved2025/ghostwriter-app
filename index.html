@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authored — Write the book you’ve been avoiding</title>
-  <meta name="description" content="Authored helps stuck writers go from idea to manuscript in their own voice. It doesn’t write for you. It writes with you." />
+  <title>Authored — Start writing without losing your voice</title>
+  <meta name="description" content="Authored helps stuck writers start and finish a real manuscript in their own voice. It doesn’t write for you. It writes with you." />
   <link rel="icon" href="data:,">
 
   <style>
@@ -48,27 +48,22 @@
       padding:14px 0;
     }
 
-    /* FIXED: logo should not be constrained */
+    /* LOGO — intentionally larger to compensate for PNG padding */
     .logo-wrap{
       display:flex;
       align-items:center;
       text-decoration:none;
       flex:0 0 auto;
-      min-width: 160px; /* keeps header from collapsing */
     }
     .logo-wrap img{
-      height:32px;      /* FIX: readable size */
+      height:48px;      /* bigger so it doesn't look like a favicon */
       width:auto;
       display:block;
     }
 
     .nav{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:10px;
-      flex-wrap:wrap;
-      flex:1 1 auto;
+      display:flex; align-items:center; justify-content:flex-end;
+      gap:10px; flex-wrap:wrap;
     }
 
     .btn{
@@ -109,6 +104,7 @@
       gap:22px;
       align-items:center;
     }
+
     .badge{
       display:inline-flex; align-items:center; gap:10px;
       padding:8px 12px;
@@ -154,6 +150,7 @@
     .previewTitle{font-weight:900; margin:0 0 10px; letter-spacing:-.02em;}
     .line{height:10px; border-radius:999px; background: rgba(255,255,255,.10); margin:10px 0;}
     .w1{width:92%} .w2{width:78%} .w3{width:85%}
+
     .miniGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
     .mini{
       border:1px solid var(--line);
@@ -171,6 +168,7 @@
       margin:0 0 10px;
     }
     .sub{margin:0 0 18px; color:var(--muted); max-width:75ch;}
+
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
     .step{
       border:1px solid var(--line);
@@ -186,6 +184,19 @@
       border:1px solid rgba(124,92,255,.35);
       margin-bottom:10px;
     }
+
+    /* Who it's for */
+    .forGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px;}
+    .forCard{
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      background: rgba(255,255,255,.02);
+      padding:16px;
+    }
+    .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
+    .forCard ul{margin:0; padding-left:18px; color:var(--muted);}
+    .forCard li{margin:8px 0;}
+
     .final{padding:46px 0 60px; text-align:center;}
     .finalBox{
       border:1px solid var(--line);
@@ -211,10 +222,10 @@
     @media (max-width: 920px){
       .heroGrid{grid-template-columns:1fr;}
       .steps{grid-template-columns:1fr;}
-      .logo-wrap{min-width:auto;}
+      .forGrid{grid-template-columns:1fr;}
     }
     @media (max-width: 640px){
-      .logo-wrap img{height:28px;}
+      .logo-wrap img{height:40px;}
     }
   </style>
 </head>
@@ -322,16 +333,45 @@
     </div>
   </section>
 
-  <section class="final" id="for">
+  <section class="section" id="for">
+    <div class="wrap">
+      <h2 class="title">Who it’s for</h2>
+      <p class="sub">Writers who have something real to say, but need help turning it into a book without losing their voice.</p>
+
+      <div class="forGrid">
+        <div class="forCard">
+          <h3>You’ve been stuck at the beginning</h3>
+          <ul>
+            <li>You have ideas but don’t know how to structure them.</li>
+            <li>You overthink the first page and never begin.</li>
+            <li>You keep restarting instead of progressing.</li>
+          </ul>
+        </div>
+
+        <div class="forCard">
+          <h3>You care about voice</h3>
+          <ul>
+            <li>You don’t want generic AI writing.</li>
+            <li>You want your tone, your phrases, your perspective.</li>
+            <li>You want guidance without being replaced.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
     <div class="wrap">
       <div class="finalBox">
         <h2 class="title" style="margin:0 0 8px;">Stop carrying the book. Start writing it.</h2>
-        <p class="sub" style="margin:0 auto 16px;">Authored helps you move from idea to manuscript in your own voice.</p>
+        <p class="sub" style="margin:0 auto 16px;">Start free. Keep going when you’re ready.</p>
+
         <div class="ctaRow" style="justify-content:center;">
           <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
           <a class="btn btnGhost" href="guest.html">Try it free</a>
           <a class="btn" href="login.html">Log in</a>
         </div>
+
         <p class="micro" style="margin-top:12px;">
           If you like what you start, create an account to save and expand it.
         </p>
