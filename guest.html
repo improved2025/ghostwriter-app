@@ -319,30 +319,52 @@
       goToAuth("login.html");
     });
 
-    /* ADDED: lead capture click handler (UI-safe; no backend call yet) */
-    const leadEmailEl = document.getElementById("leadEmail");
-    const emailOutlineBtn = document.getElementById("emailOutlineBtn");
-    const leadMsg = document.getElementById("leadMsg");
+    /* ADDED: lead capture click handler (calls /api/lead; failure does NOT affect outline) */
+const leadEmailEl = document.getElementById("leadEmail");
+const emailOutlineBtn = document.getElementById("emailOutlineBtn");
+const leadMsg = document.getElementById("leadMsg");
 
-    function setLeadMsg(text) {
-      if (leadMsg) leadMsg.textContent = text || "";
-    }
+function setLeadMsg(text) {
+  if (leadMsg) leadMsg.textContent = text || "";
+}
 
-    if (emailOutlineBtn) {
-      emailOutlineBtn.addEventListener("click", async () => {
-        const email = (leadEmailEl?.value || "").trim();
-        if (!email) { setLeadMsg("Enter your email."); return; }
+if (emailOutlineBtn) {
+  emailOutlineBtn.addEventListener("click", async () => {
+    const email = (leadEmailEl?.value || "").trim();
+    if (!email) { setLeadMsg("Enter your email."); return; }
 
-        const outlineItems = Array.from(document.querySelectorAll("#outlineOut li"))
-          .map(li => (li.textContent || "").trim())
-          .filter(Boolean);
+    const title = (document.getElementById("titleOut")?.textContent || "").trim();
+    const purpose = (document.getElementById("purposeOut")?.textContent || "").trim();
 
-        if (!outlineItems.length) { setLeadMsg("Generate an outline first, then email it."); return; }
+    const outline = Array.from(document.querySelectorAll("#outlineOut li"))
+      .map(li => ({ title: (li.textContent || "").trim() }))
+      .filter(x => x.title);
 
-        setLeadMsg("Saved. We’ll email your outline shortly.");
+    if (!outline.length) { setLeadMsg("Generate an outline first, then email it."); return; }
+
+    try {
+      setLeadMsg("Saving...");
+
+      const resp = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, title, purpose, outline, source: "guest_outline" })
       });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        setLeadMsg(`Could not save right now. (${data?.error || "error"})`);
+        return;
+      }
+
+      setLeadMsg(data.emailed ? "Sent. Check your email." : "Saved. Email sending will be enabled shortly.");
+    } catch (e) {
+      setLeadMsg("Could not save right now. Please try again.");
     }
-    /* END ADDED */
+  });
+}
+/* END ADDED */
   </script>
 </body>
 </html>
