@@ -764,19 +764,49 @@
   </a>
 </div>
   
- <script>
+<script>
   (function () {
     const buttons = document.querySelectorAll(".genre-btn");
-    if (!buttons.length) return;
+    const topicEl = document.getElementById("topic");
+    if (!buttons.length || !topicEl) return;
+
+    const presets = {
+      memoir: "I want to write a memoir about ",
+      devotional: "I want to write a devotional focused on ",
+      nonfiction: "I want to write a practical non-fiction book that helps people ",
+      fiction: "I want to write a fiction story about ",
+      inspirational: "I want to write an inspirational book that encourages readers to "
+    };
+
+    function setActive(btn) {
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    }
 
     buttons.forEach(btn => {
       btn.addEventListener("click", () => {
-        buttons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
+        const key = btn.getAttribute("data-genre");
+        const text = presets[key] || "";
+
+        setActive(btn);
+
+        const current = (topicEl.value || "").trim();
+        if (!current) {
+          topicEl.value = text;
+        } else {
+          const tag = `Genre: ${btn.textContent}.`;
+          if (!current.toLowerCase().includes("genre:")) {
+            topicEl.value = current + "\n\n" + tag;
+          }
+        }
+
+        topicEl.focus();
+        topicEl.setSelectionRange(topicEl.value.length, topicEl.value.length);
       });
     });
   })();
 </script>
+
  
 </body>
 </html>
