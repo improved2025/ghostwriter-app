@@ -3,66 +3,301 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authored — Try it free</title>
+  <title>Authored — Free Outline</title>
   <link rel="icon" href="data:,">
 
   <style>
-    body { font-family: Arial, sans-serif; margin:48px; max-width:900px; }
-    .genreRow { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
-    .genre-btn {
-      padding:8px 14px; border-radius:999px;
-      border:1px solid #ccc; background:#fff;
-      cursor:pointer; font-size:14px;
+    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
+
+    /* Logo header */
+    .site-header { display:flex; align-items:center; margin-bottom:24px; }
+    .logo-wrap { display:inline-flex; align-items:center; text-decoration:none; }
+    .logo-wrap img { height:36px; width:auto; display:block; }
+    @media (max-width:640px){ body{ margin:24px 20px; } .logo-wrap img{ height:32px; } }
+
+    h1 { margin: 0 0 8px; }
+    p { color:#333; line-height:1.5; }
+    label { display:block; font-weight:700; margin-top:14px; }
+    input[type="text"], textarea, select {
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
     }
-    .genre-btn.active { background:#111; color:#fff; }
-    textarea { width:100%; min-height:90px; padding:10px; }
+    textarea { min-height:80px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+    .btn {
+      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
+      border-radius:8px; cursor:pointer; font-weight:700;
+    }
+    .btn.secondary { background:#fff; color:#111; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .muted { color:#666; font-size:13px; }
+    hr { margin:18px 0; border:none; border-top:1px solid #eee; }
+    .notice {
+      background:#fff7d6; border:1px solid #f2d27a;
+      padding:12px 14px; border-radius:10px;
+      margin:14px 0 18px; color:#5a4600;
+    }
+    #result { display:none; margin-top:18px; }
+    .card { border:1px solid #e6e6e6; border-radius:12px; padding:16px; background:#fff; }
+    .pill {
+      display:inline-block; padding:4px 10px; border-radius:999px;
+      border:1px solid #ddd; font-size:12px; color:#333; margin-right:8px; margin-bottom:6px;
+    }
+    ol { padding-left:18px; }
+    ul { padding-left:18px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    pre {
+      white-space: pre-wrap; background:#fafafa; border:1px solid #eee;
+      padding:12px; border-radius:10px; font-size:13px; line-height:1.45;
+    }
+
+    /* Genre buttons */
+    .quickstart { margin: 8px 0 10px; }
+    .quickstart-note { font-size: 13px; color: #444; margin-bottom: 8px; }
+    .quickstart-sub { font-size: 12px; color: #666; margin-top: 8px; }
+
+    .genre-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .genre-btn{
+      appearance:none;
+      border: 1px solid #cfcfcf;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .genre-btn:hover{ background:#f6f6f6; }
+    .genre-btn.active{
+      border-color:#111;
+      background:#111;
+      color:#fff;
+    }
   </style>
 </head>
 
 <body>
-
-  <!-- LOGO -->
-  <div style="margin-bottom:24px;">
-    <a href="index.html">
-      <img src="assets/logo-authored.png" alt="Authored" style="height:32px;">
+  <!-- Logo -->
+  <header class="site-header">
+    <a href="index.html" class="logo-wrap">
+      <img src="assets/logo-authored.png" alt="Authored" />
     </a>
+  </header>
+
+  <h1>Start your book (free outline)</h1>
+  <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
+
+  <div class="notice">
+    <strong>Free:</strong> Generate an outline without an account.
+    <br />
+    <span class="muted">Account required for expansions, introductions, and downloads.</span>
   </div>
 
-  <h1>Try Authored</h1>
-  <p class="muted">Start in guest mode. No account required.</p>
+  <label>What do you want to write about?</label>
 
-  <!-- GENRES -->
-  <div class="genreRow">
-    <button class="genre-btn" data-genre="nonfiction">Non-fiction</button>
-    <button class="genre-btn" data-genre="fiction">Fiction</button>
-    <button class="genre-btn" data-genre="memoir">Memoir</button>
-    <button class="genre-btn" data-genre="inspirational">Inspirational</button>
+  <div class="quickstart">
+    <div class="quickstart-note">Optional: pick a genre to get started faster.</div>
+    <div class="genre-row" role="group" aria-label="Quick start genres">
+      <button type="button" class="genre-btn" data-genre="memoir">Memoir</button>
+      <button type="button" class="genre-btn" data-genre="devotional">Devotional</button>
+      <button type="button" class="genre-btn" data-genre="nonfiction">Non-fiction</button>
+      <button type="button" class="genre-btn" data-genre="fiction">Fiction</button>
+      <button type="button" class="genre-btn" data-genre="inspirational">Inspirational</button>
+    </div>
+    <div class="quickstart-sub">You can ignore these and just type your idea.</div>
   </div>
 
-  <label>What do you want to write?</label>
-  <textarea id="topic" placeholder="You don’t need clarity yet. Start messy."></textarea>
+  <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
+
+  <label>Who is this for?</label>
+  <input id="audience" type="text" placeholder="Who do you want to reach?" />
+
+  <label>What’s been stopping you from writing?</label>
+  <input id="blocker" type="text" placeholder="Fear, time, clarity, confidence..." />
+
+  <hr />
+
+  <h3 style="margin: 0 0 8px;">Your voice</h3>
+  <p class="muted" style="margin: 0 0 10px;">
+    Optional but recommended. Paste a short sample of your writing so Authored can match your tone.
+  </p>
+
+  <label>Your writing sample</label>
+  <textarea id="voiceSample" placeholder="Paste a sermon excerpt, blog post, letter, or chapter draft."></textarea>
+
+  <label>Voice notes</label>
+  <input id="voiceNotes" type="text" placeholder="Example: warm, pastoral, simple, no fluff, avoid robotic tone." />
+
+  <hr />
+
+  <div class="row">
+    <div style="min-width:260px; flex: 1;">
+      <label style="margin-top:0;">How many chapters?</label>
+      <select id="chapters">
+        <option value="5">5</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+        <option value="12" selected>12</option>
+        <option value="15">15</option>
+      </select>
+      <div class="muted">Start small. You can expand later.</div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <button class="btn" id="beginBtn" type="button">Generate outline</button>
+      <a href="index.html" style="align-self:center;">Back to home</a>
+    </div>
+  </div>
+
+  <div id="result">
+    <hr />
+    <p><strong>Done.</strong> Here’s your starting point.</p>
+
+    <div class="card">
+      <div>
+        <span class="pill">Working title</span>
+        <span class="pill">Starter outline</span>
+      </div>
+
+      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
+
+      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
+      <p id="purposeOut">Please wait...</p>
+
+      <h3 style="margin:14px 0 6px;">Outline</h3>
+      <ol id="outlineOut"><li>Creating your outline...</li></ol>
+
+      <div class="notice" style="margin-top:14px;">
+        <strong>Want chapter drafts, intro, and downloads?</strong><br/>
+        Create a free account to continue and we’ll save this project for you.
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn" id="createAccountBtn" type="button">Create free account</button>
+          <button class="btn secondary" id="loginBtn" type="button">Log in</button>
+        </div>
+      </div>
+
+      <pre id="debugOut" style="display:none;"></pre>
+    </div>
+  </div>
 
   <script>
-    const presets = {
-      nonfiction: "I want to write a practical non-fiction book that helps people ",
-      fiction: "I want to write a fiction story about ",
-      memoir: "I want to write a memoir about my experience with ",
-      inspirational: "I want to write an inspirational book that encourages people to "
-    };
+    // Genre quick-fill (safe: only writes to topic)
+    (function initGenreButtons() {
+      const topicEl = document.getElementById("topic");
+      if (!topicEl) return;
 
-    const buttons = document.querySelectorAll(".genre-btn");
-    const topic = document.getElementById("topic");
+      const presets = {
+        memoir: "I want to write a memoir about ",
+        devotional: "I want to write a devotional focused on ",
+        nonfiction: "I want to write a practical non-fiction book that helps people ",
+        fiction: "I want to write a fiction story about ",
+        inspirational: "I want to write an inspirational book that encourages readers to "
+      };
 
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
+      const buttons = document.querySelectorAll(".genre-btn");
+      if (!buttons.length) return;
+
+      function setActive(btn) {
         buttons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        const key = btn.dataset.genre;
-        if (!topic.value.trim()) topic.value = presets[key];
-        topic.focus();
+      }
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-genre");
+          const text = presets[key] || "";
+          setActive(btn);
+
+          const current = (topicEl.value || "").trim();
+          if (!current) {
+            topicEl.value = text;
+          } else {
+            const tag = `Genre: ${btn.textContent}.`;
+            if (!current.toLowerCase().includes("genre:")) {
+              topicEl.value = current + "\n\n" + tag;
+            }
+          }
+
+          topicEl.focus();
+          topicEl.setSelectionRange(topicEl.value.length, topicEl.value.length);
+        });
       });
+    })();
+
+    function clean(v) { return (v ?? "").toString().trim(); }
+
+    function getPayloadFromForm() {
+      return {
+        topic: clean(document.getElementById("topic").value),
+        audience: clean(document.getElementById("audience").value),
+        blocker: clean(document.getElementById("blocker").value),
+        chapters: parseInt(document.getElementById("chapters").value, 10) || 12,
+        voiceSample: clean(document.getElementById("voiceSample").value),
+        voiceNotes: clean(document.getElementById("voiceNotes").value)
+      };
+    }
+
+    function savePendingToLocalStorage(extra = {}) {
+      const base = getPayloadFromForm();
+      const pending = { ...base, ...extra, savedAt: new Date().toISOString(), source: "guest" };
+      localStorage.setItem("authored_pending", JSON.stringify(pending));
+    }
+
+    function goToAuth(page) {
+      window.location.href = `${page}?returnTo=${encodeURIComponent("start.html")}`;
+    }
+
+    async function generateOutline() {
+      const payload = getPayloadFromForm();
+      if (!payload.topic) { alert("Type what you want to write about."); return; }
+
+      document.getElementById("result").style.display = "block";
+      document.getElementById("titleOut").textContent = "Generating...";
+      document.getElementById("purposeOut").textContent = "Please wait...";
+      document.getElementById("outlineOut").innerHTML = "<li>Creating your outline...</li>";
+
+      try {
+        const resp = await fetch("/api/outline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "Request failed");
+
+        const title = data.title || "Untitled";
+        const purpose = data.purpose || "";
+        const outline = Array.isArray(data.outline) ? data.outline : [];
+
+        document.getElementById("titleOut").textContent = title;
+        document.getElementById("purposeOut").textContent = purpose;
+
+        const list = document.getElementById("outlineOut");
+        list.innerHTML = "";
+        outline.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = item?.title || `Chapter ${idx+1}`;
+          list.appendChild(li);
+        });
+
+        savePendingToLocalStorage({ title, purpose, outline });
+        document.getElementById("result").scrollIntoView({ behavior: "smooth" });
+      } catch (e) {
+        document.getElementById("titleOut").textContent = "Could not generate outline";
+        document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
+        document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
+      }
+    }
+
+    document.getElementById("beginBtn").addEventListener("click", generateOutline);
+
+    document.getElementById("createAccountBtn").addEventListener("click", () => {
+      savePendingToLocalStorage();
+      goToAuth("signup.html");
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      savePendingToLocalStorage();
+      goToAuth("login.html");
     });
   </script>
-
 </body>
 </html>
