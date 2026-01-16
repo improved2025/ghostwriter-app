@@ -165,6 +165,26 @@
       <h3 style="margin:14px 0 6px;">Outline</h3>
       <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
+      <!-- ADDED: inline lead capture (UI-safe; no backend call yet) -->
+      <div class="card" style="margin-top:14px; border-style:dashed;">
+        <h3 style="margin:0 0 8px;">Save this outline</h3>
+        <p class="muted" style="margin:0 0 10px;">
+          Enter your email and we’ll send this outline to you so you don’t lose it.
+        </p>
+
+        <div class="row" style="margin-top:0;">
+          <input id="leadEmail" type="email" placeholder="you@example.com" autocomplete="email" style="flex:1; min-width:220px;" />
+          <button class="btn secondary" id="emailOutlineBtn" type="button">Email me my outline</button>
+        </div>
+
+        <div id="leadMsg" class="muted" style="margin-top:10px; min-height:18px;"></div>
+
+        <div class="muted" style="margin-top:6px; font-size:12px;">
+          One email now. Encouragement later. Unsubscribe anytime.
+        </div>
+      </div>
+      <!-- END ADDED -->
+
       <div class="notice" style="margin-top:14px;">
         <strong>Want chapter drafts, intro, and downloads?</strong><br/>
         Create a free account to continue and we’ll save this project for you.
@@ -298,6 +318,31 @@
       savePendingToLocalStorage();
       goToAuth("login.html");
     });
+
+    /* ADDED: lead capture click handler (UI-safe; no backend call yet) */
+    const leadEmailEl = document.getElementById("leadEmail");
+    const emailOutlineBtn = document.getElementById("emailOutlineBtn");
+    const leadMsg = document.getElementById("leadMsg");
+
+    function setLeadMsg(text) {
+      if (leadMsg) leadMsg.textContent = text || "";
+    }
+
+    if (emailOutlineBtn) {
+      emailOutlineBtn.addEventListener("click", async () => {
+        const email = (leadEmailEl?.value || "").trim();
+        if (!email) { setLeadMsg("Enter your email."); return; }
+
+        const outlineItems = Array.from(document.querySelectorAll("#outlineOut li"))
+          .map(li => (li.textContent || "").trim())
+          .filter(Boolean);
+
+        if (!outlineItems.length) { setLeadMsg("Generate an outline first, then email it."); return; }
+
+        setLeadMsg("Saved. We’ll email your outline shortly.");
+      });
+    }
+    /* END ADDED */
   </script>
 </body>
 </html>
