@@ -57,6 +57,7 @@ export default async function handler(req, res) {
 
     if (RESEND_API_KEY && FROM_EMAIL) {
       const subject = "Your Authored outline is saved";
+
       const outlineLines = outline
         .map((x, i) => {
           const t = typeof x === "string" ? x : (x?.title || `Chapter ${i + 1}`);
@@ -64,10 +65,12 @@ export default async function handler(req, res) {
         })
         .join("\n");
 
+      const returnLink = APP_URL ? `${APP_URL.replace(/\/$/, "")}/start.html` : "start.html";
+
       const textBody =
 `You started something important.
 
-Here is the outline you created:
+Here’s the outline you created with Authored. Save this email so you can come back to it anytime.
 
 Title: ${title || "Untitled"}
 
@@ -77,7 +80,8 @@ ${purpose || ""}
 Outline:
 ${outlineLines}
 
-When you're ready, you can continue inside Authored.${APP_URL ? `\n\nReturn: ${APP_URL}` : ""}
+Continue writing here:
+${returnLink}
 
 — Authored`;
 
