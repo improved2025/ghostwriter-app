@@ -95,7 +95,35 @@
       el.textContent = msg;
     };
 
+    // ✅ ADDED: Wait for AuthoredAccount (account.js is deferred)
+    async function waitForAccount(timeoutMs = 15000) {
+      const start = Date.now();
+      while (!window.AuthoredAccount) {
+        if (Date.now() - start > timeoutMs) {
+          warn("Auth system not ready. Please refresh.");
+          return false;
+        }
+        await new Promise(r => setTimeout(r, 50));
+      }
+      return true;
+    }
+
+    // ✅ ADDED: Ensure we have a session (guest or logged-in) for consistent PayPal behavior
+    async function ensureIdentity() {
+      try {
+        if (window.AuthoredAccount?.ensureIdentity) {
+          await window.AuthoredAccount.ensureIdentity();
+        }
+      } catch {}
+    }
+
     async function requireSessionOrRedirect() {
+      const ok = await waitForAccount();
+      if (!ok) return null;
+
+      // Ensure a guest identity exists so token logic is stable across refreshes
+      await ensureIdentity();
+
       if (!window.AuthoredAccount?.getSession) {
         warn("Auth system not loaded. Make sure account.js is included.");
         return null;
@@ -157,6 +185,16 @@
       return paypalSdkPromise;
     }
 
+    // ✅ ADDED: Wait until PayPal Buttons is available (prevents intermittent "not highlighted")
+    async function waitForPayPalButtons(timeoutMs = 15000) {
+      const start = Date.now();
+      while (!window.paypal?.Buttons) {
+        if (Date.now() - start > timeoutMs) return false;
+        await new Promise(r => setTimeout(r, 50));
+      }
+      return true;
+    }
+
     async function renderPayPalButtons(containerId, plan) {
       const ok = await loadPayPalSdkOnce();
       if (!ok) {
@@ -164,13 +202,15 @@
         return;
       }
 
-      const token = await getAccessToken();
-      if (!token) return;
-
-      if (!window.paypal?.Buttons) {
-        warn("PayPal SDK loaded but Buttons is missing.");
+      // ✅ Ensure PayPal Buttons is actually ready (race condition fix)
+      const ready = await waitForPayPalButtons();
+      if (!ready) {
+        warn("PayPal is still loading. Refresh and try again.");
         return;
       }
+
+      const token = await getAccessToken();
+      if (!token) return;
 
       window.paypal.Buttons({
         createOrder: async () => {
