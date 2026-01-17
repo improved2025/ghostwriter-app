@@ -14,7 +14,7 @@
       --muted:rgba(245,247,251,.78);
       --line:rgba(255,255,255,.10);
 
-      /* Updated accent (orange) */
+      /* Accent (orange) */
       --accent:#ff8a2a;
 
       --shadow: 0 20px 60px rgba(0,0,0,.45);
@@ -26,11 +26,14 @@
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color:var(--text);
+
+      /* Darker background blend so headlines pop (less brown wash) */
       background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(255,138,42,.22), transparent 55%),
-        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.18), transparent 55%),
-        radial-gradient(900px 800px at 40% 95%, rgba(255,138,42,.12), transparent 60%),
-        var(--bg);
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,138,42,.12), transparent 60%),
+        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.10), transparent 60%),
+        radial-gradient(900px 800px at 40% 95%, rgba(255,138,42,.08), transparent 65%),
+        #07080c;
+
       line-height:1.45;
     }
     a{color:inherit}
@@ -339,10 +342,13 @@
     .finalBox{
       border:1px solid var(--line);
       border-radius: 22px;
+
+      /* Darker final CTA background so text pops (less brown wash) */
       background:
-        radial-gradient(900px 400px at 20% 20%, rgba(255,138,42,.20), transparent 55%),
-        radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.16), transparent 55%),
-        rgba(255,255,255,.02);
+        radial-gradient(900px 400px at 20% 20%, rgba(255,138,42,.10), transparent 60%),
+        radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.08), transparent 60%),
+        rgba(0,0,0,.35);
+
       padding:26px 18px;
       box-shadow: var(--shadow);
     }
