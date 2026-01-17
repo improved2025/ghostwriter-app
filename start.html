@@ -426,6 +426,20 @@
         window.__outlineItems = outline;
         window.__title = title;
         window.__purpose = purpose;
+try {
+  localStorage.setItem("authored_last_start", JSON.stringify({
+    savedAt: new Date().toISOString(),
+    title: window.__title || title,
+    purpose: window.__purpose || purpose,
+    outline: window.__outlineItems || outline,
+    topic: document.getElementById("topic")?.value || "",
+    audience: document.getElementById("audience")?.value || "",
+    blocker: document.getElementById("blocker")?.value || "",
+    chapters: document.getElementById("chapters")?.value || "12",
+    voiceSample: document.getElementById("voiceSample")?.value || "",
+    voiceNotes: document.getElementById("voiceNotes")?.value || ""
+  }));
+} catch {}
 
         document.getElementById("titleOut").textContent = title;
         document.getElementById("purposeOut").textContent = purpose;
