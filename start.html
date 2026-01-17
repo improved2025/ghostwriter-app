@@ -334,6 +334,59 @@
   </div>
 
   <script>
+    (function restoreLastStart() {
+  try {
+    const raw = localStorage.getItem("authored_last_start");
+    if (!raw) return;
+
+    const s = JSON.parse(raw);
+    if (!s || !Array.isArray(s.outline) || !s.outline.length) return;
+
+    // Restore form fields
+    if (document.getElementById("topic")) document.getElementById("topic").value = s.topic || "";
+    if (document.getElementById("audience")) document.getElementById("audience").value = s.audience || "";
+    if (document.getElementById("blocker")) document.getElementById("blocker").value = s.blocker || "";
+    if (document.getElementById("chapters") && s.chapters) document.getElementById("chapters").value = String(s.chapters);
+    if (document.getElementById("voiceSample")) document.getElementById("voiceSample").value = s.voiceSample || "";
+    if (document.getElementById("voiceNotes")) document.getElementById("voiceNotes").value = s.voiceNotes || "";
+
+    // Restore outputs
+    window.__title = s.title || "Untitled";
+    window.__purpose = s.purpose || "";
+    window.__outlineItems = s.outline || [];
+
+    const result = document.getElementById("result");
+    if (result) result.style.display = "block";
+
+    const titleOut = document.getElementById("titleOut");
+    if (titleOut) titleOut.textContent = window.__title;
+
+    const purposeOut = document.getElementById("purposeOut");
+    if (purposeOut) purposeOut.textContent = window.__purpose;
+
+    const list = document.getElementById("outlineOut");
+    if (list) {
+      list.innerHTML = "";
+      window.__outlineItems.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.textContent = item?.title || `Chapter ${idx + 1}`;
+        list.appendChild(li);
+      });
+    }
+
+    const picker = document.getElementById("chapterPick");
+    if (picker) {
+      picker.innerHTML = "";
+      window.__outlineItems.forEach((item, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = `Chapter ${idx + 1}: ${item?.title || `Chapter ${idx + 1}`}`;
+        picker.appendChild(opt);
+      });
+    }
+  } catch {}
+})();
+
     function clean(v) { return (v ?? "").toString().trim(); }
 
     function showUpgrade(reason) {
