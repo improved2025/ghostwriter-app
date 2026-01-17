@@ -11,9 +11,12 @@
     :root{
       --bg:#0b0d12;
       --text:#f5f7fb;
-      --muted:rgba(245,247,251,.72);
+      --muted:rgba(245,247,251,.78);
       --line:rgba(255,255,255,.10);
-      --accent:#7c5cff;
+
+      /* Slightly richer/brighter accent (per your request) */
+      --accent:#8a6bff;
+
       --shadow: 0 20px 60px rgba(0,0,0,.45);
       --r:18px;
       --max:1120px;
@@ -24,9 +27,9 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color:var(--text);
       background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(124,92,255,.25), transparent 55%),
+        radial-gradient(1200px 800px at 20% 10%, rgba(138,107,255,.26), transparent 55%),
         radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.18), transparent 55%),
-        radial-gradient(900px 800px at 40% 95%, rgba(124,92,255,.14), transparent 60%),
+        radial-gradient(900px 800px at 40% 95%, rgba(138,107,255,.14), transparent 60%),
         var(--bg);
       line-height:1.45;
     }
@@ -56,7 +59,7 @@
       flex:0 0 auto;
     }
     .logo-wrap img{
-      height:48px;      /* bigger so it doesn't look like a favicon */
+      height:48px;
       width:auto;
       display:block;
     }
@@ -74,7 +77,7 @@
       background: rgba(255,255,255,.02);
       text-decoration:none;
       font-weight:800;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease, filter .12s ease;
       white-space:nowrap;
     }
     .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.18);}
@@ -86,23 +89,60 @@
     }
     .btnGhost:hover{
       background: rgba(255,255,255,.06);
-      color: rgba(245,247,251,.9);
+      color: rgba(245,247,251,.92);
     }
 
+    /* Brighter, richer primary CTA (no neon) */
     .btnPrimary{
       border-color: transparent;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      background: linear-gradient(135deg, #8a6bff, #c4b5fd);
       color:#0b0d12;
-      box-shadow: 0 14px 40px rgba(124,92,255,.22);
+      box-shadow: 0 16px 46px rgba(138,107,255,.28);
     }
-    .btnPrimary:hover{background: linear-gradient(135deg, #6d4fff, #b59cff);}
+    .btnPrimary:hover{
+      background: linear-gradient(135deg, #7f5fff, #d1c4ff);
+      filter: brightness(1.02);
+    }
+    .btnPrimary:active{transform: translateY(0px) scale(.99);}
 
-    .hero{padding:56px 0 34px;}
+    /* Hero */
+    .hero{
+      padding:56px 0 34px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* Subtle hero motion glow (CSS only, safest option) */
+    .heroGlow{
+      position:absolute;
+      inset:-140px;
+      pointer-events:none;
+      background:
+        radial-gradient(700px 460px at 18% 30%, rgba(138,107,255,.26), transparent 62%),
+        radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.16), transparent 64%),
+        radial-gradient(820px 560px at 70% 85%, rgba(138,107,255,.14), transparent 65%);
+      filter: blur(12px);
+      opacity: .95;
+      animation: glowMove 18s ease-in-out infinite alternate;
+      transform: translate3d(0,0,0);
+      z-index:0;
+    }
+    @keyframes glowMove{
+      0% { transform: translate3d(-18px,-10px,0) scale(1); }
+      100% { transform: translate3d(22px,14px,0) scale(1.03); }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .heroGlow{animation:none;}
+      .btn{transition:none;}
+    }
+
     .heroGrid{
       display:grid;
       grid-template-columns: 1.05fr .95fr;
       gap:22px;
       align-items:center;
+      position:relative;
+      z-index:1;
     }
 
     .badge{
@@ -129,7 +169,7 @@
       max-width:56ch;
     }
     .ctaRow{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
-    .micro{margin:10px 0 0; color: rgba(245,247,251,.62); font-size:13px;}
+    .micro{margin:10px 0 0; color: rgba(245,247,251,.65); font-size:13px;}
 
     .panel{
       border:1px solid var(--line);
@@ -157,6 +197,12 @@
       border-radius:14px;
       padding:12px;
       background: rgba(255,255,255,.02);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .mini:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.18);
     }
     .mini b{display:block; margin-bottom:6px;}
     .mini span{color:var(--muted); font-size:13px;}
@@ -175,13 +221,19 @@
       border-radius: var(--r);
       background: rgba(255,255,255,.02);
       padding:16px;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .step:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.18);
     }
     .num{
       width:34px; height:34px; border-radius:999px;
       display:inline-flex; align-items:center; justify-content:center;
       font-weight:900;
-      background: rgba(124,92,255,.18);
-      border:1px solid rgba(124,92,255,.35);
+      background: rgba(138,107,255,.18);
+      border:1px solid rgba(138,107,255,.38);
       margin-bottom:10px;
     }
 
@@ -192,17 +244,89 @@
       border-radius: var(--r);
       background: rgba(255,255,255,.02);
       padding:16px;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .forCard:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.18);
     }
     .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
     .forCard ul{margin:0; padding-left:18px; color:var(--muted);}
     .forCard li{margin:8px 0;}
+
+    /* Reviews (placed before final CTA) */
+    .reviews{
+      padding:46px 0;
+    }
+    .reviewsBand{
+      border:1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,.035);
+      box-shadow: var(--shadow);
+      padding:22px 18px;
+    }
+    .reviewsHead{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+    .reviewsSub{
+      margin:0;
+      color:var(--muted);
+      max-width:70ch;
+    }
+    .reviewGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+    .reviewCard{
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      background: rgba(255,255,255,.02);
+      padding:16px;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+      min-height: 170px;
+    }
+    .reviewCard:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.18);
+    }
+    .stars{
+      font-weight:900;
+      letter-spacing:1px;
+      color: rgba(245,247,251,.92);
+      margin-bottom:10px;
+      font-size:14px;
+    }
+    .quote{
+      margin:0 0 14px;
+      color: rgba(245,247,251,.86);
+      line-height:1.55;
+    }
+    .who{
+      margin:0;
+      font-weight:900;
+      letter-spacing:-.01em;
+    }
+    .role{
+      margin:3px 0 0;
+      color: rgba(245,247,251,.68);
+      font-size:13px;
+    }
 
     .final{padding:46px 0 60px; text-align:center;}
     .finalBox{
       border:1px solid var(--line);
       border-radius: 22px;
       background:
-        radial-gradient(900px 400px at 20% 20%, rgba(124,92,255,.22), transparent 55%),
+        radial-gradient(900px 400px at 20% 20%, rgba(138,107,255,.22), transparent 55%),
         radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.16), transparent 55%),
         rgba(255,255,255,.02);
       padding:26px 18px;
@@ -223,9 +347,32 @@
       .heroGrid{grid-template-columns:1fr;}
       .steps{grid-template-columns:1fr;}
       .forGrid{grid-template-columns:1fr;}
+      .reviewGrid{grid-template-columns:1fr;}
     }
+
+    /* Mobile optimization */
     @media (max-width: 640px){
       .logo-wrap img{height:40px;}
+
+      .wrap{padding:0 16px;}
+
+      .topInner{gap:10px;}
+      .nav{gap:8px;}
+      .nav .btn{padding:10px 12px; font-weight:800;}
+
+      h1{line-height:1.06;}
+      .hero{padding:44px 0 26px;}
+
+      .ctaRow{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .ctaRow .btn{
+        width:100%;
+      }
+
+      .panelBody{padding:16px;}
+      .reviewsBand{padding:18px 14px;}
     }
   </style>
 </head>
@@ -249,6 +396,8 @@
   </div>
 
   <header class="hero">
+    <div class="heroGlow" aria-hidden="true"></div>
+
     <div class="wrap">
       <div class="heroGrid">
         <div>
@@ -266,7 +415,6 @@
           <div class="ctaRow">
             <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
             <a class="btn btnGhost" href="guest.html">Try it free</a>
-            <a class="btn" href="login.html">Log in</a>
           </div>
 
           <p class="micro">
@@ -360,6 +508,41 @@
     </div>
   </section>
 
+  <!-- Reviews: inserted right before final CTA -->
+  <section class="reviews" id="reviews">
+    <div class="wrap">
+      <div class="reviewsBand">
+        <div class="reviewsHead">
+          <h2 class="title" style="margin:0;">What writers are saying</h2>
+          <p class="reviewsSub">Real feedback from early users who care about voice, clarity, and finishing.</p>
+        </div>
+
+        <div class="reviewGrid">
+          <div class="reviewCard">
+            <div class="stars">★★★★★</div>
+            <p class="quote">Authored is a true game changer. It makes writing faster, clearer, and easier without sacrificing your voice, and I recommend it without hesitation to anyone serious about producing books that meet real demand.</p>
+            <p class="who">Francis T</p>
+            <p class="role">Pastor</p>
+          </div>
+
+          <div class="reviewCard">
+            <div class="stars">★★★★★</div>
+            <p class="quote">It’s like having that one friend who looks at your draft and says, “Say it like this,” and suddenly it’s right. Authored doesn’t replace you, it sharpens you.</p>
+            <p class="who">Fuletha D</p>
+            <p class="role">Educator</p>
+          </div>
+
+          <div class="reviewCard">
+            <div class="stars">★★★★★</div>
+            <p class="quote">This is an excellent tool, especially when writer’s block hits. I had an idea about dealing with betrayal but didn’t know how to expand it, and Authored completely changed the game for me.</p>
+            <p class="who">Sylvia T</p>
+            <p class="role">Pastor</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="final">
     <div class="wrap">
       <div class="finalBox">
@@ -369,7 +552,6 @@
         <div class="ctaRow" style="justify-content:center;">
           <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
           <a class="btn btnGhost" href="guest.html">Try it free</a>
-          <a class="btn" href="login.html">Log in</a>
         </div>
 
         <p class="micro" style="margin-top:12px;">
