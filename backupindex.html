@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Authored — Start writing without losing your voice</title>
+  <meta name="description" content="Authored helps stuck writers start and finish a real manuscript in their own voice. It doesn’t write for you. It writes with you." />
+  <link rel="icon" href="data:,">
+
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --text:#f5f7fb;
+      --muted:rgba(245,247,251,.72);
+      --line:rgba(255,255,255,.10);
+      --accent:#7c5cff;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --r:18px;
+      --max:1120px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(124,92,255,.25), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.18), transparent 55%),
+        radial-gradient(900px 800px at 40% 95%, rgba(124,92,255,.14), transparent 60%),
+        var(--bg);
+      line-height:1.45;
+    }
+    a{color:inherit}
+    .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
+
+    /* Top bar */
+    .top{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(14px);
+      background: rgba(11,13,18,.55);
+      border-bottom:1px solid var(--line);
+    }
+    .topInner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:14px 0;
+    }
+
+    /* LOGO — intentionally larger to compensate for PNG padding */
+    .logo-wrap{
+      display:flex;
+      align-items:center;
+      text-decoration:none;
+      flex:0 0 auto;
+    }
+    .logo-wrap img{
+      height:48px;      /* bigger so it doesn't look like a favicon */
+      width:auto;
+      display:block;
+    }
+
+    .nav{
+      display:flex; align-items:center; justify-content:flex-end;
+      gap:10px; flex-wrap:wrap;
+    }
+
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.02);
+      text-decoration:none;
+      font-weight:800;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.18);}
+
+    .btnGhost{
+      background: rgba(255,255,255,.03);
+      color: rgba(245,247,251,.75);
+      border-color: rgba(255,255,255,.14);
+    }
+    .btnGhost:hover{
+      background: rgba(255,255,255,.06);
+      color: rgba(245,247,251,.9);
+    }
+
+    .btnPrimary{
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      color:#0b0d12;
+      box-shadow: 0 14px 40px rgba(124,92,255,.22);
+    }
+    .btnPrimary:hover{background: linear-gradient(135deg, #6d4fff, #b59cff);}
+
+    .hero{padding:56px 0 34px;}
+    .heroGrid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:22px;
+      align-items:center;
+    }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+      font-size:13px;
+      width:fit-content;
+    }
+    .badge strong{color:var(--text)}
+    h1{
+      margin:14px 0 12px;
+      font-size: clamp(34px, 4vw, 54px);
+      letter-spacing:-.03em;
+      line-height:1.05;
+    }
+    .lead{
+      margin:0 0 18px;
+      color:var(--muted);
+      font-size: clamp(15px, 1.35vw, 18px);
+      max-width:56ch;
+    }
+    .ctaRow{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+    .micro{margin:10px 0 0; color: rgba(245,247,251,.62); font-size:13px;}
+
+    .panel{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panelTop{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 14px;
+      background: rgba(0,0,0,.22);
+      border-bottom:1px solid var(--line);
+    }
+    .dots{display:flex; gap:7px; align-items:center;}
+    .dots span{width:10px; height:10px; border-radius:999px; background: rgba(255,255,255,.16);}
+    .panelBody{padding:18px;}
+    .previewTitle{font-weight:900; margin:0 0 10px; letter-spacing:-.02em;}
+    .line{height:10px; border-radius:999px; background: rgba(255,255,255,.10); margin:10px 0;}
+    .w1{width:92%} .w2{width:78%} .w3{width:85%}
+
+    .miniGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+    .mini{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background: rgba(255,255,255,.02);
+    }
+    .mini b{display:block; margin-bottom:6px;}
+    .mini span{color:var(--muted); font-size:13px;}
+
+    .section{padding:44px 0;}
+    .title{
+      font-size: clamp(22px, 2.3vw, 32px);
+      letter-spacing:-.02em;
+      margin:0 0 10px;
+    }
+    .sub{margin:0 0 18px; color:var(--muted); max-width:75ch;}
+
+    .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
+    .step{
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      background: rgba(255,255,255,.02);
+      padding:16px;
+    }
+    .num{
+      width:34px; height:34px; border-radius:999px;
+      display:inline-flex; align-items:center; justify-content:center;
+      font-weight:900;
+      background: rgba(124,92,255,.18);
+      border:1px solid rgba(124,92,255,.35);
+      margin-bottom:10px;
+    }
+
+    /* Who it's for */
+    .forGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px;}
+    .forCard{
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      background: rgba(255,255,255,.02);
+      padding:16px;
+    }
+    .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
+    .forCard ul{margin:0; padding-left:18px; color:var(--muted);}
+    .forCard li{margin:8px 0;}
+
+    .final{padding:46px 0 60px; text-align:center;}
+    .finalBox{
+      border:1px solid var(--line);
+      border-radius: 22px;
+      background:
+        radial-gradient(900px 400px at 20% 20%, rgba(124,92,255,.22), transparent 55%),
+        radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.16), transparent 55%),
+        rgba(255,255,255,.02);
+      padding:26px 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .footer{
+      padding:18px 0 30px;
+      border-top:1px solid var(--line);
+      color: rgba(245,247,251,.6);
+      font-size:13px;
+    }
+    .footerRow{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+    .footer a{color: rgba(245,247,251,.7); text-decoration:none;}
+    .footer a:hover{text-decoration:underline;}
+
+    @media (max-width: 920px){
+      .heroGrid{grid-template-columns:1fr;}
+      .steps{grid-template-columns:1fr;}
+      .forGrid{grid-template-columns:1fr;}
+    }
+    @media (max-width: 640px){
+      .logo-wrap img{height:40px;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="top">
+    <div class="wrap">
+      <div class="topInner">
+        <a href="index.html" class="logo-wrap">
+          <img src="assets/logo-authored.png" alt="Authored" />
+        </a>
+
+        <div class="nav">
+          <a class="btn" href="#how">How it works</a>
+          <a class="btn" href="#for">Who it’s for</a>
+          <a class="btn" href="login.html">Log in</a>
+          <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="wrap">
+      <div class="heroGrid">
+        <div>
+          <div class="badge">
+            <strong>Not an AI ghostwriter.</strong>
+            <span>It writes with you.</span>
+          </div>
+
+          <h1>Write the book you’ve been avoiding.</h1>
+          <p class="lead">
+            If you’ve had an idea for months (or years) but can’t start, Authored helps you turn
+            scattered thoughts into a real manuscript in your own voice.
+          </p>
+
+          <div class="ctaRow">
+            <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+            <a class="btn btnGhost" href="guest.html">Try it free</a>
+            <a class="btn" href="login.html">Log in</a>
+          </div>
+
+          <p class="micro">
+            You own your words. Built for writers who care about voice, clarity, and finishing what they start.
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="panelTop">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <div style="color:rgba(245,247,251,.65); font-size:13px;">Draft Builder</div>
+          </div>
+          <div class="panelBody">
+            <p class="previewTitle">Your book, broken into clear steps</p>
+            <div class="line w1"></div>
+            <div class="line w2"></div>
+            <div class="line w3"></div>
+
+            <div class="miniGrid">
+              <div class="mini"><b>Title + Promise</b><span>Lock the message before chapter one.</span></div>
+              <div class="mini"><b>Outline</b><span>Build a chapter map you can finish.</span></div>
+              <div class="mini"><b>Voice</b><span>Write like you, not like AI.</span></div>
+              <div class="mini"><b>Momentum</b><span>Stop restarting. Start completing.</span></div>
+            </div>
+
+            <div style="margin-top:14px; color:rgba(245,247,251,.62); font-size:13px;">
+              Add your explainer video later. This preview keeps the page premium today.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="how">
+    <div class="wrap">
+      <h2 class="title">How it works</h2>
+      <p class="sub">A clean starting point, then a guided path forward without losing your voice.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3 style="margin:0 0 8px; font-size:16px;">Try it free</h3>
+          <p style="margin:0; color:var(--muted); font-size:14px;">
+            Start in guest mode and generate a title, purpose, and outline in minutes.
+          </p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3 style="margin:0 0 8px; font-size:16px;">Keep going</h3>
+          <p style="margin:0; color:var(--muted); font-size:14px;">
+            Create a free account to save your project and expand chapters.
+          </p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3 style="margin:0 0 8px; font-size:16px;">Upgrade when ready</h3>
+          <p style="margin:0; color:var(--muted); font-size:14px;">
+            Unlock deeper chapter drafts, intros, exports, and more.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="for">
+    <div class="wrap">
+      <h2 class="title">Who it’s for</h2>
+      <p class="sub">Writers who have something real to say, but need help turning it into a book without losing their voice.</p>
+
+      <div class="forGrid">
+        <div class="forCard">
+          <h3>You’ve been stuck at the beginning</h3>
+          <ul>
+            <li>You have ideas but don’t know how to structure them.</li>
+            <li>You overthink the first page and never begin.</li>
+            <li>You keep restarting instead of progressing.</li>
+          </ul>
+        </div>
+
+        <div class="forCard">
+          <h3>You care about voice</h3>
+          <ul>
+            <li>You don’t want generic AI writing.</li>
+            <li>You want your tone, your phrases, your perspective.</li>
+            <li>You want guidance without being replaced.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <div class="finalBox">
+        <h2 class="title" style="margin:0 0 8px;">Stop carrying the book. Start writing it.</h2>
+        <p class="sub" style="margin:0 auto 16px;">Start free. Keep going when you’re ready.</p>
+
+        <div class="ctaRow" style="justify-content:center;">
+          <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+          <a class="btn btnGhost" href="guest.html">Try it free</a>
+          <a class="btn" href="login.html">Log in</a>
+        </div>
+
+        <p class="micro" style="margin-top:12px;">
+          If you like what you start, create an account to save and expand it.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="footerRow">
+        <div>© <span id="y"></span> Authored</div>
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          <a href="mailto:support@myauthored.com">Support</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
