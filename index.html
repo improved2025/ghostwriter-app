@@ -54,7 +54,7 @@
       padding:14px 0;
     }
 
-    /* LOGO — intentionally larger to compensate for PNG padding */
+    /* LOGO */
     .logo-wrap{
       display:flex;
       align-items:center;
@@ -95,7 +95,7 @@
       color: rgba(245,247,251,.92);
     }
 
-    /* Primary CTA: orange + unmistakable (still premium) */
+    /* Primary CTA */
     .btnPrimary{
       border-color: transparent;
       background: linear-gradient(135deg, #ff8a2a, #ffc266);
@@ -109,11 +109,11 @@
     }
     .btnPrimary:active{transform: translateY(0px) scale(.99);}
 
-    /* Visible motion: subtle CTA pulse */
+    /* CTA pulse (visible but not obnoxious) */
     @keyframes pulseCTA {
-      0%   { box-shadow: 0 18px 48px rgba(255,138,42,.28); }
+      0%   { box-shadow: 0 18px 48px rgba(255,138,42,.24); }
       60%  { box-shadow: 0 18px 48px rgba(255,138,42,.42); }
-      100% { box-shadow: 0 18px 48px rgba(255,138,42,.28); }
+      100% { box-shadow: 0 18px 48px rgba(255,138,42,.24); }
     }
     .btnPrimary{
       animation: pulseCTA 2.6s ease-in-out infinite;
@@ -126,31 +126,72 @@
       overflow:hidden;
     }
 
-    /* NEW: Abstract manuscript energy layer (inline SVG texture, no external files) */
-    .heroTexture{
+    /* Moving “image” layers (abstract manuscript cards) */
+    .heroImages{
       position:absolute;
-      inset:-140px;
+      inset:-120px;
       pointer-events:none;
       z-index:0;
-
-      /* Manuscript lines + grain via inline SVG */
-      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%271600%27%20height%3D%271000%27%20viewBox%3D%270%200%201600%201000%27%3E%3Cdefs%3E%3Cfilter%20id%3D%27g%27%20x%3D%27-20%25%27%20y%3D%27-20%25%27%20width%3D%27140%25%27%20height%3D%27140%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.9%27%20numOctaves%3D%272%27%20stitchTiles%3D%27stitch%27/%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200%200.16%200%27/%3E%3C/filter%3E%3ClinearGradient%20id%3D%27fade%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%270%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23ffffff%27%20stop-opacity%3D%270.10%27/%3E%3Cstop%20offset%3D%2760%25%27%20stop-color%3D%27%23ffffff%27%20stop-opacity%3D%270.04%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23ffffff%27%20stop-opacity%3D%270%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%271600%27%20height%3D%271000%27%20fill%3D%27none%27/%3E%3Cg%20opacity%3D%270.95%27%3E%3Crect%20x%3D%27100%27%20y%3D%27150%27%20width%3D%271240%27%20height%3D%27680%27%20rx%3D%2728%27%20fill%3D%27url(%23fade)%27/%3E%3Cg%20stroke%3D%27%23ffffff%27%20stroke-opacity%3D%270.10%27%20stroke-width%3D%272%27%3E%3Cline%20x1%3D%27160%27%20y1%3D%27240%27%20x2%3D%271280%27%20y2%3D%27240%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27290%27%20x2%3D%271180%27%20y2%3D%27290%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27340%27%20x2%3D%271260%27%20y2%3D%27340%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27390%27%20x2%3D%271120%27%20y2%3D%27390%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27440%27%20x2%3D%271290%27%20y2%3D%27440%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27490%27%20x2%3D%271160%27%20y2%3D%27490%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27540%27%20x2%3D%271260%27%20y2%3D%27540%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27590%27%20x2%3D%271100%27%20y2%3D%27590%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27640%27%20x2%3D%271280%27%20y2%3D%27640%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27690%27%20x2%3D%271140%27%20y2%3D%27690%27/%3E%3Cline%20x1%3D%27160%27%20y1%3D%27740%27%20x2%3D%271260%27%20y2%3D%27740%27/%3E%3C/ g%3E%3Crect%20x%3D%27170%27%20y%3D%27325%27%20width%3D%27460%27%20height%3D%2730%27%20rx%3D%2712%27%20fill%3D%27%23ff8a2a%27%20fill-opacity%3D%270.10%27/%3E%3Crect%20x%3D%27170%27%20y%3D%27575%27%20width%3D%27380%27%20height%3D%2730%27%20rx%3D%2712%27%20fill%3D%27%23ff8a2a%27%20fill-opacity%3D%270.08%27/%3E%3C/g%3E%3Crect%20width%3D%271600%27%20height%3D%271000%27%20filter%3D%27url(%23g)%27%20opacity%3D%270.55%27/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-size: 1400px auto;
-      background-position: 20% 30%;
-      filter: blur(0.2px);
-      opacity: 0.55;
-
-      animation: textureDrift 14s ease-in-out infinite alternate;
-      transform: translate3d(0,0,0);
+    }
+    .floatCard{
+      position:absolute;
+      width: 360px;
+      height: 240px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(700px 260px at 20% 30%, rgba(255,138,42,.14), transparent 60%),
+        radial-gradient(560px 240px at 80% 20%, rgba(34,197,94,.10), transparent 60%),
+        rgba(255,255,255,.03);
+      box-shadow: 0 30px 90px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      opacity: .85;
+    }
+    .floatCard::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image:
+        linear-gradient(to bottom, rgba(255,255,255,.12) 1px, transparent 1px);
+      background-size: 100% 22px;
+      opacity:.22;
+      transform: skewY(-2deg) translateY(-18px);
+    }
+    .floatCard::after{
+      content:"";
+      position:absolute;
+      inset:-20%;
+      background:
+        radial-gradient(360px 260px at 25% 45%, rgba(255,138,42,.18), transparent 60%),
+        radial-gradient(360px 260px at 70% 30%, rgba(255,255,255,.08), transparent 65%);
+      filter: blur(10px);
+      opacity:.6;
     }
 
-    @keyframes textureDrift{
-      0%   { background-position: 18% 28%; transform: translate3d(-12px,-6px,0) scale(1); opacity: .50; }
-      100% { background-position: 26% 34%; transform: translate3d(16px,10px,0) scale(1.02); opacity: .62; }
+    .cardA{
+      left: -40px;
+      top: 60px;
+      transform: rotate(-8deg);
+      animation: floatA 9s ease-in-out infinite alternate;
+    }
+    .cardB{
+      right: -60px;
+      top: 30px;
+      transform: rotate(10deg);
+      animation: floatB 11s ease-in-out infinite alternate;
+      opacity:.75;
+    }
+    @keyframes floatA{
+      0%   { transform: translate3d(0,0,0) rotate(-8deg); }
+      100% { transform: translate3d(22px,18px,0) rotate(-6deg); }
+    }
+    @keyframes floatB{
+      0%   { transform: translate3d(0,0,0) rotate(10deg); }
+      100% { transform: translate3d(-26px,22px,0) rotate(8deg); }
     }
 
-    /* Subtle hero motion glow (CSS only) */
+    /* Existing hero glow */
     .heroGlow{
       position:absolute;
       inset:-140px;
@@ -170,11 +211,45 @@
       100% { transform: translate3d(22px,14px,0) scale(1.03); }
     }
 
-    /* Respect reduced-motion */
+    /* Rolling text ticker */
+    .ticker{
+      margin: 16px 0 0;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
+      border-radius: 999px;
+      overflow:hidden;
+      width: fit-content;
+      max-width: 100%;
+    }
+    .tickerTrack{
+      display:flex;
+      gap:18px;
+      white-space:nowrap;
+      padding:10px 12px;
+      animation: tickerScroll 16s linear infinite;
+      will-change: transform;
+      color: rgba(245,247,251,.78);
+      font-size: 13px;
+      letter-spacing: .02em;
+    }
+    .tickerDot{
+      opacity:.6;
+    }
+    .tickerStrong{
+      color: rgba(245,247,251,.92);
+      font-weight: 800;
+    }
+    @keyframes tickerScroll{
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Respect reduced motion */
     @media (prefers-reduced-motion: reduce){
       .heroGlow{animation:none;}
-      .heroTexture{animation:none;}
       .btnPrimary{animation:none;}
+      .floatCard{animation:none;}
+      .tickerTrack{animation:none;}
       .btn{transition:none;}
     }
 
@@ -219,6 +294,11 @@
       border-radius: var(--r);
       box-shadow: var(--shadow);
       overflow:hidden;
+      animation: panelFloat 10s ease-in-out infinite alternate;
+    }
+    @keyframes panelFloat{
+      0% { transform: translate3d(0,0,0); }
+      100% { transform: translate3d(0,6px,0); }
     }
     .panelTop{
       display:flex; align-items:center; justify-content:space-between;
@@ -297,10 +377,8 @@
     .forCard ul{margin:0; padding-left:18px; color:var(--muted);}
     .forCard li{margin:8px 0;}
 
-    /* Reviews (placed before final CTA) */
-    .reviews{
-      padding:46px 0;
-    }
+    /* Reviews */
+    .reviews{ padding:46px 0; }
     .reviewsBand{
       border:1px solid var(--line);
       border-radius: 22px;
@@ -367,13 +445,10 @@
     .finalBox{
       border:1px solid var(--line);
       border-radius: 22px;
-
-      /* Darker final CTA background so text pops */
       background:
         radial-gradient(900px 400px at 20% 20%, rgba(255,138,42,.10), transparent 60%),
         radial-gradient(700px 380px at 80% 20%, rgba(34,197,94,.08), transparent 60%),
         rgba(0,0,0,.35);
-
       padding:26px 18px;
       box-shadow: var(--shadow);
     }
@@ -393,14 +468,15 @@
       .steps{grid-template-columns:1fr;}
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
+
+      .cardA{left:-120px; top:40px; opacity:.55;}
+      .cardB{right:-140px; top:10px; opacity:.45;}
     }
 
     /* Mobile optimization */
     @media (max-width: 640px){
       .logo-wrap img{height:40px;}
-
       .wrap{padding:0 16px;}
-
       .topInner{gap:10px;}
       .nav{gap:8px;}
       .nav .btn{padding:10px 12px; font-weight:800;}
@@ -408,19 +484,14 @@
       h1{line-height:1.06;}
       .hero{padding:44px 0 26px;}
 
-      .ctaRow{
-        flex-direction:column;
-        align-items:stretch;
-      }
-      .ctaRow .btn{
-        width:100%;
-      }
+      .ctaRow{flex-direction:column; align-items:stretch;}
+      .ctaRow .btn{width:100%;}
 
       .panelBody{padding:16px;}
       .reviewsBand{padding:18px 14px;}
 
-      /* Slightly reduce texture prominence on small screens */
-      .heroTexture{opacity:.45;}
+      .ticker{width:100%;}
+      .tickerTrack{font-size:12px;}
     }
   </style>
 </head>
@@ -444,7 +515,10 @@
   </div>
 
   <header class="hero">
-    <div class="heroTexture" aria-hidden="true"></div>
+    <div class="heroImages" aria-hidden="true">
+      <div class="floatCard cardA"></div>
+      <div class="floatCard cardB"></div>
+    </div>
     <div class="heroGlow" aria-hidden="true"></div>
 
     <div class="wrap">
@@ -453,6 +527,30 @@
           <div class="badge">
             <strong>Not an AI ghostwriter.</strong>
             <span>It writes with you.</span>
+          </div>
+
+          <!-- Rolling text -->
+          <div class="ticker" aria-hidden="true">
+            <div class="tickerTrack">
+              <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Devotional</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Non-fiction</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Fiction</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Inspirational</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Write faster</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Keep your voice</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Finish the book</span><span class="tickerDot">•</span>
+
+              <!-- duplicate for seamless loop -->
+              <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Devotional</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Non-fiction</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Fiction</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Inspirational</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Write faster</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Keep your voice</span><span class="tickerDot">•</span>
+              <span class="tickerStrong">Finish the book</span><span class="tickerDot">•</span>
+            </div>
           </div>
 
           <h1>Write the book you’ve been avoiding.</h1>
@@ -557,7 +655,6 @@
     </div>
   </section>
 
-  <!-- Reviews: inserted right before final CTA -->
   <section class="reviews" id="reviews">
     <div class="wrap">
       <div class="reviewsBand">
