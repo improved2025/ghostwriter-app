@@ -26,8 +26,6 @@
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color:var(--text);
-
-      /* Keep base dark and premium */
       background: #07080c;
       line-height:1.45;
     }
@@ -111,17 +109,14 @@
       100% { box-shadow: 0 18px 48px rgba(255,138,42,.24); }
     }
 
-    /* HERO (full-width background slider) */
+    /* HERO: full-width slider background */
     .hero{
       position:relative;
       overflow:hidden;
-
-      /* This prevents the awkward dead space: hero becomes a complete block */
       padding:56px 0 44px;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
 
-    /* Background slider container */
     .heroBg{
       position:absolute;
       inset:0;
@@ -130,7 +125,6 @@
       background:#07080c;
     }
 
-    /* Slides: stacked + crossfade */
     .heroBg .slide{
       position:absolute;
       inset:0;
@@ -139,38 +133,37 @@
       background-repeat:no-repeat;
       opacity:0;
       animation: heroFade 18s infinite;
-      transform: scale(1.06);
-      filter: saturate(1.05) contrast(1.04);
+      transform: scale(1.07);
+      filter: saturate(1.06) contrast(1.05);
+      will-change: opacity, transform;
     }
 
-    /* Assign images */
+    /* Your actual files in /assets/ */
     .heroBg .s1{ background-image: url("assets/slide-1.webp"); }
     .heroBg .s2{ background-image: url("assets/slide-2.webp"); animation-delay: 6s; }
     .heroBg .s3{ background-image: url("assets/slide-3.webp"); animation-delay: 12s; }
 
-    /* Crossfade timing:
-       0-10% fade in, 10-35% hold, 35-45% fade out, rest hidden */
     @keyframes heroFade{
-      0%   { opacity:0; transform: scale(1.07); }
+      0%   { opacity:0; transform: scale(1.08); }
       8%   { opacity:1; transform: scale(1.06); }
       35%  { opacity:1; transform: scale(1.03); }
       45%  { opacity:0; transform: scale(1.02); }
-      100% { opacity:0; transform: scale(1.07); }
+      100% { opacity:0; transform: scale(1.08); }
     }
 
-    /* Overlay: makes text pop no matter the photo */
+    /* Dark overlay so text is always readable */
     .heroOverlay{
       position:absolute;
       inset:0;
       z-index:1;
       pointer-events:none;
       background:
-        radial-gradient(1000px 700px at 22% 30%, rgba(0,0,0,.35), rgba(0,0,0,.70) 62%),
-        radial-gradient(900px 600px at 80% 25%, rgba(0,0,0,.20), rgba(0,0,0,.60) 60%),
-        linear-gradient(180deg, rgba(7,8,12,.70), rgba(7,8,12,.86));
+        radial-gradient(1000px 700px at 22% 30%, rgba(0,0,0,.35), rgba(0,0,0,.74) 62%),
+        radial-gradient(900px 600px at 82% 25%, rgba(0,0,0,.18), rgba(0,0,0,.62) 60%),
+        linear-gradient(180deg, rgba(7,8,12,.72), rgba(7,8,12,.88));
     }
 
-    /* Subtle accent glow (kept restrained) */
+    /* Subtle accent glow */
     .heroGlow{
       position:absolute;
       inset:-160px;
@@ -180,7 +173,7 @@
         radial-gradient(740px 460px at 18% 30%, rgba(255,138,42,.18), transparent 62%),
         radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.12), transparent 64%);
       filter: blur(14px);
-      opacity:.75;
+      opacity:.70;
       animation: glowMove 14s ease-in-out infinite alternate;
       transform: translate3d(0,0,0);
     }
@@ -191,7 +184,7 @@
 
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce){
-      .heroBg .slide{ animation:none; opacity:.25; }
+      .heroBg .slide{ animation:none; opacity:.22; }
       .btnPrimary{ animation:none; }
       .heroGlow{ animation:none; }
       .btn{ transition:none; }
@@ -452,14 +445,11 @@
   </div>
 
   <header class="hero">
-    <!-- Background slider (3 WebP images in /assets/) -->
     <div class="heroBg" aria-hidden="true">
       <div class="slide s1"></div>
       <div class="slide s2"></div>
       <div class="slide s3"></div>
     </div>
-
-    <!-- Overlay and glow -->
     <div class="heroOverlay" aria-hidden="true"></div>
     <div class="heroGlow" aria-hidden="true"></div>
 
