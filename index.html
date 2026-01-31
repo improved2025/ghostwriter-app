@@ -27,13 +27,8 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       color:var(--text);
 
-      /* Darker background blend so headlines pop */
-      background:
-        radial-gradient(1200px 800px at 20% 10%, rgba(255,138,42,.12), transparent 60%),
-        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.10), transparent 60%),
-        radial-gradient(900px 800px at 40% 95%, rgba(255,138,42,.08), transparent 65%),
-        #07080c;
-
+      /* Keep base dark and premium */
+      background: #07080c;
       line-height:1.45;
     }
     a{color:inherit}
@@ -43,7 +38,7 @@
     .top{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(14px);
-      background: rgba(11,13,18,.55);
+      background: rgba(11,13,18,.62);
       border-bottom:1px solid var(--line);
     }
     .topInner{
@@ -116,134 +111,90 @@
       100% { box-shadow: 0 18px 48px rgba(255,138,42,.24); }
     }
 
-    /* Hero */
+    /* HERO (full-width background slider) */
     .hero{
-      padding:56px 0 34px;
       position:relative;
       overflow:hidden;
+
+      /* This prevents the awkward dead space: hero becomes a complete block */
+      padding:56px 0 44px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
     }
 
-    /* Moving hero image cards (REAL images) */
-    .heroImages{
-      position:absolute;
-      inset:-120px;
-      pointer-events:none;
-      z-index:0;
-    }
-    .floatCard{
-      position:absolute;
-      width: 380px;
-      height: 250px;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      box-shadow: 0 30px 90px rgba(0,0,0,.55);
-      backdrop-filter: blur(10px);
-      overflow:hidden;
-      opacity: .92;
-      isolation:isolate;
-    }
-    .floatCard img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      transform: scale(1.02);
-      filter: contrast(1.05) saturate(1.02);
-      opacity: .92;
-    }
-
-    /* subtle overlay to keep it premium and consistent */
-    .floatCard::after{
-      content:"";
+    /* Background slider container */
+    .heroBg{
       position:absolute;
       inset:0;
-      background:
-        radial-gradient(360px 240px at 25% 45%, rgba(255,138,42,.10), transparent 60%),
-        radial-gradient(360px 240px at 70% 30%, rgba(255,255,255,.08), transparent 65%),
-        linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.28));
-      mix-blend-mode: screen;
-      opacity:.55;
+      z-index:0;
       pointer-events:none;
+      background:#07080c;
     }
 
-    .cardA{
-      left: -50px;
-      top: 60px;
-      transform: rotate(-8deg);
-      animation: floatA 8.5s ease-in-out infinite alternate;
-    }
-    .cardB{
-      right: -70px;
-      top: 25px;
-      transform: rotate(10deg);
-      animation: floatB 10.5s ease-in-out infinite alternate;
-      opacity:.82;
-    }
-
-    @keyframes floatA{
-      0%   { transform: translate3d(0,0,0) rotate(-8deg); }
-      100% { transform: translate3d(26px,18px,0) rotate(-6deg); }
-    }
-    @keyframes floatB{
-      0%   { transform: translate3d(0,0,0) rotate(10deg); }
-      100% { transform: translate3d(-30px,22px,0) rotate(8deg); }
+    /* Slides: stacked + crossfade */
+    .heroBg .slide{
+      position:absolute;
+      inset:0;
+      background-position:center;
+      background-size:cover;
+      background-repeat:no-repeat;
+      opacity:0;
+      animation: heroFade 18s infinite;
+      transform: scale(1.06);
+      filter: saturate(1.05) contrast(1.04);
     }
 
-    /* Hero glow */
+    /* Assign images */
+    .heroBg .s1{ background-image: url("assets/slide-1.webp"); }
+    .heroBg .s2{ background-image: url("assets/slide-2.webp"); animation-delay: 6s; }
+    .heroBg .s3{ background-image: url("assets/slide-3.webp"); animation-delay: 12s; }
+
+    /* Crossfade timing:
+       0-10% fade in, 10-35% hold, 35-45% fade out, rest hidden */
+    @keyframes heroFade{
+      0%   { opacity:0; transform: scale(1.07); }
+      8%   { opacity:1; transform: scale(1.06); }
+      35%  { opacity:1; transform: scale(1.03); }
+      45%  { opacity:0; transform: scale(1.02); }
+      100% { opacity:0; transform: scale(1.07); }
+    }
+
+    /* Overlay: makes text pop no matter the photo */
+    .heroOverlay{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:
+        radial-gradient(1000px 700px at 22% 30%, rgba(0,0,0,.35), rgba(0,0,0,.70) 62%),
+        radial-gradient(900px 600px at 80% 25%, rgba(0,0,0,.20), rgba(0,0,0,.60) 60%),
+        linear-gradient(180deg, rgba(7,8,12,.70), rgba(7,8,12,.86));
+    }
+
+    /* Subtle accent glow (kept restrained) */
     .heroGlow{
       position:absolute;
-      inset:-140px;
+      inset:-160px;
+      z-index:1;
       pointer-events:none;
       background:
-        radial-gradient(720px 480px at 18% 30%, rgba(255,138,42,.18), transparent 62%),
-        radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.14), transparent 64%),
-        radial-gradient(820px 560px at 70% 85%, rgba(255,138,42,.10), transparent 65%);
-      filter: blur(12px);
-      opacity: .85;
-      animation: glowMove 18s ease-in-out infinite alternate;
+        radial-gradient(740px 460px at 18% 30%, rgba(255,138,42,.18), transparent 62%),
+        radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.12), transparent 64%);
+      filter: blur(14px);
+      opacity:.75;
+      animation: glowMove 14s ease-in-out infinite alternate;
       transform: translate3d(0,0,0);
-      z-index:0;
     }
     @keyframes glowMove{
-      0% { transform: translate3d(-18px,-10px,0) scale(1); }
-      100% { transform: translate3d(22px,14px,0) scale(1.03); }
-    }
-
-    /* Rolling text ticker */
-    .ticker{
-      margin: 16px 0 0;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.02);
-      border-radius: 999px;
-      overflow:hidden;
-      width: fit-content;
-      max-width: 100%;
-    }
-    .tickerTrack{
-      display:flex;
-      gap:18px;
-      white-space:nowrap;
-      padding:10px 12px;
-      animation: tickerScroll 16s linear infinite;
-      will-change: transform;
-      color: rgba(245,247,251,.78);
-      font-size: 13px;
-      letter-spacing: .02em;
-    }
-    .tickerDot{opacity:.6;}
-    .tickerStrong{color: rgba(245,247,251,.92); font-weight: 800;}
-    @keyframes tickerScroll{
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+      0% { transform: translate3d(-12px,-8px,0) scale(1); }
+      100% { transform: translate3d(14px,10px,0) scale(1.03); }
     }
 
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce){
-      .heroGlow{animation:none;}
-      .btnPrimary{animation:none;}
-      .floatCard{animation:none;}
-      .tickerTrack{animation:none;}
-      .btn{transition:none;}
+      .heroBg .slide{ animation:none; opacity:.25; }
+      .btnPrimary{ animation:none; }
+      .heroGlow{ animation:none; }
+      .btn{ transition:none; }
     }
 
     .heroGrid{
@@ -252,52 +203,52 @@
       gap:22px;
       align-items:center;
       position:relative;
-      z-index:1;
+      z-index:2;
     }
 
     .badge{
       display:inline-flex; align-items:center; gap:10px;
       padding:8px 12px;
       border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-      color:var(--muted);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color:rgba(245,247,251,.82);
       font-size:13px;
       width:fit-content;
+      backdrop-filter: blur(10px);
     }
     .badge strong{color:var(--text)}
+
     h1{
       margin:14px 0 12px;
-      font-size: clamp(34px, 4vw, 54px);
+      font-size: clamp(34px, 4vw, 56px);
       letter-spacing:-.03em;
       line-height:1.05;
+      text-shadow: 0 20px 70px rgba(0,0,0,.65);
     }
     .lead{
       margin:0 0 18px;
-      color:var(--muted);
+      color:rgba(245,247,251,.80);
       font-size: clamp(15px, 1.35vw, 18px);
       max-width:56ch;
+      text-shadow: 0 14px 50px rgba(0,0,0,.55);
     }
     .ctaRow{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
-    .micro{margin:10px 0 0; color: rgba(245,247,251,.65); font-size:13px;}
+    .micro{margin:10px 0 0; color: rgba(245,247,251,.70); font-size:13px; text-shadow: 0 12px 40px rgba(0,0,0,.55);}
 
     .panel{
-      border:1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
       border-radius: var(--r);
       box-shadow: var(--shadow);
       overflow:hidden;
-      animation: panelFloat 10s ease-in-out infinite alternate;
-    }
-    @keyframes panelFloat{
-      0% { transform: translate3d(0,0,0); }
-      100% { transform: translate3d(0,6px,0); }
+      backdrop-filter: blur(10px);
     }
     .panelTop{
       display:flex; align-items:center; justify-content:space-between;
       padding:12px 14px;
-      background: rgba(0,0,0,.22);
-      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.30);
+      border-bottom:1px solid rgba(255,255,255,.10);
     }
     .dots{display:flex; gap:7px; align-items:center;}
     .dots span{width:10px; height:10px; border-radius:999px; background: rgba(255,255,255,.16);}
@@ -308,7 +259,7 @@
 
     .miniGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
     .mini{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius:14px;
       padding:12px;
       background: rgba(255,255,255,.02);
@@ -320,7 +271,7 @@
       border-color: rgba(255,255,255,.18);
     }
     .mini b{display:block; margin-bottom:6px;}
-    .mini span{color:var(--muted); font-size:13px;}
+    .mini span{color:rgba(245,247,251,.74); font-size:13px;}
 
     .section{padding:44px 0;}
     .title{
@@ -328,11 +279,11 @@
       letter-spacing:-.02em;
       margin:0 0 10px;
     }
-    .sub{margin:0 0 18px; color:var(--muted); max-width:75ch;}
+    .sub{margin:0 0 18px; color:rgba(245,247,251,.76); max-width:75ch;}
 
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
     .step{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
       background: rgba(255,255,255,.02);
       padding:16px;
@@ -355,7 +306,7 @@
     /* Who it's for */
     .forGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px;}
     .forCard{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
       background: rgba(255,255,255,.02);
       padding:16px;
@@ -367,13 +318,13 @@
       border-color: rgba(255,255,255,.18);
     }
     .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
-    .forCard ul{margin:0; padding-left:18px; color:var(--muted);}
+    .forCard ul{margin:0; padding-left:18px; color:rgba(245,247,251,.74);}
     .forCard li{margin:8px 0;}
 
     /* Reviews */
     .reviews{ padding:46px 0; }
     .reviewsBand{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius: 22px;
       background: rgba(255,255,255,.035);
       box-shadow: var(--shadow);
@@ -389,7 +340,7 @@
     }
     .reviewsSub{
       margin:0;
-      color:var(--muted);
+      color:rgba(245,247,251,.76);
       max-width:70ch;
     }
     .reviewGrid{
@@ -399,7 +350,7 @@
       margin-top:14px;
     }
     .reviewCard{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
       background: rgba(255,255,255,.02);
       padding:16px;
@@ -436,7 +387,7 @@
 
     .final{padding:46px 0 60px; text-align:center;}
     .finalBox{
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius: 22px;
       background:
         radial-gradient(900px 400px at 20% 20%, rgba(255,138,42,.10), transparent 60%),
@@ -448,7 +399,7 @@
 
     .footer{
       padding:18px 0 30px;
-      border-top:1px solid var(--line);
+      border-top:1px solid rgba(255,255,255,.10);
       color: rgba(245,247,251,.6);
       font-size:13px;
     }
@@ -461,9 +412,6 @@
       .steps{grid-template-columns:1fr;}
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
-
-      .cardA{left:-140px; top:40px; opacity:.50;}
-      .cardB{right:-160px; top:10px; opacity:.42;}
     }
 
     @media (max-width: 640px){
@@ -474,16 +422,13 @@
       .nav .btn{padding:10px 12px; font-weight:800;}
 
       h1{line-height:1.06;}
-      .hero{padding:44px 0 26px;}
+      .hero{padding:44px 0 36px;}
 
       .ctaRow{flex-direction:column; align-items:stretch;}
       .ctaRow .btn{width:100%;}
 
       .panelBody{padding:16px;}
       .reviewsBand{padding:18px 14px;}
-
-      .ticker{width:100%;}
-      .tickerTrack{font-size:12px;}
     }
   </style>
 </head>
@@ -507,14 +452,15 @@
   </div>
 
   <header class="hero">
-    <div class="heroImages" aria-hidden="true">
-      <div class="floatCard cardA">
-        <img src="assets/hero-card-a.webp" alt="" />
-      </div>
-      <div class="floatCard cardB">
-        <img src="assets/hero-card-b.webp" alt="" />
-      </div>
+    <!-- Background slider (3 WebP images in /assets/) -->
+    <div class="heroBg" aria-hidden="true">
+      <div class="slide s1"></div>
+      <div class="slide s2"></div>
+      <div class="slide s3"></div>
     </div>
+
+    <!-- Overlay and glow -->
+    <div class="heroOverlay" aria-hidden="true"></div>
     <div class="heroGlow" aria-hidden="true"></div>
 
     <div class="wrap">
@@ -523,28 +469,6 @@
           <div class="badge">
             <strong>Not an AI ghostwriter.</strong>
             <span>It writes with you.</span>
-          </div>
-
-          <div class="ticker" aria-hidden="true">
-            <div class="tickerTrack">
-              <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Devotional</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Non-fiction</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Fiction</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Inspirational</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Write faster</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Keep your voice</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Finish the book</span><span class="tickerDot">•</span>
-
-              <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Devotional</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Non-fiction</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Fiction</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Inspirational</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Write faster</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Keep your voice</span><span class="tickerDot">•</span>
-              <span class="tickerStrong">Finish the book</span><span class="tickerDot">•</span>
-            </div>
           </div>
 
           <h1>Write the book you’ve been avoiding.</h1>
@@ -566,7 +490,7 @@
         <div class="panel">
           <div class="panelTop">
             <div class="dots"><span></span><span></span><span></span></div>
-            <div style="color:rgba(245,247,251,.65); font-size:13px;">Draft Builder</div>
+            <div style="color:rgba(245,247,251,.72); font-size:13px;">Draft Builder</div>
           </div>
           <div class="panelBody">
             <p class="previewTitle">Your book, broken into clear steps</p>
@@ -581,7 +505,7 @@
               <div class="mini"><b>Momentum</b><span>Stop restarting. Start completing.</span></div>
             </div>
 
-            <div style="margin-top:14px; color:rgba(245,247,251,.62); font-size:13px;">
+            <div style="margin-top:14px; color:rgba(245,247,251,.70); font-size:13px;">
               Add your explainer video later. This preview keeps the page premium today.
             </div>
           </div>
@@ -600,21 +524,21 @@
         <div class="step">
           <div class="num">1</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Try it free</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
             Start in guest mode and generate a title, purpose, and outline in minutes.
           </p>
         </div>
         <div class="step">
           <div class="num">2</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Keep going</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
             Create a free account to save your project and expand chapters.
           </p>
         </div>
         <div class="step">
           <div class="num">3</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Upgrade when ready</h3>
-          <p style="margin:0; color:var(--muted); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
             Unlock deeper chapter drafts, intros, exports, and more.
           </p>
         </div>
