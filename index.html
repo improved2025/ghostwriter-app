@@ -132,23 +132,27 @@
       background-size:cover;
       background-repeat:no-repeat;
       opacity:0;
+
+      /* IMPORTANT: keep frames applied at time 0 (no blank start) */
       animation: heroFade 18s infinite;
-      transform: scale(1.07);
+      animation-fill-mode: both;
+
+      transform: scale(1.06);
       filter: saturate(1.06) contrast(1.05);
       will-change: opacity, transform;
     }
 
     /* Your actual files in /assets/ */
-    .heroBg .s1{ background-image: url("assets/slide-1.webp"); }
+    .heroBg .s1{ background-image: url("assets/slide-1.webp"); opacity:1; } /* visible instantly */
     .heroBg .s2{ background-image: url("assets/slide-2.webp"); animation-delay: 6s; }
     .heroBg .s3{ background-image: url("assets/slide-3.webp"); animation-delay: 12s; }
 
+    /* Crossfade: visible immediately, then fades out */
     @keyframes heroFade{
-      0%   { opacity:0; transform: scale(1.08); }
-      8%   { opacity:1; transform: scale(1.06); }
-      35%  { opacity:1; transform: scale(1.03); }
-      45%  { opacity:0; transform: scale(1.02); }
-      100% { opacity:0; transform: scale(1.08); }
+      0%   { opacity:1; transform: scale(1.06); }
+      30%  { opacity:1; transform: scale(1.03); }
+      40%  { opacity:0; transform: scale(1.02); }
+      100% { opacity:0; transform: scale(1.06); }
     }
 
     /* Dark overlay so text is always readable */
