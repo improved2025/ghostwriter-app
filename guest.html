@@ -102,12 +102,13 @@
 
     /* Turn the body into a "card" sitting on top of the background */
     body{
-      background: rgba(255,255,255,.94);
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 22px 70px rgba(0,0,0,.45);
-      backdrop-filter: blur(6px);
-    }
+      body{
+  background: rgba(255,255,255,.98);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 22px 70px rgba(0,0,0,.45);
+  backdrop-filter: blur(6px);
+}
 
     /* Keep mobile nice */
     @media (max-width:640px){
@@ -121,6 +122,27 @@
       }
     }
     /* ===== END PREMIUM BACKGROUND ===== */
+      /* ===== READABILITY OVERRIDES (ADDED) ===== */
+h1, h2, h3, label { color:#111; }
+p { color:#222; }
+
+/* Your .muted was too faint on the new photo background */
+.muted{
+  color:#444 !important;
+}
+
+/* Make sure form placeholders are readable */
+input::placeholder, textarea::placeholder{
+  color:#777;
+}
+
+/* Make the main form fields pop a bit more */
+input[type="text"], textarea, select{
+  border-color:#cfcfcf;
+  background:#fff;
+}
+
+/* ===== END READABILITY OVERRIDES ===== */
   </style>
 </head>
 
