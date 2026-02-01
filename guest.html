@@ -90,15 +90,15 @@
     }
 
     /* Dark overlay so the photo feels premium and doesn’t fight the page */
-    html::after{
-      content:"";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.30), rgba(0,0,0,.68) 70%),
-        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65));
-    }
+   html::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.22), rgba(0,0,0,.58) 70%),
+    linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.55));
+}
 
     /* Turn the body into a "card" sitting on top of the background */
     body{
