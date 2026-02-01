@@ -71,6 +71,56 @@
       background:#111;
       color:#fff;
     }
+
+    /* ===== PREMIUM GUEST BACKGROUND (ADDED) =====
+       Safe: no HTML changes, keeps your form readable.
+       Photo sits behind the page, while the content sits on a clean light surface.
+    */
+    html, body { min-height: 100%; }
+
+    /* Full-screen photo behind everything */
+    html::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background: url("assets/hero-guest.webp") center/cover no-repeat;
+      transform: scale(1.03);
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    /* Dark overlay so the photo feels premium and doesn’t fight the page */
+    html::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.30), rgba(0,0,0,.68) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65));
+    }
+
+    /* Turn the body into a "card" sitting on top of the background */
+    body{
+      background: rgba(255,255,255,.94);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.45);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Keep mobile nice */
+    @media (max-width:640px){
+      body{
+        padding: 18px;
+        border-radius: 16px;
+      }
+      html::after{
+        background:
+          linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,.74));
+      }
+    }
+    /* ===== END PREMIUM BACKGROUND ===== */
   </style>
 </head>
 
