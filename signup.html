@@ -4,83 +4,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create your account</title>
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff;
-      margin: 0;
-      padding: 0;
-      color: #111;
+    :root{
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.78);
+      --card: rgba(15,18,24,.55);
+      --card2: rgba(15,18,24,.38);
+      --line: rgba(255,255,255,.14);
+      --shadow: 0 22px 70px rgba(0,0,0,.55);
+      --radius: 18px;
     }
-    .wrap {
+
+    html, body { height:100%; }
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      overflow-x:hidden;
+      background:#0b0d12;
+    }
+
+    /* Full-page photo background */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      background: url("assets/signup-hero.webp") center/cover no-repeat;
+      transform: scale(1.03);
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    /* Dark overlay for readability */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background:
+        radial-gradient(900px 600px at 20% 20%, rgba(0,0,0,.35), rgba(0,0,0,.72) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.68));
+      pointer-events:none;
+    }
+
+    .wrap{
       max-width: 520px;
       margin: 80px auto;
       padding: 0 20px;
       text-align: center;
     }
-    h1 {
-      font-size: 42px;
+
+    h1{
+      font-size: 40px;
       margin: 0 0 10px;
-      font-weight: 800;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      text-shadow: 0 18px 60px rgba(0,0,0,.55);
     }
-    .sub {
-      color: #444;
-      margin: 0 0 30px;
+
+    .sub{
+      color: var(--muted);
+      margin: 0 0 22px;
+      line-height: 1.5;
+      text-shadow: 0 14px 40px rgba(0,0,0,.55);
+      font-size: 14px;
     }
-    .card {
-      border: 1px solid #eee;
-      border-radius: 14px;
+
+    .card{
+      border-radius: var(--radius);
       padding: 22px;
       text-align: left;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
     }
-    label {
+
+    label{
       display: block;
       font-size: 13px;
       margin: 12px 0 6px;
-      color: #222;
+      color: rgba(255,255,255,.92);
+      font-weight: 700;
     }
-    input {
+
+    input{
       width: 100%;
       padding: 12px 12px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px;
       font-size: 15px;
       outline: none;
       box-sizing: border-box;
+      background: rgba(255,255,255,.06);
+      color: #fff;
     }
-    input:focus { border-color: #aaa; }
-    button {
+    input::placeholder{ color: rgba(255,255,255,.55); }
+
+    input:focus{
+      border-color: rgba(255,255,255,.32);
+      background: rgba(255,255,255,.08);
+    }
+
+    button{
       width: 100%;
       margin-top: 16px;
       padding: 12px 14px;
-      border: none;
-      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px;
       font-size: 15px;
-      font-weight: 700;
-      background: #111;
-      color: #fff;
+      font-weight: 900;
+      background: rgba(255,255,255,.92);
+      color: #0b0d12;
       cursor: pointer;
+      transition: transform .12s ease, filter .12s ease;
     }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .msg {
+    button:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+    button:active{ transform: translateY(0px) scale(.99); }
+    button:disabled{ opacity: 0.6; cursor: not-allowed; }
+
+    .msg{
       margin-top: 12px;
       font-size: 13px;
       min-height: 18px;
+      color: rgba(255,255,255,.85);
     }
-    .msg.ok { color: #0a7a2f; }
-    .msg.err { color: #b00020; }
-    .row {
+    .msg.ok{ color: #bff0bf; }
+    .msg.err{ color: #ffb4b4; }
+
+    .row{
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-top: 14px;
       font-size: 13px;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: rgba(255,255,255,.78);
     }
-    a { color: #1a73e8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+
+    a{
+      color: rgba(255,255,255,.88);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,.28);
+      padding-bottom: 2px;
+    }
+    a:hover{
+      color: rgba(255,255,255,.96);
+      border-bottom-color: rgba(255,255,255,.55);
+    }
+
+    @media (max-width: 640px){
+      .wrap{
+        margin: 26px 16px;
+        padding: 0;
+      }
+      h1{ font-size: 32px; }
+      .card{ padding: 18px; }
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <h1>Create your account</h1>
