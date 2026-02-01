@@ -6,8 +6,9 @@
   <title>Log in</title>
 
   <style>
-    /* ===== BACKGROUND (same as signup) ===== */
     html, body { min-height:100%; margin:0; }
+
+    /* Background image (same family as signup) */
     html::before{
       content:"";
       position:fixed;
@@ -15,6 +16,7 @@
       z-index:-2;
       background:url("assets/auth-hero.webp") center/cover no-repeat;
       transform:scale(1.03);
+      filter: saturate(1.05) contrast(1.05);
     }
     html::after{
       content:"";
@@ -24,9 +26,10 @@
       background:
         radial-gradient(1200px 800px at 20% 20%, rgba(0,0,0,.25), rgba(0,0,0,.65)),
         linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65));
+      pointer-events:none;
     }
 
-    body {
+    body{
       font-family: Arial, sans-serif;
       color:#111;
       display:flex;
@@ -35,33 +38,54 @@
       padding:24px;
     }
 
-    /* ===== CARD ===== */
-    .wrap {
+    /* Card */
+    .wrap{
       max-width: 420px;
       width:100%;
-      padding: 24px;
+      padding: 22px;
       background: rgba(255,255,255,.97);
       border-radius: 16px;
       box-shadow: 0 24px 70px rgba(0,0,0,.45);
       backdrop-filter: blur(6px);
     }
 
-    h1 { margin:0 0 6px; }
-    p { color:#444; font-size:14px; margin:0 0 18px; }
+    /* Subtle logo */
+    .logoRow{
+      display:flex;
+      justify-content:center;
+      margin-bottom: 10px;
+    }
+    .logoRow a{
+      display:inline-flex;
+      align-items:center;
+      text-decoration:none;
+    }
+    .logoRow img{
+      height: 34px;
+      width: auto;
+      display:block;
+      opacity: .92;
+    }
 
-    label { display:block; margin-top: 14px; font-size: 14px; font-weight:600; }
-    input {
+    h1{ margin: 6px 0 6px; font-size: 28px; }
+    p{ color:#444; font-size:14px; margin:0 0 18px; line-height:1.5; }
+
+    label{ display:block; margin-top: 14px; font-size: 14px; font-weight:600; color:#111; }
+    input{
       width: 100%;
-      padding: 11px;
+      padding: 11px 12px;
       margin-top: 6px;
       border:1px solid #ccc;
-      border-radius:8px;
+      border-radius:10px;
       font-size:14px;
       box-sizing:border-box;
       background:#fff;
+      color:#111;
+      outline:none;
     }
+    input:focus{ border-color:#999; }
 
-    button {
+    button{
       width: 100%;
       padding: 12px;
       margin-top: 18px;
@@ -70,43 +94,86 @@
       color:#fff;
       border:none;
       border-radius:10px;
-      font-weight:700;
+      font-weight:800;
+      transition: transform .12s ease;
     }
-    button:disabled { opacity:.6; cursor:not-allowed; }
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0px) scale(.99); }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
 
-    .msg { margin-top: 12px; font-size: 14px; }
-    .error { color: #b00020; }
-    .ok { color: #0b6b0b; }
+    .msg{ margin-top: 12px; font-size: 14px; min-height: 18px; }
+    .error{ color: #b00020; }
+    .ok{ color: #0b6b0b; }
 
-    .row {
+    .row{
       display:flex;
       justify-content:space-between;
-      margin-top: 16px;
+      margin-top: 14px;
       font-size: 13px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    a { color:#1a73e8; text-decoration:none; }
+    a{ color:#1a73e8; text-decoration:none; }
     a:hover{ text-decoration:underline; }
 
+    /* Forgot password area */
+    .forgotBox{
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #eee;
+    }
+    .forgotHint{
+      margin: 0 0 10px;
+      color:#555;
+      font-size:13px;
+      line-height:1.45;
+    }
+    .smallBtn{
+      width:auto;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px 12px;
+      margin-top: 0;
+      border-radius: 10px;
+      border: 1px solid #111;
+      background: #fff;
+      color:#111;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .smallBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
     @media (max-width:480px){
-      .wrap{ padding:20px; }
+      .wrap{ padding:18px; }
+      h1{ font-size:26px; }
+      .logoRow img{ height:32px; }
     }
   </style>
 
-  <!-- IMPORTANT: account.js must load BEFORE we use AuthoredAccount -->
+  <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Cache-bust account.js to avoid stale browser versions -->
   <script src="./account.js?v=3" defer></script>
 </head>
 
 <body>
   <div class="wrap">
+    <div class="logoRow">
+      <a href="index.html" aria-label="Back to home">
+        <img src="assets/logo-authored.png" alt="Authored" />
+      </a>
+    </div>
+
     <h1>Log in</h1>
     <p>Welcome back. Pick up right where you left off.</p>
 
     <label>Email</label>
-    <input id="email" type="email" autocomplete="email" />
+    <input id="email" type="email" autocomplete="email" placeholder="you@example.com" />
 
     <label>Password</label>
-    <input id="password" type="password" autocomplete="current-password" />
+    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
 
     <button id="loginBtn">Log in</button>
 
@@ -116,12 +183,22 @@
       <a href="./signup.html">Create an account</a>
       <a href="./start.html">Back to app</a>
     </div>
+
+    <!-- Forgot password (ADDED) -->
+    <div class="forgotBox">
+      <div class="forgotHint">
+        Forgot your password? Enter your email above and we’ll send you a reset link.
+      </div>
+      <button class="smallBtn" id="resetBtn" type="button">Send reset link</button>
+    </div>
   </div>
 
   <script>
     const statusEl = document.getElementById("status");
     const loginBtn = document.getElementById("loginBtn");
+    const resetBtn = document.getElementById("resetBtn");
 
+    // Optional: supports login.html?next=start.html (or any other page)
     const params = new URLSearchParams(window.location.search);
     const NEXT_URL = params.get("next") || "./start.html";
 
@@ -189,7 +266,46 @@
       }
     }
 
+    async function handleResetPassword() {
+      try {
+        setStatus("", "");
+        resetBtn.disabled = true;
+
+        await waitForAuthoredAccount();
+
+        const email = document.getElementById("email").value.trim();
+        if (!email) {
+          setStatus("Enter your email above first.", "error");
+          return;
+        }
+
+        // Use Supabase directly for password reset.
+        // Redirect URL should be configured in Supabase Auth settings.
+        const client = window.AuthoredAccount?.client;
+        if (!client?.auth?.resetPasswordForEmail) {
+          setStatus("Password reset not available. Please refresh.", "error");
+          return;
+        }
+
+        setStatus("Sending reset link...", "");
+        const { error } = await client.auth.resetPasswordForEmail(email);
+
+        if (error) {
+          setStatus(error.message || "Could not send reset link.", "error");
+          return;
+        }
+
+        setStatus("Reset link sent. Check your email.", "ok");
+      } catch (e) {
+        setStatus(e.message || "Could not send reset link.", "error");
+      } finally {
+        resetBtn.disabled = false;
+      }
+    }
+
     loginBtn.addEventListener("click", handleLogin);
+    resetBtn.addEventListener("click", handleResetPassword);
+
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") handleLogin();
     });
