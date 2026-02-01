@@ -6,161 +6,101 @@
   <title>Log in</title>
 
   <style>
-    :root{
-      --text:#ffffff;
-      --muted:rgba(255,255,255,.78);
-      --card: rgba(15,18,24,.55);
-      --card2: rgba(15,18,24,.38);
-      --line: rgba(255,255,255,.14);
-      --shadow: 0 22px 70px rgba(0,0,0,.55);
-      --radius: 18px;
-    }
-
-    html, body { height:100%; }
-    body{
-      margin:0;
-      font-family: Arial, sans-serif;
-      color: var(--text);
-      overflow-x:hidden;
-      background:#0b0d12;
-    }
-
-    /* Full-page photo background */
-    body::before{
+    /* ===== BACKGROUND (same as signup) ===== */
+    html, body { min-height:100%; margin:0; }
+    html::before{
       content:"";
       position:fixed;
       inset:0;
       z-index:-2;
-      background: url("assets/auth-hero.webp") center/cover no-repeat;
-      transform: scale(1.03);
-      filter: saturate(1.05) contrast(1.05);
+      background:url("assets/auth-hero.webp") center/cover no-repeat;
+      transform:scale(1.03);
     }
-
-    /* Dark overlay for readability */
-    body::after{
+    html::after{
       content:"";
       position:fixed;
       inset:0;
       z-index:-1;
       background:
-        radial-gradient(900px 600px at 20% 20%, rgba(0,0,0,.35), rgba(0,0,0,.72) 70%),
-        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.68));
-      pointer-events:none;
+        radial-gradient(1200px 800px at 20% 20%, rgba(0,0,0,.25), rgba(0,0,0,.65)),
+        linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.65));
     }
 
-    .wrap{
+    body {
+      font-family: Arial, sans-serif;
+      color:#111;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    /* ===== CARD ===== */
+    .wrap {
       max-width: 420px;
-      margin: 80px auto;
-      padding: 22px;
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, var(--card), var(--card2));
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+      width:100%;
+      padding: 24px;
+      background: rgba(255,255,255,.97);
+      border-radius: 16px;
+      box-shadow: 0 24px 70px rgba(0,0,0,.45);
+      backdrop-filter: blur(6px);
     }
 
-    h1{
-      margin: 0 0 10px;
-      font-size: 28px;
-      letter-spacing: -0.02em;
-    }
+    h1 { margin:0 0 6px; }
+    p { color:#444; font-size:14px; margin:0 0 18px; }
 
-    .sub{
-      margin: 0 0 18px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    label{
-      display:block;
-      margin-top: 14px;
-      font-size: 14px;
-      color: rgba(255,255,255,.92);
-      font-weight: 700;
-    }
-
-    input{
+    label { display:block; margin-top: 14px; font-size: 14px; font-weight:600; }
+    input {
       width: 100%;
-      padding: 11px 12px;
-      margin-top: 8px;
-      box-sizing: border-box;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.06);
-      color: #fff;
-      outline: none;
-    }
-    input::placeholder{ color: rgba(255,255,255,.55); }
-
-    input:focus{
-      border-color: rgba(255,255,255,.32);
-      background: rgba(255,255,255,.08);
+      padding: 11px;
+      margin-top: 6px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size:14px;
+      box-sizing:border-box;
+      background:#fff;
     }
 
-    button{
+    button {
       width: 100%;
       padding: 12px;
-      margin-top: 16px;
+      margin-top: 18px;
       cursor:pointer;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.92);
-      color:#0b0d12;
-      font-weight: 900;
-      transition: transform .12s ease, filter .12s ease;
+      background:#111;
+      color:#fff;
+      border:none;
+      border-radius:10px;
+      font-weight:700;
     }
-    button:hover{ transform: translateY(-1px); filter: brightness(1.02); }
-    button:active{ transform: translateY(0px) scale(.99); }
-    button:disabled{ opacity:0.6; cursor:not-allowed; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
 
-    .msg{
-      margin-top: 12px;
-      font-size: 14px;
-      color: rgba(255,255,255,.85);
-      min-height: 18px;
-    }
-    .error { color: #ffb4b4; }
-    .ok { color: #bff0bf; }
+    .msg { margin-top: 12px; font-size: 14px; }
+    .error { color: #b00020; }
+    .ok { color: #0b6b0b; }
 
-    .row{
+    .row {
       display:flex;
       justify-content:space-between;
-      margin-top: 14px;
-      font-size: 14px;
-      gap: 10px;
-      flex-wrap: wrap;
+      margin-top: 16px;
+      font-size: 13px;
     }
-    .row a{
-      color: rgba(255,255,255,.86);
-      text-decoration:none;
-      border-bottom: 1px solid rgba(255,255,255,.28);
-      padding-bottom: 2px;
-    }
-    .row a:hover{
-      color: rgba(255,255,255,.96);
-      border-bottom-color: rgba(255,255,255,.55);
-    }
+    a { color:#1a73e8; text-decoration:none; }
+    a:hover{ text-decoration:underline; }
 
-    @media (max-width: 640px){
-      .wrap{
-        margin: 26px 16px;
-        padding: 18px;
-      }
-      h1{ font-size: 26px; }
+    @media (max-width:480px){
+      .wrap{ padding:20px; }
     }
   </style>
 
   <!-- IMPORTANT: account.js must load BEFORE we use AuthoredAccount -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Cache-bust account.js to avoid stale browser versions -->
   <script src="./account.js?v=3" defer></script>
 </head>
+
 <body>
   <div class="wrap">
     <h1>Log in</h1>
-    <p class="sub">Welcome back. Log in to continue writing and expanding your draft.</p>
+    <p>Welcome back. Pick up right where you left off.</p>
 
     <label>Email</label>
     <input id="email" type="email" autocomplete="email" />
@@ -182,7 +122,6 @@
     const statusEl = document.getElementById("status");
     const loginBtn = document.getElementById("loginBtn");
 
-    // Optional: supports login.html?next=start.html (or any other page)
     const params = new URLSearchParams(window.location.search);
     const NEXT_URL = params.get("next") || "./start.html";
 
@@ -195,20 +134,14 @@
       const start = Date.now();
       while (!window.AuthoredAccount) {
         if (window.AuthoredAccountInitError) throw new Error(window.AuthoredAccountInitError);
-        if (Date.now() - start > timeoutMs) throw new Error("Auth system not ready. account.js did not load.");
+        if (Date.now() - start > timeoutMs) throw new Error("Auth system not ready.");
         await new Promise(r => setTimeout(r, 50));
       }
-    }
-
-    function isFn(fn) {
-      return typeof fn === "function";
     }
 
     async function redirectIfAlreadyAuthedRealUser() {
       const { data } = await window.AuthoredAccount.getSession();
       const user = data?.session?.user;
-
-      // If already logged in as a real user, skip the login screen entirely.
       if (user && user.is_anonymous === false) {
         window.location.replace(NEXT_URL);
         return true;
@@ -216,51 +149,19 @@
       return false;
     }
 
-    async function ensureGuestSessionIfNeeded() {
-      // This is optional stabilization. It must NEVER break the login page.
-      const { data } = await window.AuthoredAccount.getSession();
-      const user = data?.session?.user;
-
-      if (user) return user;
-
-      // Guard: if signInGuest doesn't exist (old cached account.js), just skip quietly.
-      if (!isFn(window.AuthoredAccount.signInGuest)) {
-        console.warn("signInGuest not available. Skipping anonymous session creation.");
-        return null;
-      }
-
-      try {
-        const { data: anonData, error: anonErr } = await window.AuthoredAccount.signInGuest();
-        if (anonErr) {
-          console.warn("Anonymous sign-in failed:", anonErr.message || anonErr);
-          return null;
-        }
-        return anonData?.user || null;
-      } catch (e) {
-        console.warn("Anonymous sign-in threw an error. Skipping.", e);
-        return null;
-      }
-    }
-
     (async function boot() {
       try {
         await waitForAuthoredAccount();
-
-        // 1) If already logged in as a real user, redirect instantly.
         const redirected = await redirectIfAlreadyAuthedRealUser();
         if (redirected) return;
-
-        // 2) Optional: create anon session in background (never blocks login).
-        await ensureGuestSessionIfNeeded();
       } catch (e) {
-        console.error(e);
-        setStatus(e.message || "Login page failed to initialize.", "error");
+        setStatus(e.message || "Login failed to initialize.", "error");
       }
     })();
 
     async function handleLogin() {
       try {
-        setStatus("Logging in...", "");
+        setStatus("Logging in...");
         loginBtn.disabled = true;
 
         await waitForAuthoredAccount();
@@ -273,16 +174,7 @@
           return;
         }
 
-        // If user is currently anonymous, sign out first to avoid edge cases.
-        const { data: s } = await window.AuthoredAccount.getSession();
-        const currentUser = s?.session?.user;
-
-        if (currentUser?.is_anonymous && isFn(window.AuthoredAccount.signOut)) {
-          await window.AuthoredAccount.signOut();
-        }
-
         const { error } = await window.AuthoredAccount.signIn(email, password);
-
         if (error) {
           setStatus(error.message || "Login failed.", "error");
           return;
@@ -291,7 +183,6 @@
         setStatus("Logged in. Redirecting...", "ok");
         window.location.replace(NEXT_URL);
       } catch (e) {
-        console.error(e);
         setStatus(e.message || "Login failed.", "error");
       } finally {
         loginBtn.disabled = false;
@@ -299,8 +190,6 @@
     }
 
     loginBtn.addEventListener("click", handleLogin);
-
-    // Nice UX: press Enter to login
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") handleLogin();
     });
