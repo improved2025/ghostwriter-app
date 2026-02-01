@@ -20,6 +20,7 @@
     label { display:block; font-weight:700; margin-top:14px; }
     input[type="text"], textarea, select {
       width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:14px;
+      background:#fff; color:#111;
     }
     textarea { min-height:80px; }
     .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px; }
@@ -64,6 +65,7 @@
       padding: 8px 12px;
       font-size: 13px;
       cursor: pointer;
+      color:#111;
     }
     .genre-btn:hover{ background:#f6f6f6; }
     .genre-btn.active{
@@ -72,10 +74,7 @@
       color:#fff;
     }
 
-    /* ===== PREMIUM GUEST BACKGROUND (ADDED) =====
-       Safe: no HTML changes, keeps your form readable.
-       Photo sits behind the page, while the content sits on a clean light surface.
-    */
+    /* ===== PREMIUM GUEST BACKGROUND (FIXED + READABLE) ===== */
     html, body { min-height: 100%; }
 
     /* Full-screen photo behind everything */
@@ -90,25 +89,35 @@
     }
 
     /* Dark overlay so the photo feels premium and doesn’t fight the page */
-   html::after{
-  content:"";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.22), rgba(0,0,0,.58) 70%),
-    linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.55));
-}
+    html::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.22), rgba(0,0,0,.58) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.55));
+      pointer-events:none;
+    }
 
     /* Turn the body into a "card" sitting on top of the background */
     body{
-      body{
-  background: rgba(255,255,255,.98);
-  border-radius: 18px;
-  padding: 22px;
-  box-shadow: 0 22px 70px rgba(0,0,0,.45);
-  backdrop-filter: blur(6px);
-}
+      background: rgba(255,255,255,.98);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.45);
+      backdrop-filter: blur(6px);
+    }
+
+    /* ===== READABILITY OVERRIDES (FINAL) ===== */
+    h1, h2, h3, label { color:#111; }
+    p { color:#222; }
+
+    .muted{ color:#444 !important; }
+    .quickstart-note{ color:#333 !important; }
+    .quickstart-sub{ color:#555 !important; }
+
+    input::placeholder, textarea::placeholder{ color:#777; }
 
     /* Keep mobile nice */
     @media (max-width:640px){
@@ -118,31 +127,11 @@
       }
       html::after{
         background:
-          linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,.74));
+          radial-gradient(1200px 800px at 15% 20%, rgba(0,0,0,.28), rgba(0,0,0,.66) 70%),
+          linear-gradient(180deg, rgba(0,0,0,.36), rgba(0,0,0,.66));
       }
     }
     /* ===== END PREMIUM BACKGROUND ===== */
-      /* ===== READABILITY OVERRIDES (ADDED) ===== */
-h1, h2, h3, label { color:#111; }
-p { color:#222; }
-
-/* Your .muted was too faint on the new photo background */
-.muted{
-  color:#444 !important;
-}
-
-/* Make sure form placeholders are readable */
-input::placeholder, textarea::placeholder{
-  color:#777;
-}
-
-/* Make the main form fields pop a bit more */
-input[type="text"], textarea, select{
-  border-color:#cfcfcf;
-  background:#fff;
-}
-
-/* ===== END READABILITY OVERRIDES ===== */
   </style>
 </head>
 
@@ -392,51 +381,51 @@ input[type="text"], textarea, select{
     });
 
     /* ADDED: lead capture click handler (calls /api/lead; failure does NOT affect outline) */
-const leadEmailEl = document.getElementById("leadEmail");
-const emailOutlineBtn = document.getElementById("emailOutlineBtn");
-const leadMsg = document.getElementById("leadMsg");
+    const leadEmailEl = document.getElementById("leadEmail");
+    const emailOutlineBtn = document.getElementById("emailOutlineBtn");
+    const leadMsg = document.getElementById("leadMsg");
 
-function setLeadMsg(text) {
-  if (leadMsg) leadMsg.textContent = text || "";
-}
-
-if (emailOutlineBtn) {
-  emailOutlineBtn.addEventListener("click", async () => {
-    const email = (leadEmailEl?.value || "").trim();
-    if (!email) { setLeadMsg("Enter your email."); return; }
-
-    const title = (document.getElementById("titleOut")?.textContent || "").trim();
-    const purpose = (document.getElementById("purposeOut")?.textContent || "").trim();
-
-    const outline = Array.from(document.querySelectorAll("#outlineOut li"))
-      .map(li => ({ title: (li.textContent || "").trim() }))
-      .filter(x => x.title);
-
-    if (!outline.length) { setLeadMsg("Generate an outline first, then email it."); return; }
-
-    try {
-      setLeadMsg("Saving...");
-
-      const resp = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, title, purpose, outline, source: "guest_outline" })
-      });
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        setLeadMsg(`Could not save right now. (${data?.error || "error"})`);
-        return;
-      }
-
-      setLeadMsg(data.emailed ? "Sent. Check your email." : "Saved. Email sending will be enabled shortly.");
-    } catch (e) {
-      setLeadMsg("Could not save right now. Please try again.");
+    function setLeadMsg(text) {
+      if (leadMsg) leadMsg.textContent = text || "";
     }
-  });
-}
-/* END ADDED */
+
+    if (emailOutlineBtn) {
+      emailOutlineBtn.addEventListener("click", async () => {
+        const email = (leadEmailEl?.value || "").trim();
+        if (!email) { setLeadMsg("Enter your email."); return; }
+
+        const title = (document.getElementById("titleOut")?.textContent || "").trim();
+        const purpose = (document.getElementById("purposeOut")?.textContent || "").trim();
+
+        const outline = Array.from(document.querySelectorAll("#outlineOut li"))
+          .map(li => ({ title: (li.textContent || "").trim() }))
+          .filter(x => x.title);
+
+        if (!outline.length) { setLeadMsg("Generate an outline first, then email it."); return; }
+
+        try {
+          setLeadMsg("Saving...");
+
+          const resp = await fetch("/api/lead", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, title, purpose, outline, source: "guest_outline" })
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            setLeadMsg(`Could not save right now. (${data?.error || "error"})`);
+            return;
+          }
+
+          setLeadMsg(data.emailed ? "Sent. Check your email." : "Saved. Email sending will be enabled shortly.");
+        } catch (e) {
+          setLeadMsg("Could not save right now. Please try again.");
+        }
+      });
+    }
+    /* END ADDED */
   </script>
 </body>
 </html>
