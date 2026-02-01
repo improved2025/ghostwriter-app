@@ -478,6 +478,22 @@
       .ticker{width:100%;}
       .tickerTrack{font-size:12px;}
     }
+    /* FORCE the right-panel title to be visible (surgical override) */
+.panelBody .previewTitle{
+  display:block !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  color: var(--text) !important;
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  margin: 0 0 12px !important;
+  letter-spacing: -.02em !important;
+}
+
+/* Ensure panel text isn't muted */
+.panelBody{
+  color: var(--text) !important;
+}
   </style>
 </head>
 
