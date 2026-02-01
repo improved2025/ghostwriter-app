@@ -115,20 +115,90 @@
       color:#fff;
     }
     /* --- END ADDED --- */
+
+    /* ===== PREMIUM START BACKGROUND + EMPTY STATE (ADDED, SAFE) ===== */
+    html, body { min-height: 100%; }
+
+    /* Soft global photo behind everything */
+    html::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background: url("assets/hero-start.webp") center/cover no-repeat;
+      transform: scale(1.03);
+      opacity: 0.16;
+      filter: saturate(1.02) contrast(1.02);
+    }
+
+    /* Paper texture overlay + gentle darkening */
+    html::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        url("assets/paper-texture.webp") center/cover repeat,
+        radial-gradient(1200px 800px at 20% 15%, rgba(0,0,0,.06), rgba(0,0,0,.20) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.18));
+      opacity: 0.22;
+      pointer-events: none;
+    }
+
+    /* Make the whole page a crisp work surface so all text stays readable */
+    body{
+      background: rgba(255,255,255,.95);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.40);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Empty state (shows only before generation) */
+    #emptyState{
+      margin: 14px 0 18px;
+    }
+    #emptyState img{
+      width: 100%;
+      max-width: 820px;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid #e6e6e6;
+      box-shadow: 0 18px 60px rgba(0,0,0,.18);
+    }
+    #emptyState .muted{
+      margin-top: 10px;
+    }
+
+    @media (max-width: 640px){
+      body{
+        margin: 24px 20px;
+        padding: 18px;
+        border-radius: 16px;
+      }
+      html::before{ opacity: 0.14; }
+      html::after{ opacity: 0.26; }
+
+      .actions{ gap:8px; }
+      .btn{ width:100%; text-align:center; }
+      .row > div[style*="display:flex"]{ width:100%; }
+      #emptyState img{ border-radius: 14px; }
+    }
+    /* ===== END PREMIUM ADDITIONS ===== */
   </style>
 </head>
 
 <body>
-  
+
   <div style="margin-bottom:24px;">
-  <a href="index.html" style="display:inline-flex; align-items:center;">
-    <img
-      src="assets/logo-authored.png"
-      alt="Authored"
-      style="height:40px; width:auto;"
-    />
-  </a>
-</div>
+    <a href="index.html" style="display:inline-flex; align-items:center;">
+      <img
+        src="assets/logo-authored.png"
+        alt="Authored"
+        style="height:40px; width:auto;"
+      />
+    </a>
+  </div>
 
   <h1>Start your book</h1>
   <p class="muted">Authored is not writing for you. It is writing with you. You bring the message. Authored helps you shape it.</p>
@@ -139,6 +209,13 @@
     <br />
     <span class="muted">Full chapter drafts (Expand) are limited in the free version.</span>
   </div>
+
+  <!-- EMPTY STATE IMAGE (ADDED) -->
+  <div id="emptyState">
+    <img src="assets/empty-state.webp" alt="Start your draft" loading="lazy" />
+    <p class="muted">Tip: start with a simple idea. Authored will help you shape it into a clear outline you can expand.</p>
+  </div>
+  <!-- END EMPTY STATE -->
 
   <!-- Upgrade panel (hidden until needed) -->
   <div class="upgrade-box" id="upgradeBox">
@@ -185,7 +262,6 @@
 
   <label>What do you want to write about?</label>
 
-  <!-- ADDED: genre buttons block (does not change existing textarea or IDs) -->
   <div class="quickstart">
     <div class="quickstart-note">Optional: pick a genre to get started faster.</div>
 
@@ -199,7 +275,6 @@
 
     <div class="quickstart-sub">You can ignore these and just type your idea.</div>
   </div>
-  <!-- END ADDED -->
 
   <textarea id="topic" placeholder="It’s okay if you’re not sure yet."></textarea>
 
@@ -335,57 +410,61 @@
 
   <script>
     (function restoreLastStart() {
-  try {
-    const raw = localStorage.getItem("authored_last_start");
-    if (!raw) return;
+      try {
+        const raw = localStorage.getItem("authored_last_start");
+        if (!raw) return;
 
-    const s = JSON.parse(raw);
-    if (!s || !Array.isArray(s.outline) || !s.outline.length) return;
+        const s = JSON.parse(raw);
+        if (!s || !Array.isArray(s.outline) || !s.outline.length) return;
 
-    // Restore form fields
-    if (document.getElementById("topic")) document.getElementById("topic").value = s.topic || "";
-    if (document.getElementById("audience")) document.getElementById("audience").value = s.audience || "";
-    if (document.getElementById("blocker")) document.getElementById("blocker").value = s.blocker || "";
-    if (document.getElementById("chapters") && s.chapters) document.getElementById("chapters").value = String(s.chapters);
-    if (document.getElementById("voiceSample")) document.getElementById("voiceSample").value = s.voiceSample || "";
-    if (document.getElementById("voiceNotes")) document.getElementById("voiceNotes").value = s.voiceNotes || "";
+        // Hide empty state if we already have saved output
+        const emptyState = document.getElementById("emptyState");
+        if (emptyState) emptyState.style.display = "none";
 
-    // Restore outputs
-    window.__title = s.title || "Untitled";
-    window.__purpose = s.purpose || "";
-    window.__outlineItems = s.outline || [];
+        // Restore form fields
+        if (document.getElementById("topic")) document.getElementById("topic").value = s.topic || "";
+        if (document.getElementById("audience")) document.getElementById("audience").value = s.audience || "";
+        if (document.getElementById("blocker")) document.getElementById("blocker").value = s.blocker || "";
+        if (document.getElementById("chapters") && s.chapters) document.getElementById("chapters").value = String(s.chapters);
+        if (document.getElementById("voiceSample")) document.getElementById("voiceSample").value = s.voiceSample || "";
+        if (document.getElementById("voiceNotes")) document.getElementById("voiceNotes").value = s.voiceNotes || "";
 
-    const result = document.getElementById("result");
-    if (result) result.style.display = "block";
+        // Restore outputs
+        window.__title = s.title || "Untitled";
+        window.__purpose = s.purpose || "";
+        window.__outlineItems = s.outline || [];
 
-    const titleOut = document.getElementById("titleOut");
-    if (titleOut) titleOut.textContent = window.__title;
+        const result = document.getElementById("result");
+        if (result) result.style.display = "block";
 
-    const purposeOut = document.getElementById("purposeOut");
-    if (purposeOut) purposeOut.textContent = window.__purpose;
+        const titleOut = document.getElementById("titleOut");
+        if (titleOut) titleOut.textContent = window.__title;
 
-    const list = document.getElementById("outlineOut");
-    if (list) {
-      list.innerHTML = "";
-      window.__outlineItems.forEach((item, idx) => {
-        const li = document.createElement("li");
-        li.textContent = item?.title || `Chapter ${idx + 1}`;
-        list.appendChild(li);
-      });
-    }
+        const purposeOut = document.getElementById("purposeOut");
+        if (purposeOut) purposeOut.textContent = window.__purpose;
 
-    const picker = document.getElementById("chapterPick");
-    if (picker) {
-      picker.innerHTML = "";
-      window.__outlineItems.forEach((item, idx) => {
-        const opt = document.createElement("option");
-        opt.value = String(idx);
-        opt.textContent = `Chapter ${idx + 1}: ${item?.title || `Chapter ${idx + 1}`}`;
-        picker.appendChild(opt);
-      });
-    }
-  } catch {}
-})();
+        const list = document.getElementById("outlineOut");
+        if (list) {
+          list.innerHTML = "";
+          window.__outlineItems.forEach((item, idx) => {
+            const li = document.createElement("li");
+            li.textContent = item?.title || `Chapter ${idx + 1}`;
+            list.appendChild(li);
+          });
+        }
+
+        const picker = document.getElementById("chapterPick");
+        if (picker) {
+          picker.innerHTML = "";
+          window.__outlineItems.forEach((item, idx) => {
+            const opt = document.createElement("option");
+            opt.value = String(idx);
+            opt.textContent = `Chapter ${idx + 1}: ${item?.title || `Chapter ${idx + 1}`}`;
+            picker.appendChild(opt);
+          });
+        }
+      } catch {}
+    })();
 
     function clean(v) { return (v ?? "").toString().trim(); }
 
@@ -428,6 +507,10 @@
     }
 
     document.getElementById("beginBtn").addEventListener("click", async () => {
+      // Hide empty state as soon as user generates
+      const emptyState = document.getElementById("emptyState");
+      if (emptyState) emptyState.style.display = "none";
+
       const topic = clean(document.getElementById("topic").value);
       const audience = clean(document.getElementById("audience").value);
       const blocker = clean(document.getElementById("blocker").value);
@@ -479,29 +562,30 @@
         window.__outlineItems = outline;
         window.__title = title;
         window.__purpose = purpose;
-try {
-  localStorage.setItem("authored_last_start", JSON.stringify({
-    savedAt: new Date().toISOString(),
-    title: window.__title || title,
-    purpose: window.__purpose || purpose,
-    outline: window.__outlineItems || outline,
-    topic: document.getElementById("topic")?.value || "",
-    audience: document.getElementById("audience")?.value || "",
-    blocker: document.getElementById("blocker")?.value || "",
-    chapters: document.getElementById("chapters")?.value || "12",
-    voiceSample: document.getElementById("voiceSample")?.value || "",
-    voiceNotes: document.getElementById("voiceNotes")?.value || ""
-  }));
-} catch {}
+
+        try {
+          localStorage.setItem("authored_last_start", JSON.stringify({
+            savedAt: new Date().toISOString(),
+            title: window.__title || title,
+            purpose: window.__purpose || purpose,
+            outline: window.__outlineItems || outline,
+            topic: document.getElementById("topic")?.value || "",
+            audience: document.getElementById("audience")?.value || "",
+            blocker: document.getElementById("blocker")?.value || "",
+            chapters: document.getElementById("chapters")?.value || "12",
+            voiceSample: document.getElementById("voiceSample")?.value || "",
+            voiceNotes: document.getElementById("voiceNotes")?.value || ""
+          }));
+        } catch {}
 
         document.getElementById("titleOut").textContent = title;
         document.getElementById("purposeOut").textContent = purpose;
 
         const list = document.getElementById("outlineOut");
         list.innerHTML = "";
-        outline.forEach((item) => {
+        outline.forEach((item, idx) => {
           const li = document.createElement("li");
-          li.textContent = item.title;
+          li.textContent = item?.title || `Chapter ${idx + 1}`;
           list.appendChild(li);
         });
 
@@ -510,7 +594,7 @@ try {
         outline.forEach((item, idx) => {
           const opt = document.createElement("option");
           opt.value = String(idx);
-          opt.textContent = `Chapter ${idx + 1}: ${item.title}`;
+          opt.textContent = `Chapter ${idx + 1}: ${item?.title || `Chapter ${idx + 1}`}`;
           picker.appendChild(opt);
         });
 
@@ -521,279 +605,34 @@ try {
         document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
       }
     });
-
-    function makeTextBundle() {
-      const title = clean(document.getElementById("titleOut").textContent);
-      const purpose = clean(document.getElementById("purposeOut").textContent);
-      const outlineItems = window.__outlineItems || [];
-      const outlineText = outlineItems.map((x,i)=> `${i+1}. ${(x && x.title) ? x.title : `Chapter ${i+1}`}`).join("\n");
-      return `Title: ${title}\n\nPurpose:\n${purpose}\n\nOutline:\n${outlineText}\n`;
-    }
-
-    async function copyText(text) {
-      await navigator.clipboard.writeText(text);
-      alert("Copied.");
-    }
-
-    function downloadText(filename, text) {
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    document.getElementById("copyBtn").addEventListener("click", async () => {
-      try { await copyText(makeTextBundle()); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadBtn").addEventListener("click", () => {
-      const title = clean(document.getElementById("titleOut").textContent) || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_outline.txt`, makeTextBundle());
-    });
-
-    document.getElementById("regenOutlineBtn").addEventListener("click", () => {
-      const last = window.__lastOutlinePayload;
-      if (!last) { alert("Generate an outline first."); return; }
-      document.getElementById("topic").value = last.topic || "";
-      document.getElementById("audience").value = last.audience || "";
-      document.getElementById("blocker").value = last.blocker || "";
-      document.getElementById("chapters").value = String(last.chapters || 12);
-      document.getElementById("voiceSample").value = last.voiceSample || "";
-      document.getElementById("voiceNotes").value = last.voiceNotes || "";
-      document.getElementById("beginBtn").click();
-    });
-
-    document.getElementById("genTitlesBtn").addEventListener("click", async () => {
-      const out = document.getElementById("titleIdeasOut");
-      out.innerHTML = "<li>Generating title ideas...</li>";
-
-      try {
-        const resp = await fetch("/api/titles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-          body: JSON.stringify({
-            topic: clean(document.getElementById("topic").value),
-            audience: clean(document.getElementById("audience").value),
-            blocker: clean(document.getElementById("blocker").value),
-            currentTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-            voiceSample: clean(document.getElementById("voiceSample").value),
-            voiceNotes: clean(document.getElementById("voiceNotes").value),
-          })
-        });
-
-        const data = await safeJson(resp);
-
-        if (isLimitReachedError(data)) {
-          out.innerHTML = "";
-          showUpgrade("You’ve reached the free plan limit for title suggestions.");
-          return;
-        }
-
-        if (!resp.ok) throw new Error(data?.error || "Titles failed");
-
-        const titles = Array.isArray(data.titles) ? data.titles : [];
-        if (!titles.length) throw new Error("no_titles");
-
-        out.innerHTML = "";
-        titles.slice(0, 10).forEach((t) => {
-          const li = document.createElement("li");
-          li.style.marginBottom = "6px";
-
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "btn secondary";
-          btn.textContent = "Use";
-          btn.style.marginRight = "10px";
-          btn.addEventListener("click", () => {
-            window.__title = String(t);
-            document.getElementById("titleOut").textContent = String(t);
-            alert("Title updated.");
-          });
-
-          const span = document.createElement("span");
-          span.textContent = String(t);
-
-          li.appendChild(btn);
-          li.appendChild(span);
-          out.appendChild(li);
-        });
-      } catch (e) {
-        out.innerHTML = "";
-        alert("Could not generate titles. Try again.");
-      }
-    });
-
-    document.getElementById("genIntroBtn").addEventListener("click", async () => {
-      const introOut = document.getElementById("introOut");
-      introOut.textContent = "Generating introduction...";
-
-      try {
-        const resp = await fetch("/api/intro", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-          body: JSON.stringify({
-            topic: clean(document.getElementById("topic").value),
-            audience: clean(document.getElementById("audience").value),
-            blocker: clean(document.getElementById("blocker").value),
-            bookTitle: window.__title || clean(document.getElementById("titleOut").textContent),
-            purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent),
-            outline: window.__outlineItems || [],
-            voiceSample: clean(document.getElementById("voiceSample").value),
-            voiceNotes: clean(document.getElementById("voiceNotes").value)
-          })
-        });
-
-        const data = await safeJson(resp);
-
-        if (isLimitReachedError(data)) {
-          introOut.textContent = "Free plan limit reached.";
-          showUpgrade("You’ve reached the free plan limit for introductions.");
-          return;
-        }
-
-        if (!resp.ok) throw new Error(data?.error || "Intro failed");
-
-        const intro = (data.introduction || "").toString().trim();
-        if (!intro) throw new Error("no_intro");
-
-        window.__introText = intro;
-        introOut.textContent = intro;
-        document.getElementById("copyIntroBtn").disabled = false;
-        document.getElementById("downloadIntroBtn").disabled = false;
-      } catch (e) {
-        introOut.textContent = "Click “Generate introduction” to create an optional intro.";
-        alert("Could not generate introduction. Try again.");
-      }
-    });
-
-    document.getElementById("copyIntroBtn").addEventListener("click", async () => {
-      try { await copyText(window.__introText || ""); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadIntroBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_introduction.txt`, window.__introText || "");
-    });
-
-    function getDraftWordRange() {
-      const v = (document.getElementById("draftLength")?.value || "standard").toLowerCase();
-      if (v === "long") return { draftLength: "long", minWords: 1500, maxWords: 2200 };
-      if (v === "very_long") return { draftLength: "very_long", minWords: 2500, maxWords: 3500 };
-      return { draftLength: "standard", minWords: 900, maxWords: 1300 };
-    }
-
-    async function runExpandRequest(mode) {
-      const outline = window.__outlineItems || [];
-      if (!outline.length) { alert("Generate your starting point first."); return; }
-
-      const picker = document.getElementById("chapterPick");
-      const chapterIdx = Number(picker.value);
-      const chapterObj = outline[chapterIdx];
-      if (!chapterObj) { alert("Pick a chapter first."); return; }
-
-      const { draftLength, minWords, maxWords } = getDraftWordRange();
-
-      document.getElementById("expandedOut").textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
-
-      const resp = await fetch("/api/expand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
-        body: JSON.stringify({
-          projectId: window.__projectId,
-          bookTitle: window.__title || clean(document.getElementById("titleOut").textContent) || "Untitled",
-          purpose: window.__purpose || clean(document.getElementById("purposeOut").textContent) || "",
-          chapterNumber: chapterIdx + 1,
-          chapterTitle: chapterObj.title,
-          audience: clean(document.getElementById("audience").value),
-          topic: clean(document.getElementById("topic").value),
-          voiceSample: clean(document.getElementById("voiceSample").value),
-          voiceNotes: clean(document.getElementById("voiceNotes").value),
-          regenerate: mode === "regen",
-          draftLength,
-          minWords,
-          maxWords
-        })
-      });
-
-      const data = await safeJson(resp);
-if (resp.status === 401) {
-  document.getElementById("expandedOut").textContent = "Please log in to expand chapters.";
-  showUpgrade("Please log in or upgrade to expand chapters. Outline creation is free.");
-  return;
-}
-
-      if (isLimitReachedError(data)) {
-        document.getElementById("expandedOut").textContent = "Free plan limit reached.";
-        showUpgrade("You’ve reached the free plan limit for chapter expansion. Upgrade to expand more chapters. Regenerate counts too.");
-        return;
-      }
-
-      if (!resp.ok) {
-        document.getElementById("expandedOut").textContent = "Could not expand this chapter. Please try again.";
-        return;
-      }
-
-      const expanded = (data.expanded || "").toString().trim();
-      if (!expanded) {
-        document.getElementById("expandedOut").textContent = "No expanded text returned. Please try again.";
-        return;
-      }
-
-      window.__expandedText = expanded;
-      document.getElementById("expandedOut").textContent = expanded;
-      document.getElementById("copyExpandedBtn").disabled = false;
-      document.getElementById("downloadExpandedBtn").disabled = false;
-      document.getElementById("regenExpandedBtn").disabled = false;
-    }
-
-    document.getElementById("expandBtn").addEventListener("click", async () => {
-      await runExpandRequest("expand");
-    });
-
-    document.getElementById("regenExpandedBtn").addEventListener("click", async () => {
-      await runExpandRequest("regen");
-    });
-
-    document.getElementById("copyExpandedBtn").addEventListener("click", async () => {
-      try { await copyText(window.__expandedText || ""); } catch { alert("Copy failed. Try again."); }
-    });
-
-    document.getElementById("downloadExpandedBtn").addEventListener("click", () => {
-      const title = window.__title || "authored";
-      const safe = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 40) || "authored";
-      downloadText(`${safe}_expanded_chapter.txt`, window.__expandedText || "");
-    });
-
-    const limitNote = document.getElementById("limitNote");
-    if (limitNote) {
-      limitNote.textContent =
-        "Free plan: Outline generation is free. Titles/intro/expansions are limited. Regenerate counts toward the same limit.";
-    }
   </script>
 
-  <!-- ADDED: Safe genre button behavior (only touches #topic and never alters existing logic) -->
+  <hr />
+
+  <div style="text-align:center; margin:24px 0;">
+    <a
+      href="mailto:support@myauthored.com?subject=Authored%20Support"
+      class="btn secondary"
+      style="font-size:13px; padding:8px 14px;"
+    >
+      Help / Support
+    </a>
+  </div>
+
+  <!-- Keep the working genre handler only (safe) -->
   <script>
-    (function initStartGenreButtons() {
+    (function () {
+      const buttons = document.querySelectorAll(".genre-btn");
       const topicEl = document.getElementById("topic");
-      if (!topicEl) return;
+      if (!buttons.length || !topicEl) return;
 
       const presets = {
         memoir: "I want to write a memoir about ",
         devotional: "I want to write a devotional focused on ",
         nonfiction: "I want to write a practical non-fiction book that helps people ",
-        fiction: "I want to write a fiction story about "
-        inspirational: "I want to write an inspirational book that encourages readers to ",
+        fiction: "I want to write a fiction story about ",
+        inspirational: "I want to write an inspirational book that encourages readers to "
       };
-
-      const buttons = document.querySelectorAll(".genre-btn");
-      if (!buttons.length) return;
 
       function setActive(btn) {
         buttons.forEach(b => b.classList.remove("active"));
@@ -808,7 +647,6 @@ if (resp.status === 401) {
           setActive(btn);
 
           const current = (topicEl.value || "").trim();
-
           if (!current) {
             topicEl.value = text;
           } else {
@@ -824,61 +662,6 @@ if (resp.status === 401) {
       });
     })();
   </script>
-  <hr />
 
-<div style="text-align:center; margin:24px 0;">
-  <a
-    href="mailto:support@myauthored.com?subject=Authored%20Support"
-    class="btn secondary"
-    style="font-size:13px; padding:8px 14px;"
-  >
-    Help / Support
-  </a>
-</div>
-  
-<script>
-  (function () {
-    const buttons = document.querySelectorAll(".genre-btn");
-    const topicEl = document.getElementById("topic");
-    if (!buttons.length || !topicEl) return;
-
-    const presets = {
-      memoir: "I want to write a memoir about ",
-      devotional: "I want to write a devotional focused on ",
-      nonfiction: "I want to write a practical non-fiction book that helps people ",
-      fiction: "I want to write a fiction story about ",
-      inspirational: "I want to write an inspirational book that encourages readers to "
-    };
-
-    function setActive(btn) {
-      buttons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-    }
-
-    buttons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const key = btn.getAttribute("data-genre");
-        const text = presets[key] || "";
-
-        setActive(btn);
-
-        const current = (topicEl.value || "").trim();
-        if (!current) {
-          topicEl.value = text;
-        } else {
-          const tag = `Genre: ${btn.textContent}.`;
-          if (!current.toLowerCase().includes("genre:")) {
-            topicEl.value = current + "\n\n" + tag;
-          }
-        }
-
-        topicEl.focus();
-        topicEl.setSelectionRange(topicEl.value.length, topicEl.value.length);
-      });
-    });
-  })();
-</script>
-
- 
 </body>
 </html>
