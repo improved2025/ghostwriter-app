@@ -11,81 +11,208 @@
   <script src="./account.js" defer></script>
 
   <style>
-    body { font-family: Arial, sans-serif; margin: 48px; max-width: 900px; }
-    h1 { margin: 0 0 10px; }
-    p { color:#333; line-height:1.5; }
-    .muted { color:#666; font-size:13px; }
-    .grid { display:flex; gap:14px; flex-wrap:wrap; margin-top:16px; }
-    .card { flex:1 1 320px; border:1px solid #e6e6e6; border-radius:12px; padding:16px; background:#fff; }
-    .price { font-size:28px; font-weight:800; margin:8px 0; }
-    ul { padding-left:18px; }
-    li { margin:8px 0; }
-    .btn {
-      padding:10px 14px; border:1px solid #111; background:#111; color:#fff;
-      border-radius:8px; cursor:pointer; font-weight:700;
-      text-decoration:none; display:inline-block;
+    :root{
+      --text:#ffffff;
+      --muted:rgba(255,255,255,.78);
+      --card: rgba(15,18,24,.55);
+      --card2: rgba(15,18,24,.38);
+      --line: rgba(255,255,255,.14);
+      --shadow: 0 22px 70px rgba(0,0,0,.55);
+      --radius: 18px;
     }
-    .btn.secondary { background:#fff; color:#111; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
-    .divider { margin:12px 0; border:none; border-top:1px solid #eee; }
-    .paypalBox { margin-top:10px; }
-    .warn { background:#fff7d6; border:1px solid #f2d27a; padding:10px 12px; border-radius:10px; color:#5a4600; margin-top:12px; display:none; }
+
+    html, body { height:100%; }
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      overflow-x:hidden;
+      background:#0b0d12;
+    }
+
+    /* Full-page photo background */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      background: url("assets/pricing-hero.webp") center/cover no-repeat;
+      transform: scale(1.03);
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    /* Dark overlay for readability */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      z-index:-1;
+      background:
+        radial-gradient(1000px 700px at 20% 20%, rgba(0,0,0,.35), rgba(0,0,0,.76) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.38), rgba(0,0,0,.72));
+      pointer-events:none;
+    }
+
+    .wrap{
+      max-width: 900px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    h1{
+      margin: 0 0 10px;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      text-shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    p{ color: var(--muted); line-height:1.55; margin: 0 0 16px; }
+
+    .muted{ color: var(--muted); font-size:13px; }
+
+    .grid{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .card{
+      flex:1 1 320px;
+      border-radius: var(--radius);
+      padding:16px;
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .card h2{
+      margin:0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .price{
+      font-size:34px;
+      font-weight:900;
+      margin:10px 0 8px;
+      letter-spacing: -0.02em;
+    }
+
+    ul{ padding-left:18px; margin: 10px 0 0; color: rgba(255,255,255,.86); }
+    li{ margin:8px 0; }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:900;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.92);
+      color:#0b0d12;
+      transition: transform .12s ease, filter .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      border-color: rgba(255,255,255,.18);
+    }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+    .divider{ margin:12px 0; border:none; border-top:1px solid rgba(255,255,255,.12); }
+    .paypalBox{ margin-top:10px; }
+
+    .warn{
+      background: rgba(255, 220, 140, .14);
+      border: 1px solid rgba(255, 220, 140, .25);
+      padding:10px 12px;
+      border-radius:14px;
+      color: rgba(255,255,255,.92);
+      margin-top:12px;
+      display:none;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Make PayPal buttons sit nicely in the card */
+    #paypalProject, #paypalLifetime{
+      border-radius: 12px;
+      overflow:hidden;
+    }
+
+    @media (max-width: 640px){
+      .wrap{ margin: 26px auto; padding: 0 16px; }
+      h1{ font-size: 28px; }
+      .grid{ gap: 12px; }
+      .card{ padding: 14px; }
+      .btn{ width: 100%; }
+      .row{ width:100%; }
+    }
   </style>
 </head>
 
 <body>
-  <h1>Upgrade Authored</h1>
-  <p class="muted">Pick a plan. Pay by card (Stripe) or PayPal. Your account unlocks instantly after payment.</p>
+  <div class="wrap">
+    <h1>Upgrade Authored</h1>
+    <p class="muted">Pick a plan. Pay by card (Stripe) or PayPal. Your account unlocks instantly after payment.</p>
 
-  <div class="warn" id="warn"></div>
+    <div class="warn" id="warn"></div>
 
-  <div class="grid">
-    <div class="card">
-      <h2 style="margin:0;">Project plan</h2>
-      <div class="muted">One project, one user</div>
-      <div class="price">$49</div>
-      <ul>
-        <li>Expand chapters</li>
-        <li>Regenerate drafts</li>
-        <li>DOCX export</li>
-        <li>Voice + tone controls</li>
-      </ul>
+    <div class="grid">
+      <div class="card">
+        <h2>Project plan</h2>
+        <div class="muted">One project, one user</div>
+        <div class="price">$49</div>
+        <ul>
+          <li>Expand chapters</li>
+          <li>Regenerate drafts</li>
+          <li>DOCX export</li>
+          <li>Voice + tone controls</li>
+        </ul>
 
-      <hr class="divider" />
+        <hr class="divider" />
 
-      <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
-      <div class="row">
-        <button class="btn" id="stripeProjectBtn" type="button">Checkout (Card)</button>
+        <div class="muted"><strong style="color:rgba(255,255,255,.92);">Pay with card</strong> (Stripe)</div>
+        <div class="row">
+          <button class="btn" id="stripeProjectBtn" type="button">Checkout (Card)</button>
+        </div>
+
+        <div class="muted" style="margin-top:10px;"><strong style="color:rgba(255,255,255,.92);">Pay with PayPal</strong></div>
+        <div class="paypalBox" id="paypalProject"></div>
       </div>
 
-      <div class="muted" style="margin-top:10px;"><strong>Pay with PayPal</strong></div>
-      <div class="paypalBox" id="paypalProject"></div>
-    </div>
+      <div class="card">
+        <h2>Lifetime</h2>
+        <div class="muted">All features, one user</div>
+        <div class="price">$149</div>
+        <ul>
+          <li>Unlimited projects</li>
+          <li>More expansions</li>
+          <li>Priority features as Authored grows</li>
+        </ul>
 
-    <div class="card">
-      <h2 style="margin:0;">Lifetime</h2>
-      <div class="muted">All features, one user</div>
-      <div class="price">$149</div>
-      <ul>
-        <li>Unlimited projects</li>
-        <li>More expansions</li>
-        <li>Priority features as Authored grows</li>
-      </ul>
+        <hr class="divider" />
 
-      <hr class="divider" />
+        <div class="muted"><strong style="color:rgba(255,255,255,.92);">Pay with card</strong> (Stripe)</div>
+        <div class="row">
+          <button class="btn" id="stripeLifetimeBtn" type="button">Checkout (Card)</button>
+        </div>
 
-      <div class="muted"><strong>Pay with card</strong> (Stripe)</div>
-      <div class="row">
-        <button class="btn" id="stripeLifetimeBtn" type="button">Checkout (Card)</button>
+        <div class="muted" style="margin-top:10px;"><strong style="color:rgba(255,255,255,.92);">Pay with PayPal</strong></div>
+        <div class="paypalBox" id="paypalLifetime"></div>
       </div>
-
-      <div class="muted" style="margin-top:10px;"><strong>Pay with PayPal</strong></div>
-      <div class="paypalBox" id="paypalLifetime"></div>
     </div>
-  </div>
 
-  <div class="row" style="margin-top:18px;">
-    <a class="btn secondary" href="start.html">Back to writing</a>
+    <div class="row" style="margin-top:18px;">
+      <a class="btn secondary" href="start.html">Back to writing</a>
+    </div>
   </div>
 
   <script>
