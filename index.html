@@ -494,6 +494,83 @@
 .panelBody{
   color: var(--text) !important;
 }
+    /* FIX: ensure panel content can stack above any internal overlays/filters */
+.panel{
+  position: relative !important;
+}
+
+.panelBody{
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Force the title to render on top, always */
+.panelBody .previewTitle{
+  position: relative !important;
+  z-index: 3 !important;
+  line-height: 1.25 !important;
+}
+/* MOBILE POLISH (safe + minimal) */
+@media (max-width: 640px){
+
+  /* Top header becomes clean and not cramped */
+  .topInner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  /* Hide anchor buttons on mobile (they crowd the header) */
+  .nav a[href="#how"],
+  .nav a[href="#for"]{
+    display: none !important;
+  }
+
+  /* Make remaining header buttons align nicely */
+  .nav{
+    justify-content: space-between;
+    width: 100%;
+  }
+  .nav .btn{
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+  }
+
+  /* Hero content: tighten spacing */
+  .hero{
+    padding: 40px 0 30px;
+  }
+
+  /* Stack hero sections */
+  .heroGrid{
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make CTA buttons look intentional */
+  .ctaRow{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ctaRow .btn{
+    width: 100%;
+  }
+
+  /* Ticker fits and moves slower */
+  .ticker{
+    width: 100%;
+  }
+  .tickerTrack{
+    font-size: 12px;
+    animation-duration: 32s;
+  }
+
+  /* Panel spacing so it doesn’t feel glued */
+  .panel{
+    margin-top: 14px;
+  }
+}
   </style>
 </head>
 
