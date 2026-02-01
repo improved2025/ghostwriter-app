@@ -247,7 +247,7 @@
 
     /* Premium ticker (Option A) */
     .ticker{
-      margin:14px 0 0;
+      margin:0 0 12px; /* changed from 14px 0 0 since ticker is now above the badge */
       border:1px solid rgba(255,255,255,.14);
       background: rgba(0,0,0,.22);
       border-radius:999px;
@@ -512,11 +512,8 @@
     <div class="wrap">
       <div class="heroGrid">
         <div>
-          <div class="badge">
-            <strong>Not an AI ghostwriter.</strong>
-            <span>It writes with you.</span>
-          </div>
 
+          <!-- MOVED: ticker ABOVE the badge -->
           <div class="ticker" aria-hidden="true">
             <div class="tickerTrack">
               <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
@@ -544,6 +541,11 @@
               <span class="tickerStrong">Chapters</span><span class="tickerDot">•</span>
               <span class="tickerStrong">Momentum</span><span class="tickerDot">•</span>
             </div>
+          </div>
+
+          <div class="badge">
+            <strong>Not an AI ghostwriter.</strong>
+            <span>It writes with you.</span>
           </div>
 
           <h1>Write the book you’ve been avoiding.</h1>
