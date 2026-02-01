@@ -571,6 +571,113 @@
     margin-top: 14px;
   }
 }
+    /* ===== DESKTOP: force hero content above background/overlay ===== */
+.heroBg { z-index: 0 !important; }
+.heroOverlay, .heroGlow { z-index: 1 !important; }
+
+/* Force all real content above overlays */
+.hero .wrap,
+.heroGrid { position: relative !important; z-index: 5 !important; }
+
+/* Force panel (and its text) above everything in the hero */
+.panel { position: relative !important; z-index: 6 !important; }
+.panelTop, .panelBody { position: relative !important; z-index: 7 !important; }
+
+/* Force the missing title to be visible on desktop */
+.panelBody .previewTitle{
+  display:block !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  position:relative !important;
+  z-index: 9999 !important;
+  color: var(--text) !important;
+
+  /* give it a subtle backing so it can't disappear */
+  background: rgba(0,0,0,.22) !important;
+  padding: 6px 10px !important;
+  border-radius: 12px !important;
+}
+/* ===== MOBILE POLISH (tight, premium, no layout chaos) ===== */
+@media (max-width: 640px){
+
+  /* Header: stop the cramped top bar */
+  .topInner{
+    padding: 12px 0 !important;
+  }
+
+  /* Hide anchor links on mobile (they clutter the header) */
+  .nav a[href="#how"],
+  .nav a[href="#for"]{
+    display:none !important;
+  }
+
+  /* Make the remaining header buttons cleaner */
+  .nav{
+    width:100% !important;
+    gap:8px !important;
+  }
+  .nav .btn{
+    padding:10px 12px !important;
+    font-size:13px !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Hero spacing */
+  .hero{
+    padding: 40px 0 28px !important;
+  }
+
+  /* Stronger overlay on mobile so text stays readable */
+  .heroOverlay{
+    background:
+      linear-gradient(
+        180deg,
+        rgba(0,0,0,.65) 0%,
+        rgba(0,0,0,.55) 55%,
+        rgba(0,0,0,.65) 100%
+      ) !important;
+  }
+
+  /* Text sizing */
+  h1{
+    font-size: 34px !important;
+    line-height: 1.08 !important;
+  }
+  .lead{
+    font-size: 15px !important;
+  }
+
+  /* CTAs: make them feel intentional */
+  .ctaRow{
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap:10px !important;
+  }
+  .ctaRow .btn{
+    width:100% !important;
+  }
+
+  /* Ticker: full width and calmer */
+  .ticker{
+    width:100% !important;
+  }
+  .tickerTrack{
+    font-size:12px !important;
+    animation-duration: 34s !important;
+  }
+
+  /* Panel: spacing and readability */
+  .panel{
+    margin-top: 14px !important;
+  }
+  .panelBody{
+    padding:16px !important;
+  }
+
+  /* Sections: reduce heavy vertical padding */
+  .section{ padding: 34px 0 !important; }
+  .final{ padding: 36px 0 46px !important; }
+}
   </style>
 </head>
 
