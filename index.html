@@ -247,7 +247,7 @@
 
     /* Premium ticker (Option A) */
     .ticker{
-      margin:0 0 12px; /* changed from 14px 0 0 since ticker is now above the badge */
+      margin:0 0 12px;
       border:1px solid rgba(255,255,255,.14);
       background: rgba(0,0,0,.22);
       border-radius:999px;
@@ -458,226 +458,97 @@
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
     }
+
+    /* ===== CLEAN FINAL OVERRIDES (fix desktop title + premium mobile) ===== */
+
+    /* Desktop: make sure the panel always paints above hero layers */
+    .hero .wrap,
+    .heroGrid { position: relative; z-index: 5; }
+
+    .panel { position: relative; z-index: 10; }
+    .panelTop, .panelBody { position: relative; z-index: 11; }
+
+    /* This is the only previewTitle override you need */
+    .panelBody .previewTitle{
+      display:block;
+      opacity:1;
+      visibility:visible;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 18px;
+      margin: 0 0 12px;
+      letter-spacing: -.02em;
+      position: relative;
+      z-index: 12;
+
+      /* tiny backing so it cannot visually disappear */
+      background: rgba(0,0,0,.18);
+      padding: 6px 10px;
+      border-radius: 12px;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    /* Mobile: premium layout */
     @media (max-width: 640px){
-      .logo-wrap img{height:40px;}
       .wrap{padding:0 16px;}
 
-      .topInner{gap:10px;}
-      .nav{gap:8px;}
-      .nav .btn{padding:10px 12px; font-weight:800;}
+      /* header becomes clean */
+      .topInner{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 0;
+      }
+
+      /* hide anchor buttons on phone */
+      .nav a[href="#how"],
+      .nav a[href="#for"]{
+        display:none;
+      }
+
+      .nav{
+        width:100%;
+        gap:8px;
+      }
+      .nav .btn{
+        flex: 1 1 auto;
+        padding: 10px 12px;
+        font-size:13px;
+      }
+
+      /* hero */
+      .hero{padding: 40px 0 28px;}
+
+      /* better overlay for phone readability */
+      .heroOverlay{
+        background:
+          linear-gradient(
+            180deg,
+            rgba(0,0,0,.64) 0%,
+            rgba(0,0,0,.56) 55%,
+            rgba(0,0,0,.66) 100%
+          );
+      }
 
       h1{line-height:1.06;}
-      .hero{padding:44px 0 36px;}
-
-      .ctaRow{flex-direction:column; align-items:stretch;}
+      .ctaRow{
+        flex-direction: column;
+        align-items: stretch;
+        gap:10px;
+      }
       .ctaRow .btn{width:100%;}
 
-      .panelBody{padding:16px;}
-      .reviewsBand{padding:18px 14px;}
-
       .ticker{width:100%;}
-      .tickerTrack{font-size:12px;}
+      .tickerTrack{font-size:12px; animation-duration: 34s;}
+
+      .panel{margin-top:14px;}
+      .panelBody{padding:16px;}
+
+      .section{padding:34px 0;}
+      .final{padding:36px 0 46px;}
+      .reviews{padding:38px 0;}
     }
-    /* FORCE the right-panel title to be visible (surgical override) */
-.panelBody .previewTitle{
-  display:block !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  color: var(--text) !important;
-  font-weight: 900 !important;
-  font-size: 18px !important;
-  margin: 0 0 12px !important;
-  letter-spacing: -.02em !important;
-}
-
-/* Ensure panel text isn't muted */
-.panelBody{
-  color: var(--text) !important;
-}
-    /* FIX: ensure panel content can stack above any internal overlays/filters */
-.panel{
-  position: relative !important;
-}
-
-.panelBody{
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-/* Force the title to render on top, always */
-.panelBody .previewTitle{
-  position: relative !important;
-  z-index: 3 !important;
-  line-height: 1.25 !important;
-}
-/* MOBILE POLISH (safe + minimal) */
-@media (max-width: 640px){
-
-  /* Top header becomes clean and not cramped */
-  .topInner{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 12px 0;
-  }
-
-  /* Hide anchor buttons on mobile (they crowd the header) */
-  .nav a[href="#how"],
-  .nav a[href="#for"]{
-    display: none !important;
-  }
-
-  /* Make remaining header buttons align nicely */
-  .nav{
-    justify-content: space-between;
-    width: 100%;
-  }
-  .nav .btn{
-    flex: 1;
-    text-align: center;
-    padding: 10px 12px;
-  }
-
-  /* Hero content: tighten spacing */
-  .hero{
-    padding: 40px 0 30px;
-  }
-
-  /* Stack hero sections */
-  .heroGrid{
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Make CTA buttons look intentional */
-  .ctaRow{
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .ctaRow .btn{
-    width: 100%;
-  }
-
-  /* Ticker fits and moves slower */
-  .ticker{
-    width: 100%;
-  }
-  .tickerTrack{
-    font-size: 12px;
-    animation-duration: 32s;
-  }
-
-  /* Panel spacing so it doesn’t feel glued */
-  .panel{
-    margin-top: 14px;
-  }
-}
-    /* ===== DESKTOP: force hero content above background/overlay ===== */
-.heroBg { z-index: 0 !important; }
-.heroOverlay, .heroGlow { z-index: 1 !important; }
-
-/* Force all real content above overlays */
-.hero .wrap,
-.heroGrid { position: relative !important; z-index: 5 !important; }
-
-/* Force panel (and its text) above everything in the hero */
-.panel { position: relative !important; z-index: 6 !important; }
-.panelTop, .panelBody { position: relative !important; z-index: 7 !important; }
-
-/* Force the missing title to be visible on desktop */
-.panelBody .previewTitle{
-  display:block !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  position:relative !important;
-  z-index: 9999 !important;
-  color: var(--text) !important;
-
-  /* give it a subtle backing so it can't disappear */
-  background: rgba(0,0,0,.22) !important;
-  padding: 6px 10px !important;
-  border-radius: 12px !important;
-}
-/* ===== MOBILE POLISH (tight, premium, no layout chaos) ===== */
-@media (max-width: 640px){
-
-  /* Header: stop the cramped top bar */
-  .topInner{
-    padding: 12px 0 !important;
-  }
-
-  /* Hide anchor links on mobile (they clutter the header) */
-  .nav a[href="#how"],
-  .nav a[href="#for"]{
-    display:none !important;
-  }
-
-  /* Make the remaining header buttons cleaner */
-  .nav{
-    width:100% !important;
-    gap:8px !important;
-  }
-  .nav .btn{
-    padding:10px 12px !important;
-    font-size:13px !important;
-    flex: 1 1 auto !important;
-  }
-
-  /* Hero spacing */
-  .hero{
-    padding: 40px 0 28px !important;
-  }
-
-  /* Stronger overlay on mobile so text stays readable */
-  .heroOverlay{
-    background:
-      linear-gradient(
-        180deg,
-        rgba(0,0,0,.65) 0%,
-        rgba(0,0,0,.55) 55%,
-        rgba(0,0,0,.65) 100%
-      ) !important;
-  }
-
-  /* Text sizing */
-  h1{
-    font-size: 34px !important;
-    line-height: 1.08 !important;
-  }
-  .lead{
-    font-size: 15px !important;
-  }
-
-  /* CTAs: make them feel intentional */
-  .ctaRow{
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap:10px !important;
-  }
-  .ctaRow .btn{
-    width:100% !important;
-  }
-
-  /* Ticker: full width and calmer */
-  .ticker{
-    width:100% !important;
-  }
-  .tickerTrack{
-    font-size:12px !important;
-    animation-duration: 34s !important;
-  }
-
-  /* Panel: spacing and readability */
-  .panel{
-    margin-top: 14px !important;
-  }
-  .panelBody{
-    padding:16px !important;
-  }
-
-  /* Sections: reduce heavy vertical padding */
-  .section{ padding: 34px 0 !important; }
-  .final{ padding: 36px 0 46px !important; }
-}
   </style>
 </head>
 
@@ -713,7 +584,7 @@
       <div class="heroGrid">
         <div>
 
-          <!-- MOVED: ticker ABOVE the badge -->
+          <!-- ticker ABOVE badge -->
           <div class="ticker" aria-hidden="true">
             <div class="tickerTrack">
               <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
