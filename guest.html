@@ -203,8 +203,19 @@
     </div>
 
     <div style="display:flex; gap:10px; align-items:flex-end;">
-      <button class="btn" id="beginBtn" type="button">Create my outline</button>
+      <button class="btn" id="beginBtn" type="button">Let’s shape a starting point</button>
       <a href="index.html" style="align-self:center;">Back to home</a>
+    </div>
+  </div>
+
+  <!-- Reflection gate (NEW) -->
+  <div id="reflectionGate" class="card" style="display:none; margin-top:16px;">
+    <h3 style="margin:0 0 6px;">Let’s make sure I understand</h3>
+    <p id="reflectionText" style="margin:0 0 10px; line-height:1.55;"></p>
+    <p class="muted" style="margin:0 0 12px; font-weight:700;">Does this sound right?</p>
+    <div class="actions">
+      <button class="btn" id="reflectionContinue" type="button">Yes, continue</button>
+      <button class="btn secondary" id="reflectionAdjust" type="button">Let me adjust</button>
     </div>
   </div>
 
@@ -222,8 +233,10 @@
 
       <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
       <p id="purposeOut">Please wait...</p>
+      <div class="muted" style="margin-top:-6px;">Does this reflect what you want to say?</div>
 
       <h3 style="margin:14px 0 6px;">Outline</h3>
+      <div class="muted" style="margin:-4px 0 8px;">Here’s one possible way to structure this.</div>
       <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
       <!-- ADDED: inline lead capture (UI-safe; no backend call yet) -->
@@ -305,6 +318,35 @@
 
     function clean(v) { return (v ?? "").toString().trim(); }
 
+    function getSelectedGenreLabel() {
+      const active = document.querySelector(".genre-btn.active");
+      return active ? active.textContent.trim() : "";
+    }
+
+    function buildReflectionText({ topic, audience, blocker, genre }) {
+      const genrePhrase = genre ? `${genre.toLowerCase()}-style book` : "book";
+      const aud = audience ? `meant for ${audience}` : "meant for readers you care about";
+      const top = topic ? `around ${topic}` : "around a message you’re still shaping";
+      const block = blocker ? `what’s slowed you down most is ${blocker}` : "what’s slowed you down most is clarity and confidence";
+
+      return `You’re working on a ${genrePhrase} ${aud} ${top}. Your goal is to encourage forward movement, and ${block}.`;
+    }
+
+    function showReflectionGate(text) {
+      const gate = document.getElementById("reflectionGate");
+      const p = document.getElementById("reflectionText");
+      if (!gate || !p) return;
+
+      p.textContent = text;
+      gate.style.display = "block";
+      gate.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function hideReflectionGate() {
+      const gate = document.getElementById("reflectionGate");
+      if (gate) gate.style.display = "none";
+    }
+
     function getPayloadFromForm() {
       return {
         topic: clean(document.getElementById("topic").value),
@@ -368,7 +410,37 @@
       }
     }
 
-    document.getElementById("beginBtn").addEventListener("click", generateOutline);
+    document.getElementById("beginBtn").addEventListener("click", () => {
+      const payload = getPayloadFromForm();
+      const genre = getSelectedGenreLabel();
+
+      const reflection = buildReflectionText({
+        topic: payload.topic,
+        audience: payload.audience,
+        blocker: payload.blocker,
+        genre
+      });
+
+      // Keep screen clean until they confirm
+      const result = document.getElementById("result");
+      if (result) result.style.display = "none";
+
+      showReflectionGate(reflection);
+    });
+
+    document.getElementById("reflectionContinue").addEventListener("click", async () => {
+      hideReflectionGate();
+      await generateOutline();
+    });
+
+    document.getElementById("reflectionAdjust").addEventListener("click", () => {
+      hideReflectionGate();
+      const topicEl = document.getElementById("topic");
+      if (topicEl) {
+        topicEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        topicEl.focus();
+      }
+    });
 
     document.getElementById("createAccountBtn").addEventListener("click", () => {
       savePendingToLocalStorage();
