@@ -298,8 +298,19 @@
     </div>
 
     <div style="display:flex; gap:10px; align-items:flex-end;">
-      <button class="btn" id="beginBtn" type="button">Generate starting point</button>
+      <button class="btn" id="beginBtn" type="button">Let’s shape a starting point</button>
       <a href="index.html" style="align-self:center;">Back to home</a>
+    </div>
+  </div>
+
+  <!-- Reflection gate (NEW) -->
+  <div id="reflectionGate" class="card" style="display:none; margin-top:16px;">
+    <h3 style="margin:0 0 6px;">Let’s make sure I understand</h3>
+    <p id="reflectionText" style="margin:0 0 10px; line-height:1.55;"></p>
+    <p class="muted" style="margin:0 0 12px; font-weight:700;">Does this sound right?</p>
+    <div class="actions">
+      <button class="btn" id="reflectionContinue" type="button">Yes, continue</button>
+      <button class="btn secondary" id="reflectionAdjust" type="button">Let me adjust</button>
     </div>
   </div>
 
@@ -314,18 +325,21 @@
         <span class="pill">Writing with you</span>
       </div>
 
-      <h2 id="titleOut" style="margin:10px 0 6px;">Generating...</h2>
+      <!-- PURPOSE FIRST -->
+      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
+      <p id="purposeOut">Please wait...</p>
+      <div class="muted" style="margin-top:-6px;">Does this reflect what you want to say?</div>
+
+      <h2 id="titleOut" style="margin:14px 0 6px;">Generating...</h2>
 
       <div class="actions" style="margin-top:6px;">
-        <button class="btn secondary" id="genTitlesBtn" type="button">Generate title suggestions</button>
+        <button class="btn secondary" id="genTitlesBtn" type="button">Explore title ideas</button>
         <span class="muted" id="titlesHint">10 options you can pick from.</span>
       </div>
       <ul id="titleIdeasOut" class="muted" style="margin-top:8px;"></ul>
 
-      <h3 style="margin:14px 0 6px;">One-sentence purpose</h3>
-      <p id="purposeOut">Please wait...</p>
-
       <h3 style="margin:14px 0 6px;">Outline</h3>
+      <div class="muted" style="margin:-4px 0 8px;">Here’s one possible way to structure this.</div>
       <ol id="outlineOut"><li>Creating your outline...</li></ol>
 
       <div class="actions">
@@ -337,7 +351,7 @@
       <hr />
       <h3 style="margin: 0 0 8px;">Introduction</h3>
       <div class="actions">
-        <button class="btn secondary" id="genIntroBtn" type="button">Generate introduction</button>
+        <button class="btn secondary" id="genIntroBtn" type="button">Draft an opening together</button>
         <span class="muted" id="introHint">Optional: 400–700 words that sets the tone.</span>
       </div>
       <pre id="introOut">Click “Generate introduction” to create an optional intro.</pre>
@@ -369,10 +383,10 @@
           <div class="muted" id="expandHint"></div>
 
           <div class="actions" style="margin-top:10px;">
-            <button class="btn" id="expandBtn" type="button">Draft this chapter</button>
+            <button class="btn" id="expandBtn" type="button">Work through this chapter</button>
             <button class="btn secondary" id="copyExpandedBtn" type="button" disabled>Copy expanded text</button>
             <button class="btn secondary" id="downloadExpandedBtn" type="button" disabled>Download expanded (.txt)</button>
-            <button class="btn secondary" id="regenExpandedBtn" type="button" disabled>Regenerate expanded chapter</button>
+            <button class="btn secondary" id="regenExpandedBtn" type="button" disabled>Try another version</button>
           </div>
 
           <div class="notice" style="margin-top:12px;">
@@ -482,7 +496,35 @@
       }
     }
 
-    document.getElementById("beginBtn").addEventListener("click", async () => {
+    function getSelectedGenreLabel() {
+      const active = document.querySelector(".genre-btn.active");
+      return active ? active.textContent.trim() : "";
+    }
+
+    function buildReflectionText({ topic, audience, blocker, genre }) {
+      const genrePhrase = genre ? `${genre.toLowerCase()}-style book` : "book";
+      const aud = audience ? `meant for ${audience}` : "meant for readers you care about";
+      const top = topic ? `around ${topic}` : "around a message you’re still shaping";
+      const block = blocker ? `what’s slowed you down most is ${blocker}` : "what’s slowed you down most is clarity and confidence";
+      return `You’re working on a ${genrePhrase} ${aud} ${top}. Your goal is to encourage forward movement, and ${block}.`;
+    }
+
+    function showReflectionGate(text) {
+      const gate = document.getElementById("reflectionGate");
+      const p = document.getElementById("reflectionText");
+      if (!gate || !p) return;
+
+      p.textContent = text;
+      gate.style.display = "block";
+      gate.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function hideReflectionGate() {
+      const gate = document.getElementById("reflectionGate");
+      if (gate) gate.style.display = "none";
+    }
+
+    async function runOutlineGeneration() {
       const emptyState = document.getElementById("emptyState");
       if (emptyState) emptyState.style.display = "none";
 
@@ -581,6 +623,38 @@
         document.getElementById("purposeOut").textContent = "Something went wrong. Please try again.";
         document.getElementById("outlineOut").innerHTML = "<li>Error generating outline.</li>";
       }
+    }
+
+    // Expose for regenOutlineBtn to call directly (keeps prior behavior intact)
+    window.__runOutlineGeneration = runOutlineGeneration;
+
+    document.getElementById("beginBtn").addEventListener("click", () => {
+      const topic = clean(document.getElementById("topic").value);
+      const audience = clean(document.getElementById("audience").value);
+      const blocker = clean(document.getElementById("blocker").value);
+      const genre = getSelectedGenreLabel();
+
+      const reflection = buildReflectionText({ topic, audience, blocker, genre });
+
+      // Keep screen clean until they confirm
+      const result = document.getElementById("result");
+      if (result) result.style.display = "none";
+
+      showReflectionGate(reflection);
+    });
+
+    document.getElementById("reflectionContinue").addEventListener("click", async () => {
+      hideReflectionGate();
+      await runOutlineGeneration();
+    });
+
+    document.getElementById("reflectionAdjust").addEventListener("click", () => {
+      hideReflectionGate();
+      const topicEl = document.getElementById("topic");
+      if (topicEl) {
+        topicEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        topicEl.focus();
+      }
     });
   </script>
 
@@ -647,7 +721,13 @@
         document.getElementById("chapters").value = String(last.chapters || 12);
         document.getElementById("voiceSample").value = last.voiceSample || "";
         document.getElementById("voiceNotes").value = last.voiceNotes || "";
-        document.getElementById("beginBtn").click();
+
+        // Preserve old behavior: regen runs immediately (no extra gate)
+        if (typeof window.__runOutlineGeneration === "function") {
+          window.__runOutlineGeneration();
+        } else {
+          document.getElementById("beginBtn").click();
+        }
       });
     }
 
