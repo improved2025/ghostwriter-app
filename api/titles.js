@@ -1,6 +1,6 @@
 // /api/titles.js
 // Server-controlled limits for title suggestions.
-// Uses: public.usage_limits (NOT usable_limits)
+// Uses: public.usage_limits
 // Increments: titles_used
 // Returns: { titles: [...] } OR { error: "limit_reached" }
 
@@ -11,9 +11,11 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Free tier policy (server truth)
-const FREE_LIMITS = {
-  titles_total: 1, // 1 total title suggestions on free
+// ✅ PLAN LIMITS (FINAL)
+const LIMITS = {
+  free: { titles_total: 1 },
+  project: { titles_total: 10 },
+  lifetime: { titles_total: Infinity }
 };
 
 function json(res, status, payload) {
@@ -27,7 +29,7 @@ function clean(v) {
 }
 
 /**
- * Extract a Supabase access token (logged-in users) from:
+ * Extract a Supabase access token from:
  * - Authorization: Bearer <token>
  * - Cookies: sb-access-token or supabase-auth-token
  */
@@ -54,14 +56,13 @@ function extractAccessToken(req) {
 }
 
 async function getUserId({ supabaseAdmin, req, body }) {
-  // Prefer explicit userId if your frontend already sends it (expand.js does)
+  // Prefer explicit userId if frontend sends it
   const bodyUserId = clean(body?.userId);
   if (bodyUserId) return bodyUserId;
 
   const token = extractAccessToken(req);
   if (!token) return null;
 
-  // Works with service role client too (it calls /auth/v1/user with Bearer token)
   const u = await supabaseAdmin.auth.getUser(token);
   return u?.data?.user?.id || null;
 }
@@ -69,7 +70,7 @@ async function getUserId({ supabaseAdmin, req, body }) {
 async function ensureUsageRow({ supabaseAdmin, userId }) {
   const existing = await supabaseAdmin
     .from("usage_limits")
-    .select("user_id, titles_used, outlines_used, expands_used, created_at, updated_at")
+    .select("user_id, plan, titles_used, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -79,15 +80,16 @@ async function ensureUsageRow({ supabaseAdmin, userId }) {
 
   if (existing.data) return { ok: true, row: existing.data };
 
+  // Create a default free row
   const ins = await supabaseAdmin
     .from("usage_limits")
     .insert({
       user_id: userId,
+      plan: "free",
       titles_used: 0,
-      outlines_used: 0,
-      expands_used: 0,
+      updated_at: new Date().toISOString()
     })
-    .select("user_id, titles_used, outlines_used, expands_used, created_at, updated_at")
+    .select("user_id, plan, titles_used, updated_at")
     .single();
 
   if (ins.error) {
@@ -99,18 +101,24 @@ async function ensureUsageRow({ supabaseAdmin, userId }) {
 
 async function consumeTitlesLimit({ supabaseAdmin, userId }) {
   if (!userId) {
-    // If you want guest server-limits, you MUST add guest_key to usage_limits.
-    // For now: allow guests (client-side limits can still apply in start.html).
-    return { allowed: true, guest: true };
+    // Authored model requires identity even for guests (account.js).
+    // If we can't resolve userId, treat as not authenticated.
+    return { allowed: false, notAuthed: true };
   }
 
   const ensured = await ensureUsageRow({ supabaseAdmin, userId });
   if (!ensured.ok) return { allowed: false, hardError: ensured.err };
 
   const row = ensured.row;
+  const plan = clean(row?.plan || "free").toLowerCase();
+
+  // Lifetime bypass
+  if (plan === "lifetime") return { allowed: true };
+
+  const limit = LIMITS[plan]?.titles_total ?? LIMITS.free.titles_total;
   const used = Number(row?.titles_used || 0);
 
-  if (used >= FREE_LIMITS.titles_total) {
+  if (used >= limit) {
     return { allowed: false, limitReached: true };
   }
 
@@ -118,7 +126,7 @@ async function consumeTitlesLimit({ supabaseAdmin, userId }) {
     .from("usage_limits")
     .update({
       titles_used: used + 1,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     })
     .eq("user_id", userId);
 
@@ -150,7 +158,7 @@ export default async function handler(req, res) {
     const idea = topic || currentTitle || "A helpful book idea";
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
+      auth: { persistSession: false }
     });
 
     const userId = await getUserId({ supabaseAdmin, req, body });
@@ -158,6 +166,7 @@ export default async function handler(req, res) {
     // Consume limit BEFORE spending tokens
     const lim = await consumeTitlesLimit({ supabaseAdmin, userId });
     if (!lim.allowed) {
+      if (lim.notAuthed) return json(res, 401, { error: "not_authenticated" });
       if (lim.limitReached) return json(res, 200, { error: "limit_reached" });
       return json(res, 500, { error: "limit_check_failed", details: lim.hardError || "unknown" });
     }
@@ -168,7 +177,7 @@ export default async function handler(req, res) {
       "You generate book title suggestions.",
       "Return only JSON, no extra text.",
       "Titles must be punchy, clear, and not generic.",
-      "Avoid clickbait. Avoid overly long titles.",
+      "Avoid clickbait. Avoid overly long titles."
     ].join(" ");
 
     const user = {
@@ -179,7 +188,7 @@ export default async function handler(req, res) {
       currentTitle,
       voiceNotes,
       voiceSample_snippet: voiceSample ? voiceSample.slice(0, 1800) : "",
-      output_schema: { titles: ["string"] },
+      output_schema: { titles: ["string"] }
     };
 
     const resp = await client.chat.completions.create({
@@ -187,9 +196,9 @@ export default async function handler(req, res) {
       temperature: 0.7,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: JSON.stringify(user) },
+        { role: "user", content: JSON.stringify(user) }
       ],
-      response_format: { type: "json_object" },
+      response_format: { type: "json_object" }
     });
 
     const raw = resp.choices?.[0]?.message?.content || "{}";
