@@ -1,9 +1,9 @@
 // /api/expand.js
 // Server-controlled expand limits using public.usage_limits
 // Free: 2 expands per UTC day (shared bucket for expand + regen)
-// Project ($49): 40 total chapter-level generations (expand + chapter shared), lock at first expansion
-// Lifetime ($149): unlimited
-// Works for logged-in users AND guests (because account.js ensures anonymous auth + cookie token)
+// Project: 40 total expands + project lock at first expand
+// Lifetime: unlimited
+// Works for logged-in users AND guests (account.js ensures anonymous auth + cookie token)
 
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
@@ -13,12 +13,24 @@ import crypto from "crypto";
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-// ✅ FINALIZED PLAN LIMITS
 const FREE_LIMITS = { expands_per_day: 2 };
 const PROJECT_LIMITS = { expands_total: 40 };
 
 function clean(v) {
   return (v ?? "").toString().trim();
+}
+
+function normalizeForLock(v) {
+  return clean(v).toLowerCase().replace(/\s+/g, " ").slice(0, 2000);
+}
+
+function lockHashFromBody(body) {
+  const topic = normalizeForLock(body?.topic);
+  const audience = normalizeForLock(body?.audience);
+  const blocker = normalizeForLock(body?.blocker);
+  // Lock is based on the *idea*, not the title (titles can change within the same project).
+  const base = `topic:${topic}|aud:${audience}|blocker:${blocker}`;
+  return crypto.createHash("sha256").update(base).digest("hex");
 }
 
 function extractAccessToken(req) {
@@ -57,29 +69,9 @@ function todayISODateUTC() {
   return `${y}-${m}-${day}`; // YYYY-MM-DD
 }
 
-/* ===========================
-   PROJECT LOCK FINGERPRINT
-   Lock at first expansion for project plan.
-   Deterministic and stable: title + topic only.
-=========================== */
-function normalizeForFingerprint(s) {
-  return clean(s)
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[^\w\s]/g, "")
-    .trim()
-    .slice(0, 500);
-}
-
-function makeProjectFingerprint({ bookTitle, topic }) {
-  const base = `${normalizeForFingerprint(bookTitle)}|${normalizeForFingerprint(topic)}`;
-  return crypto.createHash("sha256").update(base).digest("hex");
-}
-
-async function consumeExpand({ supabase, userId, bookTitle, topic }) {
+async function consumeExpand({ supabase, userId, body }) {
   const today = todayISODateUTC();
 
-  // Fetch row
   const existing = await supabase
     .from("usage_limits")
     .select("*")
@@ -91,37 +83,46 @@ async function consumeExpand({ supabase, userId, bookTitle, topic }) {
   const row = existing.data;
   const plan = (row?.plan || "free").toString().toLowerCase();
 
-  // Lifetime bypass
-  if (plan === "lifetime") return { allowed: true };
+  // Lifetime: no caps
+  if (plan === "lifetime") {
+    // Optional: still track expands_used for analytics
+    const nextTotal = Number(row?.expands_used || 0) + 1;
+    const up = await supabase
+      .from("usage_limits")
+      .upsert(
+        { user_id: userId, plan: row?.plan || "lifetime", expands_used: nextTotal, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    if (up.error) return { allowed: false, hardError: up.error.message };
+    return { allowed: true };
+  }
 
-  // Compute fingerprint for project locking
-  const fingerprint = makeProjectFingerprint({ bookTitle, topic });
-
-  // Project plan: lock at first expansion + enforce total cap
+  // Project: enforce total cap + lock on first chapter-generation call
   if (plan === "project") {
-    const storedFp = clean(row?.project_fingerprint || "");
-    if (storedFp && storedFp !== fingerprint) {
+    const cap = Number(row?.project_expands_cap || PROJECT_LIMITS.expands_total);
+    const used = Number(row?.expands_used || 0);
+
+    if (used >= cap) return { allowed: false, limitReached: true };
+
+    const incomingLock = lockHashFromBody(body);
+
+    // If lock exists and does not match -> hard block
+    const currentLock = clean(row?.project_lock_hash);
+    if (currentLock && currentLock !== incomingLock) {
       return { allowed: false, projectLocked: true };
     }
 
-    const usedTotal = Number(row?.expands_used || 0);
-    if (usedTotal >= PROJECT_LIMITS.expands_total) {
-      return { allowed: false, limitReached: true, limitType: "total" };
-    }
-
-    const nextTotal = usedTotal + 1;
-
+    // If no lock yet -> set it now (lock at first expand)
+    const nextTotal = used + 1;
     const up = await supabase
       .from("usage_limits")
       .upsert(
         {
           user_id: userId,
           plan: row?.plan || "project",
-          project_fingerprint: storedFp || fingerprint, // set on first expansion
+          project_lock_hash: currentLock || incomingLock,
+          project_expands_cap: row?.project_expands_cap ?? PROJECT_LIMITS.expands_total,
           expands_used: nextTotal,
-          // keep day fields consistent even if unused for project plan
-          expands_day: row?.expands_day || today,
-          expands_used_today: row?.expands_used_today || 0,
           updated_at: new Date().toISOString()
         },
         { onConflict: "user_id" }
@@ -131,14 +132,13 @@ async function consumeExpand({ supabase, userId, bookTitle, topic }) {
     return { allowed: true };
   }
 
-  // Free plan: daily cap (existing behavior) + track total
-  // Default to free if unknown plan value
+  // Free: daily cap (existing behavior)
   const rowDay = row?.expands_day ? String(row.expands_day).slice(0, 10) : null;
   const usedToday = Number(row?.expands_used_today || 0);
   const effectiveUsed = rowDay === today ? usedToday : 0;
 
   if (effectiveUsed >= FREE_LIMITS.expands_per_day) {
-    return { allowed: false, limitReached: true, limitType: "daily" };
+    return { allowed: false, limitReachedToday: true };
   }
 
   const nextUsedToday = effectiveUsed + 1;
@@ -170,18 +170,15 @@ export default async function handler(req, res) {
     if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
 
     const openai = new OpenAI({ apiKey });
-
     const body = req.body || {};
 
     const authedUserId = await getUserIdFromRequest(req);
-    if (!authedUserId) {
-      // This is the whole point of account.js cookie auth sync.
-      return res.status(401).json({ error: "not_authenticated" });
-    }
+    if (!authedUserId) return res.status(401).json({ error: "not_authenticated" });
 
     const {
       topic,
       audience,
+      blocker,
       bookTitle,
       purpose,
       chapterTitle,
@@ -198,26 +195,11 @@ export default async function handler(req, res) {
 
     const supabase = supabaseAdmin();
 
-    // Enforce expand limits (logged-in + guest both have user_id now)
-    const lim = await consumeExpand({
-      supabase,
-      userId: authedUserId,
-      bookTitle: clean(bookTitle),
-      topic: clean(topic)
-    });
-
+    const lim = await consumeExpand({ supabase, userId: authedUserId, body });
     if (!lim.allowed) {
-      if (lim.projectLocked) {
-        // Keep pattern: 200 with structured error for UI to handle
-        return res.status(200).json({ error: "project_locked" });
-      }
-      if (lim.limitReached) {
-        // Preserve existing UI behavior:
-        // Free daily cap uses limit_reached_today
-        // Project total cap uses limit_reached (generic)
-        if (lim.limitType === "daily") return res.status(200).json({ error: "limit_reached_today" });
-        return res.status(200).json({ error: "limit_reached" });
-      }
+      if (lim.projectLocked) return res.status(200).json({ error: "project_locked" });
+      if (lim.limitReachedToday) return res.status(200).json({ error: "limit_reached_today" });
+      if (lim.limitReached) return res.status(200).json({ error: "limit_reached" });
       return res.status(500).json({ error: "limit_check_failed", details: lim.hardError || "unknown" });
     }
 
@@ -233,6 +215,7 @@ Purpose: ${clean(purpose)}
 Chapter ${Number(chapterNumber) || 1}: ${clean(chapterTitle)}
 Audience: ${clean(audience)}
 Topic context: ${clean(topic)}
+Blocker: ${clean(blocker)}
 
 ${voiceBlock}
 
