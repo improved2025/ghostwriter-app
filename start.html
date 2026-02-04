@@ -406,6 +406,33 @@
   <script>
     (function restoreLastStart() {
       try {
+        /* ===========================
+           SURGICAL BRIDGE (NEW)
+           If guest created an outline in guest.html, it lives in authored_pending.
+           After signup/login, start.html promotes it once to authored_last_start,
+           then deletes authored_pending so it won't re-run.
+        ============================ */
+        const pendingRaw = localStorage.getItem("authored_pending");
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw);
+          if (pending && Array.isArray(pending.outline) && pending.outline.length) {
+            localStorage.setItem("authored_last_start", JSON.stringify({
+              savedAt: pending.savedAt || new Date().toISOString(),
+              title: pending.title || "Untitled",
+              purpose: pending.purpose || "",
+              outline: pending.outline || [],
+              topic: pending.topic || "",
+              audience: pending.audience || "",
+              blocker: pending.blocker || "",
+              chapters: pending.chapters || 12,
+              voiceSample: pending.voiceSample || "",
+              voiceNotes: pending.voiceNotes || ""
+            }));
+            localStorage.removeItem("authored_pending");
+          }
+        }
+        /* ===== END BRIDGE ===== */
+
         const raw = localStorage.getItem("authored_last_start");
         if (!raw) return;
 
