@@ -503,8 +503,13 @@
       });
     }
 
+    // ✅ UPDATED (surgical): include project_locked as a "limit-style" response we handle here.
     function isLimitReachedError(data) {
-      return data && (data.error === "limit_reached" || data.error === "limit_reached_today");
+      return data && (
+        data.error === "limit_reached" ||
+        data.error === "limit_reached_today" ||
+        data.error === "project_locked"
+      );
     }
 
     async function safeJson(resp) {
@@ -782,6 +787,12 @@
 
           const data = await safeJson(resp);
 
+          if (data && data.error === "project_locked") {
+            out.innerHTML = "";
+            showUpgrade("This project is locked after your first expansion on the Project plan. Upgrade to Lifetime to start a new book.");
+            return;
+          }
+
           if (isLimitReachedError(data)) {
             out.innerHTML = "";
             showUpgrade("You’ve reached the free plan limit for title suggestions.");
@@ -851,6 +862,12 @@
 
           const data = await safeJson(resp);
 
+          if (data && data.error === "project_locked") {
+            if (introOut) introOut.textContent = "Project locked.";
+            showUpgrade("This project is locked after your first expansion on the Project plan. Upgrade to Lifetime to start a new book.");
+            return;
+          }
+
           if (isLimitReachedError(data)) {
             if (introOut) introOut.textContent = "Free plan limit reached.";
             showUpgrade("You’ve reached the free plan limit for introductions.");
@@ -907,6 +924,7 @@
       const expandedOut = document.getElementById("expandedOut");
       if (expandedOut) expandedOut.textContent = (mode === "regen") ? "Regenerating..." : "Expanding...";
 
+      // ✅ UPDATED (surgical): include blocker in the request payload
       const resp = await fetch("/api/expand", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeaders()) },
@@ -918,6 +936,7 @@
           chapterTitle: chapterObj.title,
           audience: clean(document.getElementById("audience").value),
           topic: clean(document.getElementById("topic").value),
+          blocker: clean(document.getElementById("blocker").value),
           voiceSample: clean(document.getElementById("voiceSample").value),
           voiceNotes: clean(document.getElementById("voiceNotes").value),
           regenerate: mode === "regen",
@@ -932,6 +951,13 @@
       if (resp.status === 401) {
         if (expandedOut) expandedOut.textContent = "Please log in to expand chapters.";
         showUpgrade("Please log in or upgrade to expand chapters. Outline creation is free.");
+        return;
+      }
+
+      // ✅ UPDATED (surgical): handle project_locked here (same path as other limit-style responses)
+      if (data && data.error === "project_locked") {
+        if (expandedOut) expandedOut.textContent = "Project locked.";
+        showUpgrade("This project is locked after your first expansion on the Project plan. Upgrade to Lifetime to start a new book.");
         return;
       }
 
