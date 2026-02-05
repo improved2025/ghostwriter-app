@@ -35,7 +35,7 @@
     .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
 
     /* Better focus (accessibility, no visual clutter) */
-    a:focus-visible{
+    a:focus-visible, button:focus-visible{
       outline: 3px solid rgba(255,138,42,.55);
       outline-offset: 3px;
       border-radius: 999px;
@@ -95,12 +95,12 @@
 
     .btnGhost{
       background: rgba(255,255,255,.03);
-      color: rgba(245,247,251,.82);
+      color: rgba(245,247,251,.86);
       border-color: rgba(255,255,255,.14);
     }
     .btnGhost:hover{
       background: rgba(255,255,255,.06);
-      color: rgba(245,247,251,.94);
+      color: rgba(245,247,251,.95);
     }
 
     /* Primary CTA */
@@ -153,7 +153,7 @@
       will-change: opacity, transform;
 
       transform: scale(1.06);
-      filter: brightness(1.22) contrast(1.12) saturate(1.08);
+      filter: brightness(1.18) contrast(1.10) saturate(1.06);
     }
 
     .heroBg .s1{
@@ -195,16 +195,16 @@
       background:
         linear-gradient(
           90deg,
-          rgba(0,0,0,.82) 0%,
-          rgba(0,0,0,.62) 38%,
-          rgba(0,0,0,.20) 72%,
-          rgba(0,0,0,.08) 100%
+          rgba(0,0,0,.86) 0%,
+          rgba(0,0,0,.66) 40%,
+          rgba(0,0,0,.28) 76%,
+          rgba(0,0,0,.10) 100%
         ),
         linear-gradient(
           180deg,
           rgba(0,0,0,.18) 0%,
           rgba(0,0,0,.28) 55%,
-          rgba(0,0,0,.42) 100%
+          rgba(0,0,0,.46) 100%
         );
     }
 
@@ -215,7 +215,7 @@
       pointer-events:none;
       background:
         radial-gradient(740px 460px at 18% 30%, rgba(255,138,42,.18), transparent 62%),
-        radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.12), transparent 64%);
+        radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.10), transparent 64%);
       filter: blur(14px);
       opacity:.55;
       animation: glowMove 14s ease-in-out infinite alternate;
@@ -242,7 +242,7 @@
       z-index:2;
     }
 
-    /* Make absolutely sure hero content paints above overlays (fixes “blank button text” cases) */
+    /* Ensure hero content paints above overlays */
     .heroGrid > div{ position:relative; z-index: 6; }
     .ctaRow, .ctaRow .btn, .badge, .ticker{ position:relative; z-index: 7; }
 
@@ -250,9 +250,9 @@
       display:inline-flex; align-items:center; gap:10px;
       padding:8px 12px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.28);
-      color:rgba(245,247,251,.86);
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.30);
+      color:rgba(245,247,251,.90);
       font-size:13px;
       width:fit-content;
       backdrop-filter: blur(10px);
@@ -262,7 +262,7 @@
     /* Premium ticker */
     .ticker{
       margin:0 0 12px;
-      border:1px solid rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16);
       background: rgba(0,0,0,.22);
       border-radius:999px;
       overflow:hidden;
@@ -277,11 +277,11 @@
       padding:10px 12px;
       animation: tickerScroll 26s linear infinite;
       will-change: transform;
-      color: rgba(245,247,251,.82);
+      color: rgba(245,247,251,.84);
       font-size:13px;
       letter-spacing:.02em;
     }
-    .tickerStrong{font-weight:900; color:rgba(245,247,251,.92);}
+    .tickerStrong{font-weight:900; color:rgba(245,247,251,.94);}
     .tickerDot{opacity:.55;}
     .ticker:hover .tickerTrack{animation-play-state:paused;}
     @keyframes tickerScroll{
@@ -300,21 +300,49 @@
       text-shadow: 0 20px 70px rgba(0,0,0,.70);
     }
     .lead{
-      margin:0 0 18px;
-      color:rgba(245,247,251,.84);
+      margin:0 0 16px;
+      color:rgba(245,247,251,.86);
       font-size: clamp(15px, 1.35vw, 18px);
-      max-width:56ch;
+      max-width:60ch;
       text-shadow: 0 14px 50px rgba(0,0,0,.60);
     }
+
+    /* New: clarity bullets (scan-first) */
+    .quickClarity{
+      margin: 14px 0 18px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      max-width: 62ch;
+    }
+    .qc{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      color: rgba(245,247,251,.90);
+      font-size:13px;
+      backdrop-filter: blur(10px);
+    }
+    .qcDot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(255,138,42,.85);
+      box-shadow: 0 0 0 4px rgba(255,138,42,.14);
+      flex:0 0 auto;
+    }
+
     .ctaRow{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
     .micro{
       margin:10px 0 0;
-      color: rgba(245,247,251,.74);
+      color: rgba(245,247,251,.76);
       font-size:13px;
       text-shadow: 0 12px 40px rgba(0,0,0,.60);
     }
 
-    /* Publishing button (secondary CTA) */
+    /* Publishing button */
     .pubRow{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .btnSubtle{
       padding:10px 12px;
@@ -322,12 +350,22 @@
       border-radius:999px;
       border:1px solid rgba(255,255,255,.14);
       background: rgba(0,0,0,.18);
-      color: rgba(245,247,251,.88);
+      color: rgba(245,247,251,.90);
     }
     .btnSubtle:hover{
       background: rgba(255,255,255,.06);
       border-color: rgba(255,255,255,.20);
     }
+
+    /* New: pricing hint (tiny, friction-reducing) */
+    .priceHint{
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(245,247,251,.78);
+      max-width: 62ch;
+      text-shadow: 0 12px 40px rgba(0,0,0,.60);
+    }
+    .priceHint b{ color: rgba(245,247,251,.92); }
 
     /* Right-side panel */
     .panel{
@@ -369,7 +407,7 @@
       border-color: rgba(255,255,255,.20);
     }
     .mini b{display:block; margin-bottom:6px;}
-    .mini span{color:rgba(245,247,251,.76); font-size:13px;}
+    .mini span{color:rgba(245,247,251,.78); font-size:13px;}
 
     .section{padding:44px 0;}
     .title{
@@ -377,7 +415,113 @@
       letter-spacing:-.02em;
       margin:0 0 10px;
     }
-    .sub{margin:0 0 18px; color:rgba(245,247,251,.76); max-width:75ch;}
+    .sub{margin:0 0 18px; color:rgba(245,247,251,.78); max-width:78ch;}
+
+    /* New: "What it helps with" section */
+    .valueBand{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 22px;
+      background: rgba(255,255,255,.035);
+      box-shadow: var(--shadow);
+      padding:22px 18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .valueGlow{
+      position:absolute;
+      inset:-120px;
+      pointer-events:none;
+      background:
+        radial-gradient(720px 420px at 12% 35%, rgba(255,138,42,.10), transparent 60%),
+        radial-gradient(640px 380px at 92% 20%, rgba(34,197,94,.08), transparent 62%);
+      filter: blur(18px);
+      opacity:.7;
+    }
+    .valueGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px;
+      margin-top:14px;
+      position:relative;
+      z-index:1;
+    }
+    .valueCard{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--r);
+      background: rgba(0,0,0,.18);
+      padding:16px;
+      min-height: 142px;
+    }
+    .valueCard h3{
+      margin:0 0 8px;
+      font-size:16px;
+      letter-spacing:-.01em;
+    }
+    .valueCard p{
+      margin:0;
+      color: rgba(245,247,251,.78);
+      font-size:14px;
+      line-height:1.55;
+    }
+
+    /* New: proof band (screenshots/video placeholders) */
+    .proofGrid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .media{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--r);
+      background: rgba(0,0,0,.18);
+      padding:14px;
+      overflow:hidden;
+    }
+    .media h3{ margin:0 0 10px; font-size:16px; letter-spacing:-.01em; }
+    .shotRow{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; }
+    .shot{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      height: 120px;
+      position:relative;
+      overflow:hidden;
+    }
+    .shot::after{
+      content:"Add screenshot";
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(245,247,251,.60);
+      font-size: 13px;
+      letter-spacing: .01em;
+    }
+    .videoBox{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      height: 268px;
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(245,247,251,.62);
+      font-size: 13px;
+    }
+    .videoBox:before{
+      content:"Add a 45–75s walkthrough video";
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      text-align:center;
+    }
 
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
     .step{
@@ -403,7 +547,7 @@
       padding:16px;
     }
     .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
-    .forCard ul{margin:0; padding-left:18px; color:rgba(245,247,251,.74);}
+    .forCard ul{margin:0; padding-left:18px; color:rgba(245,247,251,.76);}
     .forCard li{margin:8px 0;}
 
     .reviews{ padding:46px 0; }
@@ -424,7 +568,7 @@
     }
     .reviewsSub{
       margin:0;
-      color:rgba(245,247,251,.76);
+      color:rgba(245,247,251,.78);
       max-width:70ch;
     }
     .reviewGrid{
@@ -443,13 +587,13 @@
     .stars{
       font-weight:900;
       letter-spacing:1px;
-      color: rgba(245,247,251,.92);
+      color: rgba(245,247,251,.94);
       margin-bottom:10px;
       font-size:14px;
     }
     .quote{
       margin:0 0 14px;
-      color: rgba(245,247,251,.86);
+      color: rgba(245,247,251,.88);
       line-height:1.55;
     }
     .who{
@@ -459,9 +603,41 @@
     }
     .role{
       margin:3px 0 0;
-      color: rgba(245,247,251,.68);
+      color: rgba(245,247,251,.70);
       font-size:13px;
     }
+
+    /* New: example proof cards (before/after) */
+    .examples{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px;
+    }
+    .ex{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--r);
+      background: rgba(0,0,0,.18);
+      padding:16px;
+    }
+    .exTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .tag{
+      font-size:12px;
+      color: rgba(245,247,251,.78);
+      border:1px solid rgba(255,255,255,.14);
+      padding:4px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    .ex b{ display:block; margin-bottom:8px; letter-spacing:-.01em; }
+    .ex p{ margin:0; color: rgba(245,247,251,.78); font-size:14px; line-height:1.55; }
 
     .final{padding:46px 0 60px; text-align:center;}
     .finalBox{
@@ -478,11 +654,11 @@
     .footer{
       padding:18px 0 30px;
       border-top:1px solid rgba(255,255,255,.10);
-      color: rgba(245,247,251,.6);
+      color: rgba(245,247,251,.62);
       font-size:13px;
     }
     .footerRow{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;}
-    .footer a{color: rgba(245,247,251,.7); text-decoration:none;}
+    .footer a{color: rgba(245,247,251,.76); text-decoration:none;}
     .footer a:hover{text-decoration:underline;}
 
     @media (max-width: 920px){
@@ -490,9 +666,15 @@
       .steps{grid-template-columns:1fr;}
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
+      .valueGrid{grid-template-columns:1fr;}
+      .proofGrid{grid-template-columns:1fr;}
+      .examples{grid-template-columns:1fr;}
+      .shotRow{grid-template-columns:1fr;}
+      .shot{height: 110px;}
+      .videoBox{height: 220px;}
     }
 
-    /* ===== CLEAN FINAL OVERRIDES (premium mobile polish) ===== */
+    /* ===== Premium mobile polish ===== */
     .hero .wrap,
     .heroGrid { position: relative; z-index: 5; }
 
@@ -533,9 +715,7 @@
         display:none;
       }
 
-      /* Turn nav into a tidy grid:
-         Row 1: Log in + Publishing quote
-         Row 2: Primary CTA full-width */
+      /* Nav into tidy grid */
       .nav{
         width:100%;
         display:grid;
@@ -561,9 +741,9 @@
         background:
           linear-gradient(
             180deg,
-            rgba(0,0,0,.68) 0%,
-            rgba(0,0,0,.58) 55%,
-            rgba(0,0,0,.70) 100%
+            rgba(0,0,0,.70) 0%,
+            rgba(0,0,0,.60) 55%,
+            rgba(0,0,0,.72) 100%
           );
       }
 
@@ -576,6 +756,10 @@
 
       .ticker{width:100%;}
       .tickerTrack{font-size:12px; animation-duration: 34s;}
+
+      /* Clarity chips wrap nicely */
+      .quickClarity{ gap:8px; }
+      .qc{ font-size:12.5px; padding:7px 10px; }
 
       /* CTA stack */
       .ctaRow{
@@ -599,6 +783,9 @@
       .section{padding:34px 0;}
       .final{padding:36px 0 46px;}
       .reviews{padding:38px 0;}
+
+      .valueBand{ padding:18px 16px; }
+      .proofGrid{ gap:12px; }
     }
   </style>
 </head>
@@ -678,6 +865,15 @@
             scattered thoughts into a real manuscript in your own voice.
           </p>
 
+          <!-- NEW: instant clarity (what it helps with) -->
+          <div class="quickClarity" aria-label="What Authored helps with">
+            <div class="qc"><span class="qcDot"></span>Clarify the idea</div>
+            <div class="qc"><span class="qcDot"></span>Organize your thoughts</div>
+            <div class="qc"><span class="qcDot"></span>Gentle writing prompts</div>
+            <div class="qc"><span class="qcDot"></span>Refine drafts</div>
+            <div class="qc"><span class="qcDot"></span>Stay consistent</div>
+          </div>
+
           <div class="ctaRow">
             <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
             <a class="btn btnGhost" href="guest.html">Try it free</a>
@@ -689,6 +885,11 @@
             <a class="btn btnSubtle" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
               Need publishing help? Get a quote
             </a>
+          </div>
+
+          <!-- NEW: pricing clarity (tiny hint, no wall of pricing) -->
+          <div class="priceHint">
+            Outline is <b>free</b>. Expanding chapters is limited on free, then upgrades start at <b>$49</b>.
           </div>
 
           <p class="micro">
@@ -720,6 +921,106 @@
     </div>
   </header>
 
+  <!-- NEW: fast clarity section (scan-first), without overwhelming -->
+  <section class="section" id="what">
+    <div class="wrap">
+      <div class="valueBand">
+        <div class="valueGlow" aria-hidden="true"></div>
+        <h2 class="title">What Authored helps you do</h2>
+        <p class="sub">
+          Think of it as a calm writing coach. You stay in control. Authored gives structure, prompts, and momentum.
+        </p>
+
+        <div class="valueGrid">
+          <div class="valueCard">
+            <h3>Clarify your message</h3>
+            <p>Turn scattered notes into one clear purpose so you know what the book is actually about.</p>
+          </div>
+          <div class="valueCard">
+            <h3>Build a real outline</h3>
+            <p>Get a chapter map you can finish, not a generic AI dump you can’t use.</p>
+          </div>
+          <div class="valueCard">
+            <h3>Write in your voice</h3>
+            <p>Paste a sample. Authored mirrors your tone and phrasing so it still sounds like you.</p>
+          </div>
+          <div class="valueCard">
+            <h3>Work through chapters</h3>
+            <p>Expand one chapter at a time with gentle prompts and a clear draft shape.</p>
+          </div>
+          <div class="valueCard">
+            <h3>Refine drafts</h3>
+            <p>Improve clarity and flow without losing your personality or turning it into “AI writing.”</p>
+          </div>
+          <div class="valueCard">
+            <h3>Stay consistent</h3>
+            <p>Stop restarting. Keep progressing with a repeatable process you can trust.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEW: show more of the actual tool (placeholders you can wire later) -->
+  <section class="section" id="proof">
+    <div class="wrap">
+      <h2 class="title">See it in action</h2>
+      <p class="sub">A few screenshots and a short walkthrough video will make this click instantly.</p>
+
+      <div class="proofGrid">
+        <div class="media">
+          <h3>Screenshots (3 quick shots)</h3>
+          <div class="shotRow">
+            <div class="shot" aria-hidden="true"></div>
+            <div class="shot" aria-hidden="true"></div>
+            <div class="shot" aria-hidden="true"></div>
+          </div>
+          <p class="sub" style="margin:12px 0 0; max-width:none;">
+            Add: Start page, outline result, expand chapter view.
+          </p>
+        </div>
+
+        <div class="media">
+          <h3>Walkthrough video</h3>
+          <div class="videoBox" aria-hidden="true"></div>
+          <p class="sub" style="margin:12px 0 0; max-width:none;">
+            Keep it simple: “Idea → purpose → outline → expand a chapter”.
+          </p>
+        </div>
+      </div>
+
+      <!-- NEW: trust-building “example outcomes” (no screenshots needed yet) -->
+      <div class="examples" aria-label="Examples of outcomes">
+        <div class="ex">
+          <div class="exTop">
+            <span class="tag">Before → After</span>
+            <span class="tag">Structure</span>
+          </div>
+          <b>From idea to chapter map</b>
+          <p>“I have a book idea about betrayal…” → a clear purpose + 12-chapter outline you can actually write.</p>
+        </div>
+
+        <div class="ex">
+          <div class="exTop">
+            <span class="tag">Voice</span>
+            <span class="tag">Clarity</span>
+          </div>
+          <b>Sound like you</b>
+          <p>Paste a sample sermon / essay → drafts keep your phrases, tone, and rhythm instead of generic AI.</p>
+        </div>
+
+        <div class="ex">
+          <div class="exTop">
+            <span class="tag">Momentum</span>
+            <span class="tag">Finish</span>
+          </div>
+          <b>Stop restarting</b>
+          <p>Pick one chapter → expand → refine → move on. Progress becomes repeatable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="how">
     <div class="wrap">
       <h2 class="title">How it works</h2>
@@ -729,21 +1030,21 @@
         <div class="step">
           <div class="num">1</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Try it free</h3>
-          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
             Start in guest mode and generate a title, purpose, and outline in minutes.
           </p>
         </div>
         <div class="step">
           <div class="num">2</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Keep going</h3>
-          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
             Create a free account to save your project and expand chapters.
           </p>
         </div>
         <div class="step">
           <div class="num">3</div>
           <h3 style="margin:0 0 8px; font-size:16px;">Upgrade when ready</h3>
-          <p style="margin:0; color:rgba(245,247,251,.76); font-size:14px;">
+          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
             Unlock deeper chapter drafts, intros, exports, and more.
           </p>
         </div>
