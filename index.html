@@ -28,9 +28,18 @@
       color:var(--text);
       background: var(--bg);
       line-height:1.45;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
     a{color:inherit}
     .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
+
+    /* Better focus (accessibility, no visual clutter) */
+    a:focus-visible{
+      outline: 3px solid rgba(255,138,42,.55);
+      outline-offset: 3px;
+      border-radius: 999px;
+    }
 
     /* Top bar */
     .top{
@@ -75,6 +84,8 @@
       font-weight:800;
       transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease, filter .12s ease;
       white-space:nowrap;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn:hover{
       transform: translateY(-1px);
@@ -142,7 +153,6 @@
       will-change: opacity, transform;
 
       transform: scale(1.06);
-      /* Improve recognizability */
       filter: brightness(1.22) contrast(1.12) saturate(1.08);
     }
 
@@ -176,7 +186,7 @@
       100% { opacity:0; transform: scale(1.06); }
     }
 
-    /* Premium overlay: dark for text on left, clear for photos on right */
+    /* Premium overlay */
     .heroOverlay{
       position:absolute;
       inset:0;
@@ -232,6 +242,10 @@
       z-index:2;
     }
 
+    /* Make absolutely sure hero content paints above overlays (fixes “blank button text” cases) */
+    .heroGrid > div{ position:relative; z-index: 6; }
+    .ctaRow, .ctaRow .btn, .badge, .ticker{ position:relative; z-index: 7; }
+
     .badge{
       display:inline-flex; align-items:center; gap:10px;
       padding:8px 12px;
@@ -245,7 +259,7 @@
     }
     .badge strong{color:var(--text)}
 
-    /* Premium ticker (Option A) */
+    /* Premium ticker */
     .ticker{
       margin:0 0 12px;
       border:1px solid rgba(255,255,255,.14);
@@ -300,6 +314,21 @@
       text-shadow: 0 12px 40px rgba(0,0,0,.60);
     }
 
+    /* Publishing button (secondary CTA) */
+    .pubRow{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .btnSubtle{
+      padding:10px 12px;
+      font-weight:800;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: rgba(245,247,251,.88);
+    }
+    .btnSubtle:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.20);
+    }
+
     /* Right-side panel */
     .panel{
       border:1px solid rgba(255,255,255,.12);
@@ -308,16 +337,20 @@
       box-shadow: var(--shadow);
       overflow:hidden;
       backdrop-filter: blur(12px);
+      position:relative;
+      z-index:10;
     }
     .panelTop{
       display:flex; align-items:center; justify-content:space-between;
       padding:12px 14px;
       background: rgba(0,0,0,.34);
       border-bottom:1px solid rgba(255,255,255,.10);
+      position:relative;
+      z-index:11;
     }
     .dots{display:flex; gap:7px; align-items:center;}
     .dots span{width:10px; height:10px; border-radius:999px; background: rgba(255,255,255,.18);}
-    .panelBody{padding:18px;}
+    .panelBody{padding:18px; position:relative; z-index:11;}
     .previewTitle{font-weight:900; margin:0 0 10px; letter-spacing:-.02em;}
     .line{height:10px; border-radius:999px; background: rgba(255,255,255,.12); margin:10px 0;}
     .w1{width:92%} .w2{width:78%} .w3{width:85%}
@@ -459,16 +492,10 @@
       .reviewGrid{grid-template-columns:1fr;}
     }
 
-    /* ===== CLEAN FINAL OVERRIDES (fix desktop title + premium mobile) ===== */
-
-    /* Desktop: make sure the panel always paints above hero layers */
+    /* ===== CLEAN FINAL OVERRIDES (premium mobile polish) ===== */
     .hero .wrap,
     .heroGrid { position: relative; z-index: 5; }
 
-    .panel { position: relative; z-index: 10; }
-    .panelTop, .panelBody { position: relative; z-index: 11; }
-
-    /* This is the only previewTitle override you need */
     .panelBody .previewTitle{
       display:block;
       opacity:1;
@@ -480,8 +507,6 @@
       letter-spacing: -.02em;
       position: relative;
       z-index: 12;
-
-      /* tiny backing so it cannot visually disappear */
       background: rgba(0,0,0,.18);
       padding: 6px 10px;
       border-radius: 12px;
@@ -489,58 +514,84 @@
       max-width: 100%;
     }
 
-    /* Mobile: premium layout */
     @media (max-width: 640px){
       .wrap{padding:0 16px;}
 
-      /* header becomes clean */
+      /* Header becomes clean + compact */
       .topInner{
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
         padding: 12px 0;
       }
+      .logo-wrap{ justify-content:flex-start; }
+      .logo-wrap img{ height:40px; }
 
-      /* hide anchor buttons on phone */
+      /* Hide anchor buttons on phone */
       .nav a[href="#how"],
       .nav a[href="#for"]{
         display:none;
       }
 
+      /* Turn nav into a tidy grid:
+         Row 1: Log in + Publishing quote
+         Row 2: Primary CTA full-width */
       .nav{
         width:100%;
+        display:grid;
+        grid-template-columns: 1fr 1fr;
         gap:8px;
       }
       .nav .btn{
-        flex: 1 1 auto;
+        width:100%;
         padding: 10px 12px;
         font-size:13px;
       }
+      .nav .btnPrimary{
+        grid-column: 1 / -1;
+        padding: 12px 12px;
+        font-size: 13.5px;
+      }
 
-      /* hero */
-      .hero{padding: 40px 0 28px;}
+      /* Hero spacing */
+      .hero{padding: 36px 0 24px;}
 
-      /* better overlay for phone readability */
+      /* Better overlay for phone readability */
       .heroOverlay{
         background:
           linear-gradient(
             180deg,
-            rgba(0,0,0,.64) 0%,
-            rgba(0,0,0,.56) 55%,
-            rgba(0,0,0,.66) 100%
+            rgba(0,0,0,.68) 0%,
+            rgba(0,0,0,.58) 55%,
+            rgba(0,0,0,.70) 100%
           );
       }
 
-      h1{line-height:1.06;}
+      h1{
+        font-size: 36px;
+        line-height:1.06;
+        margin-top:14px;
+      }
+      .lead{ font-size: 15px; }
+
+      .ticker{width:100%;}
+      .tickerTrack{font-size:12px; animation-duration: 34s;}
+
+      /* CTA stack */
       .ctaRow{
         flex-direction: column;
         align-items: stretch;
         gap:10px;
       }
-      .ctaRow .btn{width:100%;}
+      .ctaRow .btn{
+        width:100%;
+        padding: 12px 14px;
+        font-size: 14px;
+      }
 
-      .ticker{width:100%;}
-      .tickerTrack{font-size:12px; animation-duration: 34s;}
+      /* Publishing row stays compact */
+      .pubRow{ flex-direction: column; align-items: stretch; }
+      .pubRow .btnSubtle{ width:100%; text-align:center; }
 
       .panel{margin-top:14px;}
       .panelBody{padding:16px;}
@@ -563,6 +614,12 @@
         <div class="nav">
           <a class="btn" href="#how">How it works</a>
           <a class="btn" href="#for">Who it’s for</a>
+
+          <!-- Publishing business button (no name, just the button) -->
+          <a class="btn btnGhost" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
+            Get a publishing quote
+          </a>
+
           <a class="btn" href="login.html">Log in</a>
           <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
         </div>
@@ -571,7 +628,6 @@
   </div>
 
   <header class="hero">
-    <!-- Full-width slider background -->
     <div class="heroBg" aria-hidden="true">
       <div class="slide s1"></div>
       <div class="slide s2"></div>
@@ -583,8 +639,6 @@
     <div class="wrap">
       <div class="heroGrid">
         <div>
-
-          <!-- ticker ABOVE badge -->
           <div class="ticker" aria-hidden="true">
             <div class="tickerTrack">
               <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
@@ -599,7 +653,6 @@
               <span class="tickerStrong">Chapters</span><span class="tickerDot">•</span>
               <span class="tickerStrong">Momentum</span><span class="tickerDot">•</span>
 
-              <!-- duplicate for seamless loop -->
               <span class="tickerStrong">Memoir</span><span class="tickerDot">•</span>
               <span class="tickerStrong">Devotional</span><span class="tickerDot">•</span>
               <span class="tickerStrong">Non-fiction</span><span class="tickerDot">•</span>
@@ -629,6 +682,13 @@
             <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
             <a class="btn btnGhost" href="guest.html">Try it free</a>
             <a class="btn" href="login.html">Log in</a>
+          </div>
+
+          <!-- Publishing button in hero (simple + optional, no business name) -->
+          <div class="pubRow">
+            <a class="btn btnSubtle" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
+              Need publishing help? Get a quote
+            </a>
           </div>
 
           <p class="micro">
@@ -762,6 +822,7 @@
           <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
           <a class="btn btnGhost" href="guest.html">Try it free</a>
           <a class="btn" href="login.html">Log in</a>
+          <a class="btn btnGhost" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">Get a publishing quote</a>
         </div>
 
         <p class="micro" style="margin-top:12px;">
@@ -777,6 +838,7 @@
         <div>© <span id="y"></span> Authored</div>
         <div style="display:flex; gap:14px; flex-wrap:wrap;">
           <a href="mailto:support@myauthored.com">Support</a>
+          <a href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">Publishing quote</a>
         </div>
       </div>
     </div>
