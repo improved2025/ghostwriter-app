@@ -33,6 +33,7 @@
     }
     a{color:inherit}
     img{max-width:100%; display:block;}
+    video{max-width:100%; display:block;}
     .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
 
     /* Better focus (accessibility, no visual clutter) */
@@ -465,7 +466,14 @@
       line-height:1.55;
     }
 
-    /* Proof: screenshots only (video removed) */
+    /* Proof: polished video + screenshots */
+    .proofGrid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:14px;
+      align-items:start;
+    }
+
     .media{
       border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
@@ -474,6 +482,75 @@
       overflow:hidden;
     }
     .media h3{ margin:0 0 10px; font-size:16px; letter-spacing:-.01em; }
+
+    .videoWrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+      overflow:hidden;
+      position:relative;
+      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    .videoWrap::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(520px 260px at 15% 20%, rgba(255,138,42,.14), transparent 60%),
+        radial-gradient(520px 260px at 90% 10%, rgba(34,197,94,.10), transparent 62%);
+      opacity:.75;
+      mix-blend-mode: screen;
+    }
+    .walkVideo{
+      width:100%;
+      aspect-ratio: 16 / 9;
+      background: #0b0d12;
+      object-fit: cover;
+      position:relative;
+      z-index:1;
+    }
+
+    .videoMeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      position:relative;
+      z-index:2;
+    }
+    .videoMeta .left{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width: 0;
+    }
+    .videoKicker{
+      font-size:12px;
+      color: rgba(245,247,251,.72);
+      letter-spacing:.01em;
+    }
+    .videoTitle{
+      font-weight:900;
+      letter-spacing:-.01em;
+      font-size:13px;
+      color: rgba(245,247,251,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .videoChip{
+      flex:0 0 auto;
+      font-size:12px;
+      color: rgba(245,247,251,.78);
+      border:1px solid rgba(255,255,255,.14);
+      padding:4px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
 
     .shotRow{
       display:grid;
@@ -653,6 +730,7 @@
       .reviewGrid{grid-template-columns:1fr;}
       .valueGrid{grid-template-columns:1fr;}
       .examples{grid-template-columns:1fr;}
+      .proofGrid{grid-template-columns:1fr;}
       .shotRow{grid-template-columns:1fr;}
       .shotImg{height: 190px;}
     }
@@ -768,6 +846,10 @@
       .reviews{padding:38px 0;}
 
       .valueBand{ padding:18px 16px; }
+
+      /* Video looks premium on mobile */
+      .videoMeta{ padding:10px 10px; }
+      .videoChip{ display:none; }
 
       /* Screenshots look clean on mobile */
       .shotImg{height: 200px;}
@@ -942,35 +1024,66 @@
     </div>
   </section>
 
-  <!-- Proof section (screenshots only — video removed) -->
+  <!-- Proof section (video + screenshots) -->
   <section class="section" id="proof">
     <div class="wrap">
       <h2 class="title">See it in action</h2>
-      <p class="sub">A quick look at the real flow: start → outline → expand.</p>
+      <p class="sub">Watch the real flow in under a minute, then scan the screenshots.</p>
 
-      <div class="media">
-        <h3>Screenshots (3 quick shots)</h3>
+      <div class="proofGrid">
+        <div class="media">
+          <h3>60-second walkthrough</h3>
 
-        <div class="shotRow">
-          <div class="shotCard">
-            <img class="shotImg" src="assets/shot-start.png" alt="Authored start screen" loading="lazy" />
-            <div class="shotCap"><b>Start</b> — enter your idea + voice</div>
+          <div class="videoWrap">
+            <video
+              class="walkVideo"
+              controls
+              playsinline
+              preload="metadata"
+              poster="assets/shot-start.png"
+            >
+              <source src="assets/authored-walkthrough.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+
+            <div class="videoMeta">
+              <div class="left">
+                <div class="videoKicker">Start → Outline → Expand</div>
+                <div class="videoTitle">See how Authored turns an idea into a chapter draft</div>
+              </div>
+              <div class="videoChip">~55s</div>
+            </div>
           </div>
 
-          <div class="shotCard">
-            <img class="shotImg" src="assets/shot-outline.png" alt="Authored outline screen" loading="lazy" />
-            <div class="shotCap"><b>Outline</b> — get a chapter map</div>
-          </div>
-
-          <div class="shotCard">
-            <img class="shotImg" src="assets/shot-expand.png" alt="Authored expand chapter screen" loading="lazy" />
-            <div class="shotCap"><b>Expand</b> — draft one chapter</div>
-          </div>
+          <p class="sub" style="margin:12px 0 0; max-width:none;">
+            Tip: watch with sound. The narration explains what’s happening as you move through each step.
+          </p>
         </div>
 
-        <p class="sub" style="margin:12px 0 0; max-width:none;">
-          This is the core loop: clarity → structure → progress.
-        </p>
+        <div class="media">
+          <h3>Screenshots (3 quick shots)</h3>
+
+          <div class="shotRow">
+            <div class="shotCard">
+              <img class="shotImg" src="assets/shot-start.png" alt="Authored start screen" loading="lazy" />
+              <div class="shotCap"><b>Start</b> — enter your idea + voice</div>
+            </div>
+
+            <div class="shotCard">
+              <img class="shotImg" src="assets/shot-outline.png" alt="Authored outline screen" loading="lazy" />
+              <div class="shotCap"><b>Outline</b> — get a chapter map</div>
+            </div>
+
+            <div class="shotCard">
+              <img class="shotImg" src="assets/shot-expand.png" alt="Authored expand chapter screen" loading="lazy" />
+              <div class="shotCap"><b>Expand</b> — draft one chapter</div>
+            </div>
+          </div>
+
+          <p class="sub" style="margin:12px 0 0; max-width:none;">
+            This is the core loop: clarity → structure → progress.
+          </p>
+        </div>
       </div>
 
       <div class="examples" aria-label="Examples of outcomes">
