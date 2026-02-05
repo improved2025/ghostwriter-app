@@ -32,6 +32,7 @@
       text-rendering: optimizeLegibility;
     }
     a{color:inherit}
+    img{max-width:100%; display:block;}
     .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
 
     /* Better focus (accessibility, no visual clutter) */
@@ -307,7 +308,7 @@
       text-shadow: 0 14px 50px rgba(0,0,0,.60);
     }
 
-    /* New: clarity bullets (scan-first) */
+    /* Clarity bullets */
     .quickClarity{
       margin: 14px 0 18px;
       display:flex;
@@ -357,7 +358,7 @@
       border-color: rgba(255,255,255,.20);
     }
 
-    /* New: pricing hint (tiny, friction-reducing) */
+    /* Pricing hint */
     .priceHint{
       margin-top: 10px;
       font-size: 13px;
@@ -417,7 +418,7 @@
     }
     .sub{margin:0 0 18px; color:rgba(245,247,251,.78); max-width:78ch;}
 
-    /* New: "What it helps with" section */
+    /* "What it helps with" section */
     .valueBand{
       border:1px solid rgba(255,255,255,.10);
       border-radius: 22px;
@@ -464,13 +465,7 @@
       line-height:1.55;
     }
 
-    /* New: proof band (screenshots/video placeholders) */
-    .proofGrid{
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:14px;
-      margin-top:14px;
-    }
+    /* Proof: screenshots only (video removed) */
     .media{
       border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
@@ -479,49 +474,39 @@
       overflow:hidden;
     }
     .media h3{ margin:0 0 10px; font-size:16px; letter-spacing:-.01em; }
-    .shotRow{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; }
-    .shot{
+
+    .shotRow{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .shotCard{
       border:1px solid rgba(255,255,255,.10);
       border-radius: 14px;
       background: rgba(255,255,255,.03);
-      height: 120px;
-      position:relative;
       overflow:hidden;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
     }
-    .shot::after{
-      content:"Add screenshot";
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color: rgba(245,247,251,.60);
+    .shotCard:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.05);
+    }
+    .shotImg{
+      width:100%;
+      height: 170px;
+      object-fit: cover;
+      object-position: top;
+    }
+    .shotCap{
+      padding:10px 10px 12px;
       font-size: 13px;
-      letter-spacing: .01em;
+      color: rgba(245,247,251,.80);
+      border-top:1px solid rgba(255,255,255,.08);
     }
-    .videoBox{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      background: rgba(255,255,255,.03);
-      height: 268px;
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color: rgba(245,247,251,.62);
-      font-size: 13px;
-    }
-    .videoBox:before{
-      content:"Add a 45–75s walkthrough video";
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 14px;
-      text-align:center;
-    }
+    .shotCap b{ color: rgba(245,247,251,.92); }
 
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
     .step{
@@ -607,7 +592,7 @@
       font-size:13px;
     }
 
-    /* New: example proof cards (before/after) */
+    /* Example proof cards */
     .examples{
       margin-top:14px;
       display:grid;
@@ -667,11 +652,9 @@
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
       .valueGrid{grid-template-columns:1fr;}
-      .proofGrid{grid-template-columns:1fr;}
       .examples{grid-template-columns:1fr;}
       .shotRow{grid-template-columns:1fr;}
-      .shot{height: 110px;}
-      .videoBox{height: 220px;}
+      .shotImg{height: 190px;}
     }
 
     /* ===== Premium mobile polish ===== */
@@ -785,7 +768,9 @@
       .reviews{padding:38px 0;}
 
       .valueBand{ padding:18px 16px; }
-      .proofGrid{ gap:12px; }
+
+      /* Screenshots look clean on mobile */
+      .shotImg{height: 200px;}
     }
   </style>
 </head>
@@ -865,7 +850,6 @@
             scattered thoughts into a real manuscript in your own voice.
           </p>
 
-          <!-- NEW: instant clarity (what it helps with) -->
           <div class="quickClarity" aria-label="What Authored helps with">
             <div class="qc"><span class="qcDot"></span>Clarify the idea</div>
             <div class="qc"><span class="qcDot"></span>Organize your thoughts</div>
@@ -880,14 +864,12 @@
             <a class="btn" href="login.html">Log in</a>
           </div>
 
-          <!-- Publishing button in hero (simple + optional, no business name) -->
           <div class="pubRow">
             <a class="btn btnSubtle" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
               Need publishing help? Get a quote
             </a>
           </div>
 
-          <!-- NEW: pricing clarity (tiny hint, no wall of pricing) -->
           <div class="priceHint">
             Outline is <b>free</b>. Expanding chapters is limited on free, then upgrades start at <b>$49</b>.
           </div>
@@ -921,7 +903,6 @@
     </div>
   </header>
 
-  <!-- NEW: fast clarity section (scan-first), without overwhelming -->
   <section class="section" id="what">
     <div class="wrap">
       <div class="valueBand">
@@ -961,35 +942,37 @@
     </div>
   </section>
 
-  <!-- NEW: show more of the actual tool (placeholders you can wire later) -->
+  <!-- Proof section (screenshots only — video removed) -->
   <section class="section" id="proof">
     <div class="wrap">
       <h2 class="title">See it in action</h2>
-      <p class="sub">A few screenshots and a short walkthrough video will make this click instantly.</p>
+      <p class="sub">A quick look at the real flow: start → outline → expand.</p>
 
-      <div class="proofGrid">
-        <div class="media">
-          <h3>Screenshots (3 quick shots)</h3>
-          <div class="shotRow">
-            <div class="shot" aria-hidden="true"></div>
-            <div class="shot" aria-hidden="true"></div>
-            <div class="shot" aria-hidden="true"></div>
+      <div class="media">
+        <h3>Screenshots (3 quick shots)</h3>
+
+        <div class="shotRow">
+          <div class="shotCard">
+            <img class="shotImg" src="assets/shot-start.png" alt="Authored start screen" loading="lazy" />
+            <div class="shotCap"><b>Start</b> — enter your idea + voice</div>
           </div>
-          <p class="sub" style="margin:12px 0 0; max-width:none;">
-            Add: Start page, outline result, expand chapter view.
-          </p>
+
+          <div class="shotCard">
+            <img class="shotImg" src="assets/shot-outline.png" alt="Authored outline screen" loading="lazy" />
+            <div class="shotCap"><b>Outline</b> — get a chapter map</div>
+          </div>
+
+          <div class="shotCard">
+            <img class="shotImg" src="assets/shot-expand.png" alt="Authored expand chapter screen" loading="lazy" />
+            <div class="shotCap"><b>Expand</b> — draft one chapter</div>
+          </div>
         </div>
 
-        <div class="media">
-          <h3>Walkthrough video</h3>
-          <div class="videoBox" aria-hidden="true"></div>
-          <p class="sub" style="margin:12px 0 0; max-width:none;">
-            Keep it simple: “Idea → purpose → outline → expand a chapter”.
-          </p>
-        </div>
+        <p class="sub" style="margin:12px 0 0; max-width:none;">
+          This is the core loop: clarity → structure → progress.
+        </p>
       </div>
 
-      <!-- NEW: trust-building “example outcomes” (no screenshots needed yet) -->
       <div class="examples" aria-label="Examples of outcomes">
         <div class="ex">
           <div class="exTop">
