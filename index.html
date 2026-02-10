@@ -405,7 +405,9 @@
         radial-gradient(520px 260px at 90% 10%, rgba(34,197,94,.10), transparent 62%);
       opacity:.75;
       mix-blend-mode: screen;
+      z-index: 2;
     }
+
     .walkVideo{
       width:100%;
       aspect-ratio: 16 / 9;
@@ -413,6 +415,57 @@
       object-fit: cover;
       position:relative;
       z-index:1;
+    }
+
+    /* Centered play overlay (keeps native controls, but gives you a premium centered play affordance) */
+    .playOverlay{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      z-index:3;
+      pointer-events:auto;
+      background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.20));
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .playOverlayBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.38);
+      color: rgba(245,247,251,.92);
+      font-weight:900;
+      letter-spacing:-.01em;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      transform: translateY(0);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .playOverlayBtn:hover{
+      transform: translateY(-1px);
+      background: rgba(0,0,0,.46);
+      border-color: rgba(255,255,255,.24);
+    }
+    .playIcon{
+      width:34px; height:34px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(135deg, #ff8a2a, #ffc266);
+      color:#0b0d12;
+      box-shadow: 0 18px 48px rgba(255,138,42,.25);
+      flex:0 0 auto;
+    }
+    .playIcon svg{ width:16px; height:16px; margin-left:2px; }
+    .videoWrap.isPlaying .playOverlay{
+      opacity:0;
+      pointer-events:none;
+      transform: scale(1.01);
     }
 
     .videoMeta{
@@ -423,7 +476,7 @@
       padding:10px 12px;
       border-top:1px solid rgba(255,255,255,.08);
       position:relative;
-      z-index:2;
+      z-index:4;
     }
     .videoMeta .left{
       display:flex;
@@ -456,33 +509,7 @@
       white-space:nowrap;
     }
 
-    .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
-    .step{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: var(--r);
-      background: rgba(255,255,255,.02);
-      padding:16px;
-    }
-    .num{
-      width:34px; height:34px; border-radius:999px;
-      display:inline-flex; align-items:center; justify-content:center;
-      font-weight:900;
-      background: rgba(255,138,42,.16);
-      border:1px solid rgba(255,138,42,.34);
-      margin-bottom:10px;
-    }
-
     .forGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px;}
-    .forCard{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: var(--r);
-      background: rgba(255,255,255,.02);
-      padding:16px;
-    }
-    .forCard h3{margin:0 0 10px; font-size:16px; letter-spacing:-.01em;}
-    .forCard ul{margin:0; padding-left:18px; color:rgba(245,247,251,.76);}
-    .forCard li{margin:8px 0;}
-
     .reviews{ padding:46px 0; }
     .reviewsBand{
       border:1px solid rgba(255,255,255,.10);
@@ -542,8 +569,6 @@
 
     @media (max-width: 920px){
       .heroGrid{grid-template-columns:1fr;}
-      .steps{grid-template-columns:1fr;}
-      .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
       .valueGrid{grid-template-columns:1fr;}
     }
@@ -566,57 +591,154 @@
       max-width: 100%;
     }
 
+    /* ===== MOBILE FIXES (this is what makes your screenshot look clean) ===== */
     @media (max-width: 640px){
       .wrap{padding:0 16px;}
 
+      /* Header: centered + tighter, no awkward spacing */
       .topInner{
         flex-direction: column;
-        align-items: stretch;
+        align-items: center;
+        justify-content:center;
         gap: 10px;
-        padding: 12px 0;
+        padding: 12px 0 12px;
       }
-      .logo-wrap img{ height:40px; }
+      .logo-wrap{ justify-content:center; }
+      .logo-wrap img{ height:38px; }
 
+      /* Nav: consistent spacing, premium sizing */
       .nav{
         width:100%;
         display:grid;
         grid-template-columns: 1fr 1fr;
-        gap:8px;
+        gap:10px;
       }
-      .nav .btn{ width:100%; padding: 10px 12px; font-size:13px; }
-      .nav .btnPrimary{ grid-column: 1 / -1; padding: 12px 12px; font-size: 13.5px; }
+      .nav .btn{
+        width:100%;
+        padding: 10px 12px;
+        font-size:13px;
+      }
+      .nav .btnGhost{
+        font-weight:800;
+      }
+      .nav .btnPrimary{
+        grid-column: 1 / -1;
+        padding: 12px 14px;
+        font-size: 14px;
+      }
 
-      .hero{padding: 36px 0 24px;}
+      /* Hero: remove “cramped” feeling */
+      .hero{
+        padding: 26px 0 18px;
+        border-bottom: 1px solid rgba(255,255,255,.06);
+      }
+
+      /* Overlay tuned so orange/bright band doesn’t look like a random block */
       .heroOverlay{
-        background: linear-gradient(180deg, rgba(0,0,0,.70) 0%, rgba(0,0,0,.60) 55%, rgba(0,0,0,.72) 100%);
+        background:
+          linear-gradient(180deg,
+            rgba(0,0,0,.72) 0%,
+            rgba(0,0,0,.62) 55%,
+            rgba(0,0,0,.78) 100%
+          );
       }
 
-      h1{ font-size: 36px; line-height:1.06; margin-top:14px; }
-      .lead{ font-size: 15px; }
+      /* Ticker is cool, but on mobile it steals space.
+         Keep it, but make it shorter and less dominant. */
+      .ticker{
+        width:100%;
+        margin:0 0 10px;
+        border-radius: 16px;
+      }
+      .tickerTrack{
+        font-size:11.5px;
+        padding:8px 10px;
+        animation-duration: 36s;
+      }
 
-      .ticker{width:100%;}
-      .tickerTrack{font-size:12px; animation-duration: 34s;}
+      /* Badge + headline spacing */
+      .badge{
+        width:100%;
+        justify-content:center;
+        text-align:center;
+      }
 
-      .quickClarity{ gap:8px; }
-      .qc{ font-size:12.5px; padding:7px 10px; }
+      h1{
+        font-size: 34px;
+        line-height:1.06;
+        margin: 14px 0 10px;
+      }
+      .lead{
+        font-size: 15px;
+        margin: 0 0 14px;
+      }
 
+      /* Chips become a neat 2-column grid instead of wrapping messy */
+      .quickClarity{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap:10px;
+        max-width:none;
+        margin: 12px 0 16px;
+      }
+      .qc{
+        width:100%;
+        justify-content:flex-start;
+        font-size:12.5px;
+        padding:8px 10px;
+      }
+
+      /* CTA: keep it simple and clean */
       .ctaRow{
         flex-direction: column;
         align-items: stretch;
         gap:10px;
+        margin-top: 4px;
       }
-      .ctaRow .btn{ width:100%; padding: 12px 14px; font-size: 14px; }
+      .ctaRow .btn{
+        width:100%;
+        padding: 12px 14px;
+        font-size: 14px;
+      }
 
+      .priceHint{
+        margin-top: 12px;
+        font-size: 12.5px;
+      }
+      .micro{
+        margin-top: 10px;
+        font-size: 12.5px;
+      }
+
+      /* Right panel spacing */
       .panel{margin-top:14px;}
       .panelBody{padding:16px;}
 
-      .section{padding:34px 0;}
-      .final{padding:36px 0 46px;}
-      .reviews{padding:38px 0;}
-
+      /* Video section polish */
+      .section{padding:30px 0;}
+      .reviews{padding:34px 0;}
+      .final{padding:34px 0 42px;}
       .valueBand{ padding:18px 16px; }
-
       .videoChip{ display:none; }
+
+      /* Video meta centered so it looks intentional */
+      .videoMeta{
+        flex-direction: column;
+        align-items:center;
+        text-align:center;
+        gap:6px;
+        padding: 12px 12px;
+      }
+      .videoTitle{
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height:1.35;
+      }
+      .playOverlayBtn{
+        padding: 11px 13px;
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -784,9 +906,10 @@
       <div class="media">
         <h3>60-second walkthrough</h3>
 
-        <div class="videoWrap">
+        <div class="videoWrap" id="walkWrap">
           <video
             class="walkVideo"
+            id="walkVideo"
             controls
             playsinline
             preload="metadata"
@@ -795,6 +918,18 @@
             <source src="assets/authored-walkthrough.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+
+          <!-- Centered play overlay -->
+          <div class="playOverlay" id="playOverlay" role="button" aria-label="Play the walkthrough">
+            <div class="playOverlayBtn">
+              <span class="playIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
+              </span>
+              Watch the walkthrough
+            </div>
+          </div>
 
           <div class="videoMeta">
             <div class="left">
@@ -878,6 +1013,26 @@
 
   <script>
     document.getElementById("y").textContent = new Date().getFullYear();
+
+    // Center-play overlay behavior (doesn't remove native controls; just gives a premium centered play affordance)
+    (function(){
+      const wrap = document.getElementById("walkWrap");
+      const vid = document.getElementById("walkVideo");
+      const overlay = document.getElementById("playOverlay");
+      if(!wrap || !vid || !overlay) return;
+
+      const setPlaying = (isPlaying) => {
+        wrap.classList.toggle("isPlaying", !!isPlaying);
+      };
+
+      overlay.addEventListener("click", () => {
+        try { vid.play(); } catch(e) {}
+      });
+
+      vid.addEventListener("play", () => setPlaying(true));
+      vid.addEventListener("pause", () => setPlaying(false));
+      vid.addEventListener("ended", () => setPlaying(false));
+    })();
   </script>
 </body>
 </html>
