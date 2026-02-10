@@ -592,7 +592,11 @@
     }
 
     /* ===== MOBILE FIXES (this is what makes your screenshot look clean) ===== */
+    /* Force controlled headline break on mobile */
+.hBreak{ display:none; }
     @media (max-width: 640px){
+        .hBreak{ display:block; }
+
       .wrap{padding:0 16px;}
 
       /* Header: centered + tighter, no awkward spacing */
@@ -807,7 +811,7 @@
             <span>It writes with you.</span>
           </div>
 
-          <h1>Write the book you’ve been avoiding.</h1>
+          <h1>Write the book you’ve been <br class="hBreak" />avoiding.</h1>
           <p class="lead">
             Turn scattered thoughts into a real manuscript in your own voice.
             Start with clarity, build structure, and keep momentum.
