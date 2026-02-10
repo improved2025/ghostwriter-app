@@ -13,10 +13,7 @@
       --text:#f5f7fb;
       --muted:rgba(245,247,251,.78);
       --line:rgba(255,255,255,.10);
-
-      /* Accent (orange) */
       --accent:#ff8a2a;
-
       --shadow: 0 20px 60px rgba(0,0,0,.45);
       --r:18px;
       --max:1120px;
@@ -32,11 +29,9 @@
       text-rendering: optimizeLegibility;
     }
     a{color:inherit}
-    img{max-width:100%; display:block;}
-    video{max-width:100%; display:block;}
+    img, video{max-width:100%; display:block;}
     .wrap{max-width:var(--max); margin:0 auto; padding:0 20px;}
 
-    /* Better focus (accessibility, no visual clutter) */
     a:focus-visible, button:focus-visible{
       outline: 3px solid rgba(255,138,42,.55);
       outline-offset: 3px;
@@ -58,18 +53,13 @@
       padding:14px 0;
     }
 
-    /* Logo */
     .logo-wrap{
       display:flex;
       align-items:center;
       text-decoration:none;
       flex:0 0 auto;
     }
-    .logo-wrap img{
-      height:48px;
-      width:auto;
-      display:block;
-    }
+    .logo-wrap img{ height:48px; width:auto; }
 
     .nav{
       display:flex; align-items:center; justify-content:flex-end;
@@ -84,7 +74,7 @@
       background: rgba(255,255,255,.02);
       text-decoration:none;
       font-weight:800;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease, filter .12s ease;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, filter .12s ease;
       white-space:nowrap;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
@@ -100,12 +90,8 @@
       color: rgba(245,247,251,.86);
       border-color: rgba(255,255,255,.14);
     }
-    .btnGhost:hover{
-      background: rgba(255,255,255,.06);
-      color: rgba(245,247,251,.95);
-    }
+    .btnGhost:hover{ background: rgba(255,255,255,.06); color: rgba(245,247,251,.95); }
 
-    /* Primary CTA */
     .btnPrimary{
       border-color: transparent;
       background: linear-gradient(135deg, #ff8a2a, #ffc266);
@@ -134,7 +120,6 @@
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
 
-    /* Full-width background slider */
     .heroBg{
       position:absolute;
       inset:0;
@@ -142,79 +127,47 @@
       pointer-events:none;
       background:#07080c;
     }
-
     .heroBg .slide{
-      position:absolute;
-      inset:0;
+      position:absolute; inset:0;
       background-position:center;
       background-size:cover;
       background-repeat:no-repeat;
       opacity:0;
-
       animation: heroFadeOther 18s infinite;
       will-change: opacity, transform;
-
       transform: scale(1.06);
       filter: brightness(1.18) contrast(1.10) saturate(1.06);
     }
-
     .heroBg .s1{
       background-image: url("assets/slide-1.webp");
       animation-name: heroFadeFirst;
       opacity:1;
     }
-    .heroBg .s2{
-      background-image: url("assets/slide-2.webp");
-      animation-delay: 6s;
-      animation-fill-mode: none;
-    }
-    .heroBg .s3{
-      background-image: url("assets/slide-3.webp");
-      animation-delay: 12s;
-      animation-fill-mode: none;
-    }
+    .heroBg .s2{ background-image: url("assets/slide-2.webp"); animation-delay: 6s; }
+    .heroBg .s3{ background-image: url("assets/slide-3.webp"); animation-delay: 12s; }
 
     @keyframes heroFadeFirst{
-      0%   { opacity:1; transform: scale(1.06); }
-      30%  { opacity:1; transform: scale(1.03); }
-      40%  { opacity:0; transform: scale(1.02); }
-      100% { opacity:0; transform: scale(1.06); }
+      0%{opacity:1; transform: scale(1.06);}
+      30%{opacity:1; transform: scale(1.03);}
+      40%{opacity:0; transform: scale(1.02);}
+      100%{opacity:0; transform: scale(1.06);}
     }
     @keyframes heroFadeOther{
-      0%   { opacity:0; transform: scale(1.06); }
-      8%   { opacity:1; transform: scale(1.05); }
-      35%  { opacity:1; transform: scale(1.03); }
-      45%  { opacity:0; transform: scale(1.02); }
-      100% { opacity:0; transform: scale(1.06); }
+      0%{opacity:0; transform: scale(1.06);}
+      8%{opacity:1; transform: scale(1.05);}
+      35%{opacity:1; transform: scale(1.03);}
+      45%{opacity:0; transform: scale(1.02);}
+      100%{opacity:0; transform: scale(1.06);}
     }
 
-    /* Premium overlay */
     .heroOverlay{
-      position:absolute;
-      inset:0;
-      z-index:1;
-      pointer-events:none;
+      position:absolute; inset:0; z-index:1; pointer-events:none;
       background:
-        linear-gradient(
-          90deg,
-          rgba(0,0,0,.86) 0%,
-          rgba(0,0,0,.66) 40%,
-          rgba(0,0,0,.28) 76%,
-          rgba(0,0,0,.10) 100%
-        ),
-        linear-gradient(
-          180deg,
-          rgba(0,0,0,.18) 0%,
-          rgba(0,0,0,.28) 55%,
-          rgba(0,0,0,.46) 100%
-        );
+        linear-gradient(90deg, rgba(0,0,0,.86) 0%, rgba(0,0,0,.66) 40%, rgba(0,0,0,.28) 76%, rgba(0,0,0,.10) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.18) 0%, rgba(0,0,0,.28) 55%, rgba(0,0,0,.46) 100%);
     }
-
     .heroGlow{
-      position:absolute;
-      inset:-160px;
-      z-index:1;
-      pointer-events:none;
+      position:absolute; inset:-160px; z-index:1; pointer-events:none;
       background:
         radial-gradient(740px 460px at 18% 30%, rgba(255,138,42,.18), transparent 62%),
         radial-gradient(760px 520px at 85% 22%, rgba(34,197,94,.10), transparent 64%);
@@ -244,7 +197,6 @@
       z-index:2;
     }
 
-    /* Ensure hero content paints above overlays */
     .heroGrid > div{ position:relative; z-index: 6; }
     .ctaRow, .ctaRow .btn, .badge, .ticker{ position:relative; z-index: 7; }
 
@@ -261,7 +213,6 @@
     }
     .badge strong{color:var(--text)}
 
-    /* Premium ticker */
     .ticker{
       margin:0 0 12px;
       border:1px solid rgba(255,255,255,.16);
@@ -273,9 +224,7 @@
       backdrop-filter: blur(10px);
     }
     .tickerTrack{
-      display:flex;
-      gap:16px;
-      white-space:nowrap;
+      display:flex; gap:16px; white-space:nowrap;
       padding:10px 12px;
       animation: tickerScroll 26s linear infinite;
       will-change: transform;
@@ -286,13 +235,7 @@
     .tickerStrong{font-weight:900; color:rgba(245,247,251,.94);}
     .tickerDot{opacity:.55;}
     .ticker:hover .tickerTrack{animation-play-state:paused;}
-    @keyframes tickerScroll{
-      0%{transform:translateX(0)}
-      100%{transform:translateX(-50%)}
-    }
-    @media (prefers-reduced-motion: reduce){
-      .tickerTrack{animation:none}
-    }
+    @keyframes tickerScroll{ 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
 
     h1{
       margin:16px 0 12px;
@@ -309,18 +252,13 @@
       text-shadow: 0 14px 50px rgba(0,0,0,.60);
     }
 
-    /* Clarity bullets */
     .quickClarity{
       margin: 14px 0 18px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
+      display:flex; flex-wrap:wrap; gap:10px;
       max-width: 62ch;
     }
     .qc{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
+      display:inline-flex; align-items:center; gap:8px;
       padding:8px 10px;
       border-radius:999px;
       border:1px solid rgba(255,255,255,.14);
@@ -344,22 +282,6 @@
       text-shadow: 0 12px 40px rgba(0,0,0,.60);
     }
 
-    /* Publishing button */
-    .pubRow{ margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .btnSubtle{
-      padding:10px 12px;
-      font-weight:800;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.18);
-      color: rgba(245,247,251,.90);
-    }
-    .btnSubtle:hover{
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.20);
-    }
-
-    /* Pricing hint */
     .priceHint{
       margin-top: 10px;
       font-size: 13px;
@@ -369,7 +291,6 @@
     }
     .priceHint b{ color: rgba(245,247,251,.92); }
 
-    /* Right-side panel */
     .panel{
       border:1px solid rgba(255,255,255,.12);
       background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.22));
@@ -419,7 +340,6 @@
     }
     .sub{margin:0 0 18px; color:rgba(245,247,251,.78); max-width:78ch;}
 
-    /* "What it helps with" section */
     .valueBand{
       border:1px solid rgba(255,255,255,.10);
       border-radius: 22px;
@@ -454,26 +374,10 @@
       padding:16px;
       min-height: 142px;
     }
-    .valueCard h3{
-      margin:0 0 8px;
-      font-size:16px;
-      letter-spacing:-.01em;
-    }
-    .valueCard p{
-      margin:0;
-      color: rgba(245,247,251,.78);
-      font-size:14px;
-      line-height:1.55;
-    }
+    .valueCard h3{ margin:0 0 8px; font-size:16px; letter-spacing:-.01em; }
+    .valueCard p{ margin:0; color: rgba(245,247,251,.78); font-size:14px; line-height:1.55; }
 
-    /* Proof: polished video + screenshots */
-    .proofGrid{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap:14px;
-      align-items:start;
-    }
-
+    /* Proof: video only */
     .media{
       border:1px solid rgba(255,255,255,.10);
       border-radius: var(--r);
@@ -491,7 +395,6 @@
       position:relative;
       box-shadow: 0 18px 50px rgba(0,0,0,.35);
     }
-    /* glow */
     .videoWrap::before{
       content:"";
       position:absolute;
@@ -502,9 +405,7 @@
         radial-gradient(520px 260px at 90% 10%, rgba(34,197,94,.10), transparent 62%);
       opacity:.75;
       mix-blend-mode: screen;
-      z-index:2;
     }
-
     .walkVideo{
       width:100%;
       aspect-ratio: 16 / 9;
@@ -512,44 +413,6 @@
       object-fit: cover;
       position:relative;
       z-index:1;
-    }
-
-    /* Centered play overlay (does not block clicks) */
-    .videoOverlay{
-      position:absolute;
-      inset:0;
-      display:grid;
-      place-items:center;
-      pointer-events:none;
-      z-index:3;
-      transition: opacity .18s ease, transform .18s ease;
-    }
-    .videoOverlay .playBtn{
-      width:76px;
-      height:76px;
-      border-radius:999px;
-      background: rgba(0,0,0,.46);
-      border: 1px solid rgba(255,255,255,.22);
-      box-shadow: 0 22px 60px rgba(0,0,0,.45);
-      backdrop-filter: blur(10px);
-      position:relative;
-    }
-    .videoOverlay .playBtn::after{
-      content:"";
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform: translate(-40%,-50%);
-      width:0; height:0;
-      border-top:12px solid transparent;
-      border-bottom:12px solid transparent;
-      border-left:18px solid rgba(245,247,251,.92);
-      filter: drop-shadow(0 10px 22px rgba(0,0,0,.35));
-    }
-
-    .videoWrap.isPlaying .videoOverlay{
-      opacity:0;
-      transform: scale(.98);
     }
 
     .videoMeta{
@@ -560,9 +423,7 @@
       padding:10px 12px;
       border-top:1px solid rgba(255,255,255,.08);
       position:relative;
-      z-index:4;
-      background: rgba(0,0,0,.10);
-      backdrop-filter: blur(10px);
+      z-index:2;
     }
     .videoMeta .left{
       display:flex;
@@ -594,39 +455,6 @@
       background: rgba(255,255,255,.03);
       white-space:nowrap;
     }
-
-    .shotRow{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-
-    .shotCard{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      background: rgba(255,255,255,.03);
-      overflow:hidden;
-      transition: transform .16s ease, border-color .16s ease, background .16s ease;
-    }
-    .shotCard:hover{
-      transform: translateY(-2px);
-      border-color: rgba(255,255,255,.18);
-      background: rgba(255,255,255,.05);
-    }
-    .shotImg{
-      width:100%;
-      height: 170px;
-      object-fit: cover;
-      object-position: top;
-    }
-    .shotCap{
-      padding:10px 10px 12px;
-      font-size: 13px;
-      color: rgba(245,247,251,.80);
-      border-top:1px solid rgba(255,255,255,.08);
-    }
-    .shotCap b{ color: rgba(245,247,251,.92); }
 
     .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
     .step{
@@ -671,11 +499,7 @@
       flex-wrap:wrap;
       margin-bottom:14px;
     }
-    .reviewsSub{
-      margin:0;
-      color:rgba(245,247,251,.78);
-      max-width:70ch;
-    }
+    .reviewsSub{margin:0; color:rgba(245,247,251,.78); max-width:70ch;}
     .reviewGrid{
       display:grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -689,60 +513,10 @@
       padding:16px;
       min-height: 170px;
     }
-    .stars{
-      font-weight:900;
-      letter-spacing:1px;
-      color: rgba(245,247,251,.94);
-      margin-bottom:10px;
-      font-size:14px;
-    }
-    .quote{
-      margin:0 0 14px;
-      color: rgba(245,247,251,.88);
-      line-height:1.55;
-    }
-    .who{
-      margin:0;
-      font-weight:900;
-      letter-spacing:-.01em;
-    }
-    .role{
-      margin:3px 0 0;
-      color: rgba(245,247,251,.70);
-      font-size:13px;
-    }
-
-    /* Example proof cards */
-    .examples{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:14px;
-    }
-    .ex{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: var(--r);
-      background: rgba(0,0,0,.18);
-      padding:16px;
-    }
-    .exTop{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      margin-bottom:10px;
-    }
-    .tag{
-      font-size:12px;
-      color: rgba(245,247,251,.78);
-      border:1px solid rgba(255,255,255,.14);
-      padding:4px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.03);
-      white-space:nowrap;
-    }
-    .ex b{ display:block; margin-bottom:8px; letter-spacing:-.01em; }
-    .ex p{ margin:0; color: rgba(245,247,251,.78); font-size:14px; line-height:1.55; }
+    .stars{font-weight:900; letter-spacing:1px; color: rgba(245,247,251,.94); margin-bottom:10px; font-size:14px;}
+    .quote{margin:0 0 14px; color: rgba(245,247,251,.88); line-height:1.55;}
+    .who{margin:0; font-weight:900; letter-spacing:-.01em;}
+    .role{margin:3px 0 0; color: rgba(245,247,251,.70); font-size:13px;}
 
     .final{padding:46px 0 60px; text-align:center;}
     .finalBox{
@@ -772,20 +546,12 @@
       .forGrid{grid-template-columns:1fr;}
       .reviewGrid{grid-template-columns:1fr;}
       .valueGrid{grid-template-columns:1fr;}
-      .examples{grid-template-columns:1fr;}
-      .proofGrid{grid-template-columns:1fr;}
-      .shotRow{grid-template-columns:1fr;}
-      .shotImg{height: 190px;}
     }
 
-    /* ===== Premium mobile polish ===== */
-    .hero .wrap,
-    .heroGrid { position: relative; z-index: 5; }
+    .hero .wrap, .heroGrid { position: relative; z-index: 5; }
 
     .panelBody .previewTitle{
       display:block;
-      opacity:1;
-      visibility:visible;
       color: var(--text);
       font-weight: 900;
       font-size: 18px;
@@ -803,83 +569,43 @@
     @media (max-width: 640px){
       .wrap{padding:0 16px;}
 
-      /* Header becomes clean + compact */
       .topInner{
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
         padding: 12px 0;
       }
-      .logo-wrap{ justify-content:flex-start; }
       .logo-wrap img{ height:40px; }
 
-      /* Hide anchor buttons on phone */
-      .nav a[href="#how"],
-      .nav a[href="#for"]{
-        display:none;
-      }
-
-      /* Nav into tidy grid */
       .nav{
         width:100%;
         display:grid;
         grid-template-columns: 1fr 1fr;
         gap:8px;
       }
-      .nav .btn{
-        width:100%;
-        padding: 10px 12px;
-        font-size:13px;
-      }
-      .nav .btnPrimary{
-        grid-column: 1 / -1;
-        padding: 12px 12px;
-        font-size: 13.5px;
-      }
+      .nav .btn{ width:100%; padding: 10px 12px; font-size:13px; }
+      .nav .btnPrimary{ grid-column: 1 / -1; padding: 12px 12px; font-size: 13.5px; }
 
-      /* Hero spacing */
       .hero{padding: 36px 0 24px;}
-
-      /* Better overlay for phone readability */
       .heroOverlay{
-        background:
-          linear-gradient(
-            180deg,
-            rgba(0,0,0,.70) 0%,
-            rgba(0,0,0,.60) 55%,
-            rgba(0,0,0,.72) 100%
-          );
+        background: linear-gradient(180deg, rgba(0,0,0,.70) 0%, rgba(0,0,0,.60) 55%, rgba(0,0,0,.72) 100%);
       }
 
-      h1{
-        font-size: 36px;
-        line-height:1.06;
-        margin-top:14px;
-      }
+      h1{ font-size: 36px; line-height:1.06; margin-top:14px; }
       .lead{ font-size: 15px; }
 
       .ticker{width:100%;}
       .tickerTrack{font-size:12px; animation-duration: 34s;}
 
-      /* Clarity chips wrap nicely */
       .quickClarity{ gap:8px; }
       .qc{ font-size:12.5px; padding:7px 10px; }
 
-      /* CTA stack */
       .ctaRow{
         flex-direction: column;
         align-items: stretch;
         gap:10px;
       }
-      .ctaRow .btn{
-        width:100%;
-        padding: 12px 14px;
-        font-size: 14px;
-      }
-
-      /* Publishing row stays compact */
-      .pubRow{ flex-direction: column; align-items: stretch; }
-      .pubRow .btnSubtle{ width:100%; text-align:center; }
+      .ctaRow .btn{ width:100%; padding: 12px 14px; font-size: 14px; }
 
       .panel{margin-top:14px;}
       .panelBody{padding:16px;}
@@ -890,22 +616,7 @@
 
       .valueBand{ padding:18px 16px; }
 
-      /* Video looks premium on mobile */
-      .videoMeta{ padding:10px 10px; }
       .videoChip{ display:none; }
-
-      .videoOverlay .playBtn{
-        width:66px;
-        height:66px;
-      }
-      .videoOverlay .playBtn::after{
-        border-top:11px solid transparent;
-        border-bottom:11px solid transparent;
-        border-left:17px solid rgba(245,247,251,.92);
-      }
-
-      /* Screenshots look clean on mobile */
-      .shotImg{height: 200px;}
     }
   </style>
 </head>
@@ -919,16 +630,11 @@
         </a>
 
         <div class="nav">
-          <a class="btn" href="#how">How it works</a>
-          <a class="btn" href="#for">Who it’s for</a>
-
-          <!-- Publishing business button (no name, just the button) -->
           <a class="btn btnGhost" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
             Publishing assistance
           </a>
-
           <a class="btn" href="login.html">Log in</a>
-          <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+          <a class="btn btnPrimary" href="signup.html">Start writing</a>
         </div>
       </div>
     </div>
@@ -981,28 +687,21 @@
 
           <h1>Write the book you’ve been avoiding.</h1>
           <p class="lead">
-            If you’ve had an idea for months (or years) but can’t start, Authored helps you turn
-            scattered thoughts into a real manuscript in your own voice.
+            Turn scattered thoughts into a real manuscript in your own voice.
+            Start with clarity, build structure, and keep momentum.
           </p>
 
           <div class="quickClarity" aria-label="What Authored helps with">
             <div class="qc"><span class="qcDot"></span>Clarify the idea</div>
             <div class="qc"><span class="qcDot"></span>Organize your thoughts</div>
-            <div class="qc"><span class="qcDot"></span>Gentle writing prompts</div>
-            <div class="qc"><span class="qcDot"></span>Refine drafts</div>
-            <div class="qc"><span class="qcDot"></span>Stay consistent</div>
+            <div class="qc"><span class="qcDot"></span>Write in your voice</div>
+            <div class="qc"><span class="qcDot"></span>Expand chapters</div>
+            <div class="qc"><span class="qcDot"></span>Finish the draft</div>
           </div>
 
           <div class="ctaRow">
-            <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+            <a class="btn btnPrimary" href="signup.html">Start writing</a>
             <a class="btn btnGhost" href="guest.html">Try it free</a>
-            <a class="btn" href="login.html">Log in</a>
-          </div>
-
-          <div class="pubRow">
-            <a class="btn btnSubtle" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">
-              Need publishing Assistance
-            </a>
           </div>
 
           <div class="priceHint">
@@ -1010,7 +709,7 @@
           </div>
 
           <p class="micro">
-            You own your words. Built for writers who care about voice, clarity, and finishing what they start.
+            You own your words. Authored guides the process without replacing you.
           </p>
         </div>
 
@@ -1066,7 +765,7 @@
           </div>
           <div class="valueCard">
             <h3>Refine drafts</h3>
-            <p>Improve clarity and flow without losing your personality or turning it into “AI writing.”</p>
+            <p>Improve clarity and flow without losing your personality or turning it into AI writing.</p>
           </div>
           <div class="valueCard">
             <h3>Stay consistent</h3>
@@ -1077,157 +776,38 @@
     </div>
   </section>
 
-  <!-- Proof section (video + screenshots) -->
   <section class="section" id="proof">
     <div class="wrap">
       <h2 class="title">See it in action</h2>
-      <p class="sub">Watch the real flow in under a minute, then scan the screenshots.</p>
+      <p class="sub">A quick walkthrough of the real flow: start → outline → expand.</p>
 
-      <div class="proofGrid">
-        <div class="media">
-          <h3>60-second walkthrough</h3>
+      <div class="media">
+        <h3>60-second walkthrough</h3>
 
-          <div class="videoWrap" id="demoVideoWrap">
-            <div class="videoOverlay" aria-hidden="true">
-              <div class="playBtn"></div>
+        <div class="videoWrap">
+          <video
+            class="walkVideo"
+            controls
+            playsinline
+            preload="metadata"
+            poster="assets/video-poster.webp"
+          >
+            <source src="assets/authored-walkthrough.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+
+          <div class="videoMeta">
+            <div class="left">
+              <div class="videoKicker">Start → Outline → Expand</div>
+              <div class="videoTitle">See how Authored turns an idea into a chapter draft</div>
             </div>
-
-            <video
-              class="walkVideo"
-              controls
-              playsinline
-              preload="metadata"
-              poster="assets/video-poster.webp"
-            >
-              <source src="assets/authored-walkthrough.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-
-            <div class="videoMeta">
-              <div class="left">
-                <div class="videoKicker">Start → Outline → Expand</div>
-                <div class="videoTitle">See how Authored turns an idea into a chapter draft</div>
-              </div>
-              <div class="videoChip">~55s</div>
-            </div>
+            <div class="videoChip">~55s</div>
           </div>
-
-          <p class="sub" style="margin:12px 0 0; max-width:none;">
-            Tip: watch with sound. The narration explains what’s happening as you move through each step.
-          </p>
         </div>
 
-        <div class="media">
-          <h3>Screenshots (3 quick shots)</h3>
-
-          <div class="shotRow">
-            <div class="shotCard">
-              <img class="shotImg" src="assets/shot-start.png" alt="Authored start screen" loading="lazy" />
-              <div class="shotCap"><b>Start</b> — enter your idea + voice</div>
-            </div>
-
-            <div class="shotCard">
-              <img class="shotImg" src="assets/shot-outline.png" alt="Authored outline screen" loading="lazy" />
-              <div class="shotCap"><b>Outline</b> — get a chapter map</div>
-            </div>
-
-            <div class="shotCard">
-              <img class="shotImg" src="assets/shot-expand.png" alt="Authored expand chapter screen" loading="lazy" />
-              <div class="shotCap"><b>Expand</b> — draft one chapter</div>
-            </div>
-          </div>
-
-          <p class="sub" style="margin:12px 0 0; max-width:none;">
-            This is the core loop: clarity → structure → progress.
-          </p>
-        </div>
-      </div>
-
-      <div class="examples" aria-label="Examples of outcomes">
-        <div class="ex">
-          <div class="exTop">
-            <span class="tag">Before → After</span>
-            <span class="tag">Structure</span>
-          </div>
-          <b>From idea to chapter map</b>
-          <p>“I have a book idea about betrayal…” → a clear purpose + 12-chapter outline you can actually write.</p>
-        </div>
-
-        <div class="ex">
-          <div class="exTop">
-            <span class="tag">Voice</span>
-            <span class="tag">Clarity</span>
-          </div>
-          <b>Sound like you</b>
-          <p>Paste a sample sermon / essay → drafts keep your phrases, tone, and rhythm instead of generic AI.</p>
-        </div>
-
-        <div class="ex">
-          <div class="exTop">
-            <span class="tag">Momentum</span>
-            <span class="tag">Finish</span>
-          </div>
-          <b>Stop restarting</b>
-          <p>Pick one chapter → expand → refine → move on. Progress becomes repeatable.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="how">
-    <div class="wrap">
-      <h2 class="title">How it works</h2>
-      <p class="sub">A clean starting point, then a guided path forward without losing your voice.</p>
-
-      <div class="steps">
-        <div class="step">
-          <div class="num">1</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Try it free</h3>
-          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
-            Start in guest mode and generate a title, purpose, and outline in minutes.
-          </p>
-        </div>
-        <div class="step">
-          <div class="num">2</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Keep going</h3>
-          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
-            Create a free account to save your project and expand chapters.
-          </p>
-        </div>
-        <div class="step">
-          <div class="num">3</div>
-          <h3 style="margin:0 0 8px; font-size:16px;">Upgrade when ready</h3>
-          <p style="margin:0; color:rgba(245,247,251,.78); font-size:14px;">
-            Unlock deeper chapter drafts, intros, exports, and more.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="for">
-    <div class="wrap">
-      <h2 class="title">Who it’s for</h2>
-      <p class="sub">Writers who have something real to say, but need help turning it into a book without losing their voice.</p>
-
-      <div class="forGrid">
-        <div class="forCard">
-          <h3>You’ve been stuck at the beginning</h3>
-          <ul>
-            <li>You have ideas but don’t know how to structure them.</li>
-            <li>You overthink the first page and never begin.</li>
-            <li>You keep restarting instead of progressing.</li>
-          </ul>
-        </div>
-
-        <div class="forCard">
-          <h3>You care about voice</h3>
-          <ul>
-            <li>You don’t want generic AI writing.</li>
-            <li>You want your tone, your phrases, your perspective.</li>
-            <li>You want guidance without being replaced.</li>
-          </ul>
-        </div>
+        <p class="sub" style="margin:12px 0 0; max-width:none;">
+          Tip: watch with sound. The narration explains what’s happening as you move through each step.
+        </p>
       </div>
     </div>
   </section>
@@ -1273,14 +853,12 @@
         <p class="sub" style="margin:0 auto 16px;">Start free. Keep going when you’re ready.</p>
 
         <div class="ctaRow" style="justify-content:center;">
-          <a class="btn btnPrimary" href="signup.html">Start writing without losing your voice</a>
+          <a class="btn btnPrimary" href="signup.html">Start writing</a>
           <a class="btn btnGhost" href="guest.html">Try it free</a>
-          <a class="btn" href="login.html">Log in</a>
-          <a class="btn btnGhost" href="https://www.improvedsolution.com/quote" target="_blank" rel="noopener">publishing assistance</a>
         </div>
 
         <p class="micro" style="margin-top:12px;">
-          If you like what you start, create an account to save and expand it.
+          You own your words. Authored helps you finish them.
         </p>
       </div>
     </div>
@@ -1300,23 +878,6 @@
 
   <script>
     document.getElementById("y").textContent = new Date().getFullYear();
-
-    // Hide the play overlay once the user starts playing
-    (function(){
-      const v = document.querySelector(".walkVideo");
-      if(!v) return;
-      const wrap = v.closest(".videoWrap");
-      if(!wrap) return;
-
-      const sync = () => {
-        wrap.classList.toggle("isPlaying", !v.paused && !v.ended);
-      };
-
-      v.addEventListener("play", sync);
-      v.addEventListener("pause", sync);
-      v.addEventListener("ended", sync);
-      sync();
-    })();
   </script>
 </body>
 </html>
