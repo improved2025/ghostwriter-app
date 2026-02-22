@@ -163,6 +163,32 @@
       border-bottom-color: rgba(255,255,255,.55);
     }
 
+    .resendRow{
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      display:none;
+    }
+    .resendRow.show{ display:block; }
+    .smallBtn{
+      width:auto;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      font-weight: 900;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease;
+      margin-top: 10px;
+    }
+    .smallBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); }
+    .smallBtn:active{ transform: translateY(0px) scale(.99); }
+    .smallBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
     @media (max-width: 640px){
       .wrap{
         margin: 26px 16px;
@@ -190,6 +216,13 @@
       <div id="msg" class="msg"></div>
       <div id="hint" class="hint"></div>
 
+      <div id="resendRow" class="resendRow">
+        <div style="color:rgba(255,255,255,.78); font-size:13px; line-height:1.45;">
+          Didn’t get the verification email?
+        </div>
+        <button id="resendBtn" class="smallBtn" type="button">Resend verification email</button>
+      </div>
+
       <div class="row">
         <div>Already have an account?</div>
         <a id="loginLink" href="login.html">Log in</a>
@@ -200,8 +233,8 @@
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Cache-bust to avoid stale account.js -->
-  <script src="./account.js?v=4" defer></script>
+  <!-- IMPORTANT: bump version after replacing account.js -->
+  <script src="./account.js?v=5" defer></script>
 
   <script>
     const emailEl = document.getElementById("email");
@@ -209,10 +242,13 @@
     const btn     = document.getElementById("btn");
     const msg     = document.getElementById("msg");
     const hint    = document.getElementById("hint");
+    const resendRow = document.getElementById("resendRow");
+    const resendBtn = document.getElementById("resendBtn");
 
     const params = new URLSearchParams(window.location.search);
     const returnTo = params.get("returnTo") || "start.html";
     const nextStep = params.get("nextStep") || "";
+
     const loginLink = document.getElementById("loginLink");
     loginLink.href =
       `login.html?returnTo=${encodeURIComponent(returnTo)}` +
@@ -228,8 +264,11 @@
       hint.className = "hint" + (show ? " show" : "");
     }
 
+    function showResend(show) {
+      resendRow.className = "resendRow" + (show ? " show" : "");
+    }
+
     function buildEmailRedirectTo() {
-      // Send the user to verify.html after they click the email link
       const base = `${window.location.origin}/verify.html`;
       const qs =
         `returnTo=${encodeURIComponent(returnTo)}` +
@@ -254,17 +293,29 @@
     (async function boot() {
       try {
         await waitForAccount();
-const { data } = await window.AuthoredAccount.getSession();
-const user = data?.session?.user;
 
-// Only redirect if they are a real user AND email is confirmed
-const isRealUser = !!user && user.is_anonymous === false;
-const isConfirmed = !!user?.email_confirmed_at;
+        // Only redirect if: real user AND email is confirmed.
+        const { data } = await window.AuthoredAccount.getSession();
+        const user = data?.session?.user;
 
-if (isRealUser && isConfirmed) {
-  goToStart();
-}
+        const isReal = !!user && user.is_anonymous === false;
+        const isConfirmed = !!user?.email_confirmed_at;
 
+        if (isReal && isConfirmed) {
+          goToStart();
+          return;
+        }
+
+        // If real but NOT confirmed, keep them here and show resend.
+        if (isReal && !isConfirmed) {
+          setMsg("Your account exists, but your email isn’t verified yet.", "err");
+          setHint("Check your inbox for the verification email. You can also resend it below.", true);
+          showResend(true);
+          if (user?.email) emailEl.value = user.email;
+          return;
+        }
+
+        // Make sure guest identity exists so drafts carry over
         if (window.AuthoredAccount.ensureIdentity) {
           await window.AuthoredAccount.ensureIdentity();
         }
@@ -277,6 +328,7 @@ if (isRealUser && isConfirmed) {
     async function handleSignup() {
       setMsg("", "");
       setHint("", false);
+      showResend(false);
 
       const email = (emailEl.value || "").trim();
       const password = passEl.value || "";
@@ -292,49 +344,40 @@ if (isRealUser && isConfirmed) {
       try {
         await waitForAccount();
 
+        // Ensure we have a guest session first (so conversion keeps same user_id)
         if (window.AuthoredAccount.ensureIdentity) {
           await window.AuthoredAccount.ensureIdentity();
         }
 
         const emailRedirectTo = buildEmailRedirectTo();
 
-        // Check current user
         const u = await window.AuthoredAccount.getUser();
         const user = u?.data?.user || null;
 
-        // Convert anon -> email/password (keeps same user_id)
+        // Convert anon -> email/password (same user_id)
         if (user?.is_anonymous && window.AuthoredAccount.convertGuestToEmailPassword) {
-          // Try to pass redirect options (won't break if the function ignores it)
           const r = await window.AuthoredAccount.convertGuestToEmailPassword(email, password, { emailRedirectTo });
           if (r?.error) {
             setMsg(r.error.message || "Could not convert guest account.", "err");
             return;
           }
 
-          setMsg("Check your email to confirm your account.", "ok");
-          setHint("After you confirm, you’ll be brought back to your draft automatically.", true);
+          setMsg("Confirm your email to finish signup.", "ok");
+          setHint("Open your inbox and click the confirmation link. After that, you’ll land on the verification page and we’ll bring you back to your draft.", true);
+          showResend(true);
           return;
         }
 
-        // Normal signup
-        let result;
-        try {
-          // If your account.js supports options, use them
-          result = await window.AuthoredAccount.signUp(email, password, { emailRedirectTo });
-        } catch {
-          // Fallback: older signature
-          result = await window.AuthoredAccount.signUp(email, password);
-        }
-
+        // Normal signup (new user)
+        const result = await window.AuthoredAccount.signUp(email, password, { emailRedirectTo });
         if (result?.error) {
           setMsg(result.error.message || "Something went wrong. Please try again.", "err");
           return;
         }
 
-        // With email confirmations enabled, you usually won’t be logged in yet.
-        // The right UX is: tell them to check email, don’t redirect to start.
         setMsg("Confirm your email to finish signup.", "ok");
         setHint("Open your inbox and click the confirmation link. After that, you’ll land on the verification page and we’ll bring you back to your draft.", true);
+        showResend(true);
 
       } catch (e) {
         console.error(e);
@@ -345,7 +388,51 @@ if (isRealUser && isConfirmed) {
       }
     }
 
+    async function handleResend() {
+      try {
+        setMsg("", "");
+        setHint("", false);
+
+        await waitForAccount();
+
+        const email = (emailEl.value || "").trim();
+        if (!email) {
+          setMsg("Enter your email above first.", "err");
+          return;
+        }
+
+        const client = window.AuthoredAccount?.client;
+        if (!client?.auth?.resend) {
+          setMsg("Resend not available. Refresh the page.", "err");
+          return;
+        }
+
+        resendBtn.disabled = true;
+        setMsg("Sending verification email…", "");
+
+        const emailRedirectTo = buildEmailRedirectTo();
+        const { error } = await client.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo }
+        });
+
+        if (error) {
+          setMsg(error.message || "Could not resend verification email.", "err");
+          return;
+        }
+
+        setMsg("Verification email sent. Check your inbox.", "ok");
+        setHint("If you don’t see it in 2 minutes, check spam/junk.", true);
+      } catch (e) {
+        setMsg(e?.message || "Could not resend verification email.", "err");
+      } finally {
+        resendBtn.disabled = false;
+      }
+    }
+
     btn.addEventListener("click", handleSignup);
+    resendBtn.addEventListener("click", handleResend);
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") handleSignup();
