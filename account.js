@@ -41,22 +41,29 @@ const SUPABASE_ANON_KEY =
     }
 
     function writeAuthCookies(session) {
-      // Your API routes already try to read:
-      // - sb-access-token
-      // - supabase-auth-token
-      // We will set sb-access-token and sb-refresh-token.
-
       if (!session?.access_token) {
         clearCookie("sb-access-token");
         clearCookie("sb-refresh-token");
         return;
       }
-
-      // 7 days is fine for now (change later)
       const oneWeek = 60 * 60 * 24 * 7;
-
       setCookie("sb-access-token", session.access_token, oneWeek);
       setCookie("sb-refresh-token", session.refresh_token || "", oneWeek);
+    }
+
+    function isAnonymousUser(user) {
+      return !!user?.is_anonymous;
+    }
+
+    function isEmailVerified(user) {
+      // Supabase user has email_confirmed_at when verified
+      return !!user?.email_confirmed_at;
+    }
+
+    function defaultEmailRedirectTo() {
+      // Where the confirmation link should land after the user clicks it
+      // Keep this simple and stable:
+      return `${window.location.origin}/login.html`;
     }
 
     async function currentUser() {
@@ -76,7 +83,24 @@ const SUPABASE_ANON_KEY =
       return `authored_active_project_id_${userId}`;
     }
 
-    // Auto-create a stable identity for every visitor (guest sessions)
+    function shouldAutoCreateGuestIdentity() {
+      // This is the key fix:
+      // Do NOT create anonymous sessions on auth pages. It causes confusion and redirects.
+      const path = (window.location.pathname || "").toLowerCase();
+      const file = path.split("/").pop() || "";
+
+      // Add/remove files here if needed:
+      const block = new Set(["login.html", "signup.html", "verify.html"]);
+      if (block.has(file)) return false;
+
+      // Allow manual override on any page:
+      // <script>window.AUTHORED_DISABLE_AUTO_GUEST = true</script> (before loading account.js)
+      if (window.AUTHORED_DISABLE_AUTO_GUEST === true) return false;
+
+      return true;
+    }
+
+    // Auto-create a stable identity for visitors (guest sessions)
     async function ensureIdentity() {
       const { data } = await client.auth.getSession();
       if (data?.session) {
@@ -103,27 +127,39 @@ const SUPABASE_ANON_KEY =
     // Run once on load
     client.auth.getSession().then(({ data }) => {
       writeAuthCookies(data?.session || null);
-      // Ensure guest identity exists (so limits always work)
-      ensureIdentity().catch(() => {});
-      console.log("Supabase session on load:", data?.session || null);
+
+      // Only auto-create guest identity on non-auth pages
+      if (shouldAutoCreateGuestIdentity()) {
+        ensureIdentity().catch(() => {});
+      }
+
+      // console.log("Supabase session on load:", data?.session || null);
     });
 
     window.AuthoredAccount = {
       client,
 
-      // Makes sure there is ALWAYS a user_id (guest or logged-in)
+      // ===== Identity =====
       async ensureIdentity() {
         return await ensureIdentity();
       },
 
+      // ===== Auth =====
       async signIn(email, password) {
-        const r = await client.auth.signInWithPassword({ email, password });
-        // cookies update via onAuthStateChange
-        return r;
+        // Cookies update via onAuthStateChange
+        return await client.auth.signInWithPassword({ email, password });
       },
 
-      async signUp(email, password) {
-        return await client.auth.signUp({ email, password });
+      async signUp(email, password, options = {}) {
+        // Force confirmation link to come back to your site
+        const emailRedirectTo =
+          options.emailRedirectTo || defaultEmailRedirectTo();
+
+        return await client.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo }
+        });
       },
 
       async signOut() {
@@ -141,17 +177,63 @@ const SUPABASE_ANON_KEY =
         return await client.auth.getUser();
       },
 
-      async convertGuestToEmailPassword(email, password) {
+      // Converts anon user into email/password user (same user_id)
+      async convertGuestToEmailPassword(email, password, options = {}) {
         const u = await currentUser();
         if (!u) return { data: null, error: new Error("No session to convert") };
         if (!u.is_anonymous) return { data: { user: u }, error: null };
 
-        // Converts anon user into email/password user (same user_id)
-        const { data, error } = await client.auth.updateUser({ email, password });
+        const emailRedirectTo =
+          options.emailRedirectTo || defaultEmailRedirectTo();
+
+        const { data, error } = await client.auth.updateUser(
+          { email, password },
+          { emailRedirectTo }
+        );
         return { data, error };
       },
 
-      // For protected pages: redirect to login if not authenticated
+      // ===== Verification helpers (use these in start.html or guards) =====
+      isAnonymousUser(user) {
+        return isAnonymousUser(user);
+      },
+
+      isEmailVerified(user) {
+        return isEmailVerified(user);
+      },
+
+      // Requires a REAL user (not anonymous). Redirects if missing.
+      async requireRealUser(redirectTo = "login.html") {
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+
+        const session = data?.session;
+        const user = session?.user || null;
+
+        if (!session || !user || isAnonymousUser(user)) {
+          window.location.href = redirectTo;
+          return null;
+        }
+        return user;
+      },
+
+      // Requires REAL + VERIFIED user. Use this to protect start.html.
+      async requireVerifiedUser(
+        redirectToLogin = "login.html",
+        redirectToVerify = "verify.html"
+      ) {
+        const user = await this.requireRealUser(redirectToLogin);
+        if (!user) return null;
+
+        if (!isEmailVerified(user)) {
+          window.location.href = redirectToVerify;
+          return null;
+        }
+        return user;
+      },
+
+      // For protected pages: redirect to login if no session (includes anonymous sessions)
+      // NOTE: this is unchanged behavior; use requireRealUser/requireVerifiedUser for stricter gating.
       async requireUser(redirectTo = "login.html") {
         const { data, error } = await client.auth.getSession();
         if (error) throw error;
@@ -164,6 +246,7 @@ const SUPABASE_ANON_KEY =
         return session.user;
       },
 
+      // ===== Projects (unchanged) =====
       projects: {
         async getActiveProjectId() {
           const userId = await requireUserId();
