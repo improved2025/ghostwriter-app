@@ -254,13 +254,16 @@
     (async function boot() {
       try {
         await waitForAccount();
+const { data } = await window.AuthoredAccount.getSession();
+const user = data?.session?.user;
 
-        // If already logged in as a real user, skip signup page
-        const { data } = await window.AuthoredAccount.getSession();
-        const user = data?.session?.user;
-        if (user && user.is_anonymous === false) {
-          goToStart();
-        }
+// Only redirect if they are a real user AND email is confirmed
+const isRealUser = !!user && user.is_anonymous === false;
+const isConfirmed = !!user?.email_confirmed_at;
+
+if (isRealUser && isConfirmed) {
+  goToStart();
+}
 
         if (window.AuthoredAccount.ensureIdentity) {
           await window.AuthoredAccount.ensureIdentity();
