@@ -25,7 +25,6 @@
       background:#0b0d12;
     }
 
-    /* Full-page photo background (match signup) */
     body::before{
       content:"";
       position:fixed;
@@ -36,7 +35,6 @@
       filter: saturate(1.05) contrast(1.05);
     }
 
-    /* Dark overlay for readability (match signup) */
     body::after{
       content:"";
       position:fixed;
@@ -55,7 +53,6 @@
       text-align: center;
     }
 
-    /* Subtle logo (top, centered) */
     .logoRow{
       display:flex;
       justify-content:center;
@@ -218,7 +215,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Cache-bust account.js to avoid stale browser versions -->
-  <script src="./account.js?v=3" defer></script>
+  <script src="./account.js?v=4" defer></script>
 </head>
 
 <body>
@@ -262,9 +259,10 @@
     const loginBtn = document.getElementById("loginBtn");
     const resetBtn = document.getElementById("resetBtn");
 
-    // Optional: supports login.html?next=start.html (or any other page)
+    // Supports: login.html?next=./start.html
     const params = new URLSearchParams(window.location.search);
     const NEXT_URL = params.get("next") || "./start.html";
+    const VERIFY_URL = "./verify.html";
 
     function setStatus(text, kind) {
       statusEl.textContent = text || "";
@@ -280,14 +278,27 @@
       }
     }
 
+    function isRealUser(user) {
+      return !!user && user.is_anonymous === false;
+    }
+
+    function isVerifiedUser(user) {
+      return !!user && !!user.email_confirmed_at;
+    }
+
     async function redirectIfAlreadyAuthedRealUser() {
       const { data } = await window.AuthoredAccount.getSession();
       const user = data?.session?.user;
-      if (user && user.is_anonymous === false) {
-        window.location.replace(NEXT_URL);
+
+      if (!isRealUser(user)) return false;
+
+      if (!isVerifiedUser(user)) {
+        window.location.replace(VERIFY_URL);
         return true;
       }
-      return false;
+
+      window.location.replace(NEXT_URL);
+      return true;
     }
 
     (async function boot() {
@@ -321,6 +332,16 @@
           return;
         }
 
+        // Re-check user to enforce verification gate
+        const u = await window.AuthoredAccount.getUser();
+        const user = u?.data?.user;
+
+        if (isRealUser(user) && !isVerifiedUser(user)) {
+          setStatus("Logged in. Please verify your email to continue.", "ok");
+          window.location.replace(VERIFY_URL);
+          return;
+        }
+
         setStatus("Logged in. Redirecting...", "ok");
         window.location.replace(NEXT_URL);
       } catch (e) {
@@ -349,8 +370,11 @@
           return;
         }
 
+        // Send reset link that returns to YOUR site
+        const redirectTo = `${window.location.origin}/verify.html`;
+
         setStatus("Sending reset link...");
-        const { error } = await client.auth.resetPasswordForEmail(email);
+        const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
 
         if (error) {
           setStatus(error.message || "Could not send reset link.", "error");
