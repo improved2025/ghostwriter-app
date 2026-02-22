@@ -25,7 +25,6 @@
       background:#0b0d12;
     }
 
-    /* Full-page photo background */
     body::before{
       content:"";
       position:fixed;
@@ -33,10 +32,8 @@
       z-index:-2;
       background: url("assets/signup-hero.webp") center/cover no-repeat;
       transform: scale(1.03);
-      filter: saturate(1.05) contrast(1.05);
     }
 
-    /* Dark overlay for readability */
     body::after{
       content:"";
       position:fixed;
@@ -45,286 +42,114 @@
       background:
         radial-gradient(900px 600px at 20% 20%, rgba(0,0,0,.35), rgba(0,0,0,.72) 70%),
         linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.68));
-      pointer-events:none;
     }
 
-    .wrap{
-      max-width: 520px;
-      margin: 80px auto;
-      padding: 0 20px;
-      text-align: center;
-    }
-
-    h1{
-      font-size: 40px;
-      margin: 0 0 10px;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-      text-shadow: 0 18px 60px rgba(0,0,0,.55);
-    }
-
-    .sub{
-      color: var(--muted);
-      margin: 0 0 22px;
-      line-height: 1.5;
-      text-shadow: 0 14px 40px rgba(0,0,0,.55);
-      font-size: 14px;
-    }
+    .wrap{max-width:520px;margin:80px auto;padding:0 20px;text-align:center;}
+    h1{font-size:40px;margin:0 0 10px;font-weight:900;}
+    .sub{color:var(--muted);margin:0 0 22px;font-size:14px;}
 
     .card{
       border-radius: var(--radius);
-      padding: 22px;
-      text-align: left;
+      padding:22px;
       background: linear-gradient(180deg, var(--card), var(--card2));
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
     }
 
-    label{
-      display: block;
-      font-size: 13px;
-      margin: 12px 0 6px;
-      color: rgba(255,255,255,.92);
-      font-weight: 700;
-    }
-
+    label{display:block;font-size:13px;margin:12px 0 6px;font-weight:700;}
     input{
-      width: 100%;
-      padding: 12px 12px;
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 12px;
-      font-size: 15px;
-      outline: none;
-      box-sizing: border-box;
-      background: rgba(255,255,255,.06);
-      color: #fff;
-    }
-    input::placeholder{ color: rgba(255,255,255,.55); }
-
-    input:focus{
-      border-color: rgba(255,255,255,.32);
-      background: rgba(255,255,255,.08);
+      width:100%;padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.18);
+      color:#fff;
     }
 
     button{
-      width: 100%;
-      margin-top: 16px;
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 900;
-      background: rgba(255,255,255,.92);
-      color: #0b0d12;
-      cursor: pointer;
-      transition: transform .12s ease, filter .12s ease;
-    }
-    button:hover{ transform: translateY(-1px); filter: brightness(1.02); }
-    button:active{ transform: translateY(0px) scale(.99); }
-    button:disabled{ opacity: 0.6; cursor: not-allowed; }
-
-    .msg{
-      margin-top: 12px;
-      font-size: 13px;
-      min-height: 18px;
-      color: rgba(255,255,255,.85);
-    }
-    .msg.ok{ color: #bff0bf; }
-    .msg.err{ color: #ffb4b4; }
-
-    .row{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 14px;
-      font-size: 13px;
-      gap: 10px;
-      flex-wrap: wrap;
-      color: rgba(255,255,255,.78);
+      width:100%;margin-top:16px;padding:12px;border-radius:12px;
+      font-weight:900;background:#fff;color:#000;cursor:pointer;
     }
 
-    a{
-      color: rgba(255,255,255,.88);
-      text-decoration: none;
-      border-bottom: 1px solid rgba(255,255,255,.28);
-      padding-bottom: 2px;
-    }
-    a:hover{
-      color: rgba(255,255,255,.96);
-      border-bottom-color: rgba(255,255,255,.55);
-    }
+    .msg{margin-top:12px;font-size:13px;min-height:18px;}
+    .msg.ok{color:#bff0bf;}
+    .msg.err{color:#ffb4b4;}
 
-    @media (max-width: 640px){
-      .wrap{
-        margin: 26px 16px;
-        padding: 0;
-      }
-      h1{ font-size: 32px; }
-      .card{ padding: 18px; }
+    .row{display:flex;justify-content:space-between;margin-top:14px;font-size:13px;}
+    a{color:#fff;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.3);}
+
+    @media(max-width:640px){
+      .wrap{margin:26px 16px;}
+      h1{font-size:32px;}
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <h1>Create your account</h1>
-    <p class="sub">Email + password. Your draft will carry over.</p>
+<div class="wrap">
+<h1>Create your account</h1>
+<p class="sub">Email + password. Your draft will carry over.</p>
 
-    <div class="card">
-      <label for="email">Email</label>
-      <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+<div class="card">
 
-      <label for="password">Password</label>
-      <input id="password" type="password" placeholder="••••••••" autocomplete="new-password" />
+<label>Email</label>
+<input id="email" type="email" placeholder="you@example.com">
 
-      <button id="btn">Sign up</button>
-      <div id="msg" class="msg"></div>
+<label>Password</label>
+<input id="password" type="password">
 
-      <div class="row">
-        <div>Already have an account?</div>
-        <a id="loginLink" href="login.html">Log in</a>
-      </div>
-    </div>
-  </div>
+<button id="btn">Sign up</button>
+<div id="msg" class="msg"></div>
 
-  <!-- Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div class="row">
+<div>Already have an account?</div>
+<a href="login.html">Log in</a>
+</div>
 
-  <!-- Cache-bust to avoid stale account.js -->
-  <script src="./account.js?v=3" defer></script>
+</div>
+</div>
 
-  <script>
-    const emailEl = document.getElementById("email");
-    const passEl  = document.getElementById("password");
-    const btn     = document.getElementById("btn");
-    const msg     = document.getElementById("msg");
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./account.js?v=3" defer></script>
 
-    // Carry forward guest momentum if present
-    const params = new URLSearchParams(window.location.search);
-    const returnTo = params.get("returnTo") || "start.html";
-    const nextStep = params.get("nextStep") || ""; // safe even if unused
-    const loginLink = document.getElementById("loginLink");
-    loginLink.href = `login.html?returnTo=${encodeURIComponent(returnTo)}${nextStep ? `&nextStep=${encodeURIComponent(nextStep)}` : ""}`;
+<script>
+const emailEl=document.getElementById("email");
+const passEl=document.getElementById("password");
+const btn=document.getElementById("btn");
+const msg=document.getElementById("msg");
 
-    function setMsg(text, type) {
-      msg.textContent = text || "";
-      msg.className = "msg" + (type ? " " + type : "");
-    }
+function setMsg(t,c){msg.textContent=t||"";msg.className="msg "+(c||"");}
 
-    async function waitForAccount(timeoutMs = 15000) {
-      const start = Date.now();
-      while (!window.AuthoredAccount) {
-        if (window.AuthoredAccountInitError) throw new Error(window.AuthoredAccountInitError);
-        if (Date.now() - start > timeoutMs) throw new Error("account.js not loaded");
-        await new Promise(r => setTimeout(r, 25));
-      }
-    }
+async function waitForAccount(){
+ while(!window.AuthoredAccount) await new Promise(r=>setTimeout(r,30));
+}
 
-    function goToStart() {
-      // Preserve nextStep for later use (safe if ignored by start.html for now)
-      const url = nextStep ? `${returnTo}?nextStep=${encodeURIComponent(nextStep)}` : returnTo;
-      window.location.replace(url);
-    }
+btn.onclick=async()=>{
+ setMsg("");
+ const email=emailEl.value.trim();
+ const password=passEl.value;
+ if(!email||!password){setMsg("Enter email + password","err");return;}
 
-    (async function boot() {
-      try {
-        await waitForAccount();
+ btn.disabled=true;
 
-        // If already logged in as a real user, skip signup page
-        const { data } = await window.AuthoredAccount.getSession();
-        const user = data?.session?.user;
-        if (user && user.is_anonymous === false) {
-          goToStart();
-        }
+ try{
+   await waitForAccount();
 
-        // Ensure an identity exists (anon or real). This matches your account.js API.
-        if (window.AuthoredAccount.ensureIdentity) {
-          await window.AuthoredAccount.ensureIdentity();
-        }
-      } catch (e) {
-        console.error(e);
-        setMsg(e.message || "Signup page failed to initialize.", "err");
-      }
-    })();
+   const { error } = await window.AuthoredAccount.signUp(email,password);
 
-    async function handleSignup() {
-      setMsg("", "");
-      const email = (emailEl.value || "").trim();
-      const password = passEl.value || "";
+   if(error){
+     setMsg(error.message,"err");
+     btn.disabled=false;
+     return;
+   }
 
-      if (!email || !password) {
-        setMsg("Please enter email and password.", "err");
-        return;
-      }
+   setMsg("Account created. Check your email to verify before logging in.","ok");
 
-      btn.disabled = true;
-      btn.textContent = "Creating account...";
+ }catch(e){
+   setMsg("Signup failed.","err");
+ }
 
-      try {
-        await waitForAccount();
+ btn.disabled=false;
+};
+</script>
 
-        // Ensure we have a session (anon if needed)
-        if (window.AuthoredAccount.ensureIdentity) {
-          await window.AuthoredAccount.ensureIdentity();
-        }
-
-        // Check current user
-        const u = await window.AuthoredAccount.getUser();
-        const user = u?.data?.user || null;
-
-        // Convert anon -> email/password (keeps same user_id)
-        if (user?.is_anonymous && window.AuthoredAccount.convertGuestToEmailPassword) {
-          const r = await window.AuthoredAccount.convertGuestToEmailPassword(email, password);
-          if (r?.error) {
-            setMsg(r.error.message || "Could not convert guest account.", "err");
-            return;
-          }
-
-          setMsg("Account created. Taking you back to your draft...", "ok");
-          setTimeout(goToStart, 500);
-          return;
-        }
-
-        // Otherwise, normal signup
-        const { error } = await window.AuthoredAccount.signUp(email, password);
-        if (error) {
-          setMsg(error.message || "Something went wrong. Please try again.", "err");
-          return;
-        }
-
-        // If logged in immediately, go to start. If not, go to login.
-        const u2 = await window.AuthoredAccount.getUser();
-        const isLoggedIn = !!u2?.data?.user;
-
-        setMsg("Account created.", "ok");
-        setTimeout(() => {
-          if (isLoggedIn) {
-            goToStart();
-          } else {
-            // preserve returnTo + nextStep for continuity
-            const loginUrl =
-              `login.html?returnTo=${encodeURIComponent(returnTo)}` +
-              (nextStep ? `&nextStep=${encodeURIComponent(nextStep)}` : "");
-            window.location.replace(loginUrl);
-          }
-        }, 500);
-
-      } catch (e) {
-        console.error(e);
-        setMsg(e?.message || "Something went wrong. Please try again.", "err");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Sign up";
-      }
-    }
-
-    btn.addEventListener("click", handleSignup);
-
-    // Enter key submits
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") handleSignup();
-    });
-  </script>
 </body>
 </html>
