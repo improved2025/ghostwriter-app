@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Authored — Email verified</title>
-  <meta name="description" content="Your email has been verified. Continue to Authored." />
+  <title>Authored — Verify email</title>
+  <meta name="description" content="Verify your email to continue to Authored." />
   <link rel="icon" href="data:,">
 
   <style>
@@ -113,6 +113,7 @@
       white-space:nowrap;
       user-select:none;
       -webkit-tap-highlight-color: transparent;
+      cursor:pointer;
     }
     .btn:hover{
       transform: translateY(-1px);
@@ -141,13 +142,61 @@
       z-index:2;
     }
 
+    .status{
+      margin-top: 10px;
+      font-size: 13px;
+      text-align:center;
+      position:relative;
+      z-index:2;
+      min-height: 18px;
+      color: rgba(245,247,251,.78);
+    }
+    .status.ok{ color: #bff0bf; }
+    .status.err{ color: #ffb4b4; }
+
+    .resendBox{
+      margin: 14px auto 0;
+      max-width: 520px;
+      position:relative;
+      z-index:2;
+      display:none;
+    }
+    .fieldRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    .emailInput{
+      flex: 1 1 260px;
+      max-width: 360px;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      outline: none;
+      font-size: 14px;
+    }
+    .emailInput::placeholder{ color: rgba(255,255,255,.55); }
+    .emailInput:focus{
+      border-color: rgba(255,255,255,.32);
+      background: rgba(255,255,255,.08);
+    }
+
     @media (max-width: 520px){
       .wrap{padding:0 16px;}
       .btnRow{flex-direction:column; align-items:stretch;}
       .btn{width:100%;}
       .brand img{height:40px;}
+      .emailInput{max-width:none; width:100%;}
     }
   </style>
+
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Your shared auth -->
+  <script src="./account.js?v=4" defer></script>
 </head>
 
 <body>
@@ -159,20 +208,225 @@
         <img src="assets/logo-authored.png" alt="Authored" />
       </div>
 
-      <h1>Email verified.</h1>
-      <p>
-        You’re all set. Your email has been confirmed. Continue to log in and start writing.
+      <h1 id="title">Checking your verification…</h1>
+      <p id="desc">
+        Please wait a moment. We’re confirming your email and setting up your session.
       </p>
 
       <div class="btnRow">
-        <a class="btn btnPrimary" href="login.html">Continue to log in</a>
-        <a class="btn" href="index.html">Back to home</a>
+        <a class="btn btnPrimary" id="primaryBtn" href="login.html">Continue</a>
+        <a class="btn" id="secondaryBtn" href="index.html">Back to home</a>
       </div>
 
-      <div class="note">
+      <div id="status" class="status"></div>
+
+      <div id="resendBox" class="resendBox">
+        <p style="margin:10px auto 10px; font-size:14px;">
+          Didn’t get the email? Enter your email and resend the verification link.
+        </p>
+
+        <div class="fieldRow">
+          <input id="email" class="emailInput" type="email" placeholder="you@example.com" autocomplete="email" />
+          <button id="resendBtn" class="btn btnPrimary" type="button">Resend</button>
+        </div>
+
+        <div class="note" style="margin-top:10px;">
+          Check spam/junk too. Some inboxes delay verification emails.
+        </div>
+      </div>
+
+      <div class="note" id="footerNote">
         If you didn’t request this, you can safely ignore it.
       </div>
     </div>
   </div>
+
+  <script>
+    const titleEl = document.getElementById("title");
+    const descEl = document.getElementById("desc");
+    const statusEl = document.getElementById("status");
+    const primaryBtn = document.getElementById("primaryBtn");
+    const secondaryBtn = document.getElementById("secondaryBtn");
+    const resendBox = document.getElementById("resendBox");
+    const resendBtn = document.getElementById("resendBtn");
+    const emailEl = document.getElementById("email");
+
+    function setStatus(text, kind) {
+      statusEl.textContent = text || "";
+      statusEl.className = "status" + (kind ? " " + kind : "");
+    }
+
+    async function waitForAccount(timeoutMs = 15000) {
+      const start = Date.now();
+      while (!window.AuthoredAccount) {
+        if (window.AuthoredAccountInitError) throw new Error(window.AuthoredAccountInitError);
+        if (Date.now() - start > timeoutMs) throw new Error("Auth system not ready.");
+        await new Promise(r => setTimeout(r, 50));
+      }
+    }
+
+    function hasAuthParams() {
+      // Supabase may use:
+      // - ?code=... (PKCE)
+      // - #access_token=... (implicit)
+      const q = window.location.search || "";
+      const h = window.location.hash || "";
+      return q.includes("code=") || h.includes("access_token=") || q.includes("error=") || h.includes("error=");
+    }
+
+    function readUrlError() {
+      const q = new URLSearchParams(window.location.search);
+      const h = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
+      return (
+        q.get("error_description") ||
+        q.get("error") ||
+        h.get("error_description") ||
+        h.get("error") ||
+        ""
+      );
+    }
+
+    function showResendUI(prefillEmail = "") {
+      resendBox.style.display = "block";
+      if (prefillEmail) emailEl.value = prefillEmail;
+    }
+
+    function setVerifiedUI() {
+      titleEl.textContent = "Email verified.";
+      descEl.textContent = "You’re all set. Continue to the app.";
+      primaryBtn.textContent = "Continue to app";
+      primaryBtn.href = "start.html";
+      secondaryBtn.textContent = "Back to home";
+      secondaryBtn.href = "index.html";
+      setStatus("Verified. You can continue.", "ok");
+      resendBox.style.display = "none";
+    }
+
+    function setNotVerifiedUI() {
+      titleEl.textContent = "Verify your email to continue.";
+      descEl.textContent = "Your account exists, but your email isn’t verified yet. Use the button below to resend the verification email.";
+      primaryBtn.textContent = "Go to login";
+      primaryBtn.href = "login.html";
+      secondaryBtn.textContent = "Back to home";
+      secondaryBtn.href = "index.html";
+      setStatus("Not verified yet.", "");
+      showResendUI();
+    }
+
+    function setNoSessionUI() {
+      titleEl.textContent = "Check your email to verify your account.";
+      descEl.textContent = "Open the verification email from Supabase and click the confirm link. If the link expired, resend a new one below.";
+      primaryBtn.textContent = "Go to login";
+      primaryBtn.href = "login.html";
+      secondaryBtn.textContent = "Back to home";
+      secondaryBtn.href = "index.html";
+      setStatus("", "");
+      showResendUI();
+    }
+
+    async function processVerificationLinkIfPresent() {
+      const client = window.AuthoredAccount.client;
+
+      // If URL contains auth params, consume them and store a session if possible
+      if (!hasAuthParams()) return;
+
+      // Surface any error from the link
+      const urlErr = readUrlError();
+      if (urlErr) {
+        setStatus(urlErr, "err");
+      }
+
+      // Try to complete the flow
+      try {
+        // Supabase v2 supports consuming both code and hash token flows
+        if (client?.auth?.getSessionFromUrl) {
+          await client.auth.getSessionFromUrl({ storeSession: true });
+        }
+      } catch (e) {
+        setStatus(e?.message || "Could not process verification link. Try resending.", "err");
+      }
+    }
+
+    async function refreshAndRender() {
+      const { data } = await window.AuthoredAccount.getUser();
+      const user = data?.user || null;
+
+      // If no user/session on this device, show resend
+      if (!user) {
+        setNoSessionUI();
+        return;
+      }
+
+      // If user exists but not verified
+      if (!user.email_confirmed_at) {
+        // we can prefill email if available
+        showResendUI(user.email || "");
+        setNotVerifiedUI();
+        return;
+      }
+
+      // Verified
+      setVerifiedUI();
+    }
+
+    (async function boot() {
+      try {
+        await waitForAccount();
+
+        // IMPORTANT: process the verification link first, before anything else
+        await processVerificationLinkIfPresent();
+
+        // Now render correct state
+        await refreshAndRender();
+      } catch (e) {
+        console.error(e);
+        titleEl.textContent = "Something went wrong.";
+        descEl.textContent = "We couldn’t verify your email on this device. Try logging in, or resend the verification email.";
+        setStatus(e?.message || "Verification failed.", "err");
+        setNoSessionUI();
+      }
+    })();
+
+    resendBtn?.addEventListener("click", async () => {
+      try {
+        resendBtn.disabled = true;
+        setStatus("", "");
+
+        await waitForAccount();
+        const client = window.AuthoredAccount.client;
+
+        const email = (emailEl.value || "").trim();
+        if (!email) {
+          setStatus("Enter your email first.", "err");
+          return;
+        }
+
+        const redirectTo = `${window.location.origin}/verify.html`;
+
+        if (!client?.auth?.resend) {
+          setStatus("Resend not available. Refresh the page.", "err");
+          return;
+        }
+
+        setStatus("Sending…", "");
+        const { error } = await client.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: redirectTo }
+        });
+
+        if (error) {
+          setStatus(error.message || "Could not resend verification email.", "err");
+          return;
+        }
+
+        setStatus("Verification email sent. Check your inbox.", "ok");
+      } catch (e) {
+        setStatus(e?.message || "Could not resend verification email.", "err");
+      } finally {
+        resendBtn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
