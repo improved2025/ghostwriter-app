@@ -25,8 +25,7 @@ const SUPABASE_ANON_KEY =
       }
     });
 
-    // IMPORTANT:
-    // Expose a stable global for auth-guard.js (and any other script).
+    // Stable global for other scripts
     window.supabaseClient = client;
 
     function setCookie(name, value, maxAgeSeconds) {
@@ -46,24 +45,24 @@ const SUPABASE_ANON_KEY =
         clearCookie("sb-refresh-token");
         return;
       }
+
       const oneWeek = 60 * 60 * 24 * 7;
       setCookie("sb-access-token", session.access_token, oneWeek);
       setCookie("sb-refresh-token", session.refresh_token || "", oneWeek);
     }
 
-    function isAnonymousUser(user) {
-      return !!user?.is_anonymous;
+    // ---- AUTH HELPERS ----
+    function isRealUser(user) {
+      return !!user && user.is_anonymous === false;
     }
 
-    function isEmailVerified(user) {
-      // Supabase user has email_confirmed_at when verified
+    function isEmailConfirmed(user) {
+      // Supabase sets email_confirmed_at when verified
       return !!user?.email_confirmed_at;
     }
 
-    function defaultEmailRedirectTo() {
-      // Where the confirmation link should land after the user clicks it
-      // Keep this simple and stable:
-      return `${window.location.origin}/login.html`;
+    function isLaunchReadyUser(user) {
+      return isRealUser(user) && isEmailConfirmed(user);
     }
 
     async function currentUser() {
@@ -71,10 +70,32 @@ const SUPABASE_ANON_KEY =
       return data?.user || null;
     }
 
-    async function requireUserId() {
-      const { data, error } = await client.auth.getUser();
+    async function requireLaunchReadyUser(redirectTo) {
+      const { data, error } = await client.auth.getSession();
       if (error) throw error;
-      const user = data?.user;
+
+      const user = data?.session?.user || null;
+
+      if (!user) {
+        if (redirectTo) window.location.replace(redirectTo);
+        throw new Error("Not signed in");
+      }
+
+      if (!isRealUser(user)) {
+        if (redirectTo) window.location.replace(redirectTo);
+        throw new Error("Guest session not allowed here");
+      }
+
+      if (!isEmailConfirmed(user)) {
+        if (redirectTo) window.location.replace(redirectTo);
+        throw new Error("Email not confirmed");
+      }
+
+      return user;
+    }
+
+    async function requireLaunchReadyUserId() {
+      const user = await requireLaunchReadyUser();
       if (!user?.id) throw new Error("No authenticated user");
       return user.id;
     }
@@ -83,24 +104,8 @@ const SUPABASE_ANON_KEY =
       return `authored_active_project_id_${userId}`;
     }
 
-    function shouldAutoCreateGuestIdentity() {
-      // This is the key fix:
-      // Do NOT create anonymous sessions on auth pages. It causes confusion and redirects.
-      const path = (window.location.pathname || "").toLowerCase();
-      const file = path.split("/").pop() || "";
-
-      // Add/remove files here if needed:
-      const block = new Set(["login.html", "signup.html", "verify.html"]);
-      if (block.has(file)) return false;
-
-      // Allow manual override on any page:
-      // <script>window.AUTHORED_DISABLE_AUTO_GUEST = true</script> (before loading account.js)
-      if (window.AUTHORED_DISABLE_AUTO_GUEST === true) return false;
-
-      return true;
-    }
-
-    // Auto-create a stable identity for visitors (guest sessions)
+    // Guest identity is still useful (limits, guest mode),
+    // but PROJECTS will be blocked unless the user is launch-ready.
     async function ensureIdentity() {
       const { data } = await client.auth.getSession();
       if (data?.session) {
@@ -124,41 +129,35 @@ const SUPABASE_ANON_KEY =
       writeAuthCookies(session || null);
     });
 
-    // Run once on load
+    // Run once on load: keep cookies in sync + create guest identity (safe)
     client.auth.getSession().then(({ data }) => {
       writeAuthCookies(data?.session || null);
-
-      // Only auto-create guest identity on non-auth pages
-      if (shouldAutoCreateGuestIdentity()) {
-        ensureIdentity().catch(() => {});
-      }
-
-      // console.log("Supabase session on load:", data?.session || null);
+      ensureIdentity().catch(() => {});
     });
 
     window.AuthoredAccount = {
       client,
 
-      // ===== Identity =====
+      // Expose checks
+      isRealUser,
+      isEmailConfirmed,
+      isLaunchReadyUser,
+
       async ensureIdentity() {
         return await ensureIdentity();
       },
 
-      // ===== Auth =====
       async signIn(email, password) {
-        // Cookies update via onAuthStateChange
-        return await client.auth.signInWithPassword({ email, password });
+        const r = await client.auth.signInWithPassword({ email, password });
+        return r;
       },
 
+      // Supports emailRedirectTo
       async signUp(email, password, options = {}) {
-        // Force confirmation link to come back to your site
-        const emailRedirectTo =
-          options.emailRedirectTo || defaultEmailRedirectTo();
-
         return await client.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo }
+          options: options?.emailRedirectTo ? { emailRedirectTo: options.emailRedirectTo } : undefined
         });
       },
 
@@ -178,93 +177,48 @@ const SUPABASE_ANON_KEY =
       },
 
       // Converts anon user into email/password user (same user_id)
+      // Note: with email confirmation enabled, this may NOT create a session immediately.
       async convertGuestToEmailPassword(email, password, options = {}) {
         const u = await currentUser();
         if (!u) return { data: null, error: new Error("No session to convert") };
         if (!u.is_anonymous) return { data: { user: u }, error: null };
 
-        const emailRedirectTo =
-          options.emailRedirectTo || defaultEmailRedirectTo();
+        const payload = { email, password };
+        const opt = options?.emailRedirectTo ? { emailRedirectTo: options.emailRedirectTo } : undefined;
 
-        const { data, error } = await client.auth.updateUser(
-          { email, password },
-          { emailRedirectTo }
-        );
+        const { data, error } = await client.auth.updateUser(payload, opt);
         return { data, error };
       },
 
-      // ===== Verification helpers (use these in start.html or guards) =====
-      isAnonymousUser(user) {
-        return isAnonymousUser(user);
-      },
-
-      isEmailVerified(user) {
-        return isEmailVerified(user);
-      },
-
-      // Requires a REAL user (not anonymous). Redirects if missing.
-      async requireRealUser(redirectTo = "login.html") {
-        const { data, error } = await client.auth.getSession();
-        if (error) throw error;
-
-        const session = data?.session;
-        const user = session?.user || null;
-
-        if (!session || !user || isAnonymousUser(user)) {
-          window.location.href = redirectTo;
+      // For pages that require a confirmed real user (start.html)
+      async requireLaunchReadyUser(redirectTo = "login.html") {
+        // redirectTo can include query params if you want
+        try {
+          return await requireLaunchReadyUser(redirectTo);
+        } catch {
           return null;
         }
-        return user;
       },
 
-      // Requires REAL + VERIFIED user. Use this to protect start.html.
-      async requireVerifiedUser(
-        redirectToLogin = "login.html",
-        redirectToVerify = "verify.html"
-      ) {
-        const user = await this.requireRealUser(redirectToLogin);
-        if (!user) return null;
-
-        if (!isEmailVerified(user)) {
-          window.location.href = redirectToVerify;
-          return null;
-        }
-        return user;
-      },
-
-      // For protected pages: redirect to login if no session (includes anonymous sessions)
-      // NOTE: this is unchanged behavior; use requireRealUser/requireVerifiedUser for stricter gating.
-      async requireUser(redirectTo = "login.html") {
-        const { data, error } = await client.auth.getSession();
-        if (error) throw error;
-
-        const session = data?.session;
-        if (!session) {
-          window.location.href = redirectTo;
-          return null;
-        }
-        return session.user;
-      },
-
-      // ===== Projects (unchanged) =====
       projects: {
+        // Project ops are now LAUNCH-READY ONLY
         async getActiveProjectId() {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           return localStorage.getItem(activeProjectKey(userId)) || "";
         },
 
         async setActiveProjectId(projectId) {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           localStorage.setItem(activeProjectKey(userId), projectId);
         },
 
         async clearActiveProjectId() {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           localStorage.removeItem(activeProjectKey(userId));
         },
 
         async getProject(projectId) {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           const { data, error } = await client
             .from("projects")
             .select("*")
@@ -276,7 +230,8 @@ const SUPABASE_ANON_KEY =
         },
 
         async createProject(payload) {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
+
           const insertRow = {
             user_id: userId,
             topic: payload.topic,
@@ -299,7 +254,7 @@ const SUPABASE_ANON_KEY =
         },
 
         async updateProject(projectId, updates) {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           const safe = { ...updates };
           delete safe.user_id;
           delete safe.id;
@@ -317,7 +272,7 @@ const SUPABASE_ANON_KEY =
         },
 
         async getOrCreateActiveProject(payload) {
-          const userId = await requireUserId();
+          const userId = await requireLaunchReadyUserId();
           const existingId = localStorage.getItem(activeProjectKey(userId)) || "";
 
           if (existingId) {
